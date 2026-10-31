@@ -20,7 +20,18 @@ Nada a fazer. Publicou → em até ~5 min (+ o próximo momento tranquilo) todos
 03-PLANO, README, walkthrough.
 
 ### Validação executada
-Build e testes pelo script de publicação; atualização real 0.4.0 → 0.4.2 pelo GitHub — resultado no relato abaixo.
+- Build 0 avisos, testes 66/66 (pelo script de publicação); Releases v0.4.1 e v0.4.2 publicadas
+  (pacote de diferença: 5 arquivos alterados de 402).
+- **Atualização REAL pelo GitHub, aceite da Onda 4 ✅:** o velocímetro instalado na 0.4.0 foi
+  reaberto às 11:56:16 (para não esperar a consulta de 1 h que a 0.4.0 ainda tem) → consultou o feed
+  e baixou a 0.4.2 às 11:57:17 → "Momento tranquilo: aplicando" às 11:58:17 → "Package version 0.4.2
+  applied successfully" → reaberto sozinho às 11:58:25 ("Reaberto pelo atualizador: agora na versão
+  0.4.2"). Sem janela, sem clique. A 0.4.1 foi pulada (o feed só oferece a última).
+- ⚠️ **Observação não reproduzida:** duas capturas aos ~17 s e ~29 s depois do reinício mostraram
+  o lugar do widget vazio, embora a janela estivesse lá (ao 77 s aparecia normal). O log não registra
+  ocultação. Duas tentativas de reproduzir NÃO repetiram o vazio: (1) abrir com janela inicial oculta
+  (`-WindowStyle Hidden`); (2) o ciclo completo do atualizador no ensaio local, medindo a cada 3 s por
+  75 s (visível, sem cloak, texto desenhado desde o segundo 0). Fica para observar nas próximas versões.
 
 ## v0.4.1 — 2026-10-31 — Teste da atualização automática REAL pelo GitHub
 
