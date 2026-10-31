@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
 using VelocimetroInternet.Apresentacao;
 using VelocimetroInternet.Config;
 using VelocimetroInternet.Medicao;
@@ -20,6 +21,10 @@ namespace VelocimetroInternet;
 /// - ícone na bandeja + menu (bandeja e clique direito no widget) com as opções do design;
 /// - "Iniciar com o Windows" real (HKCU\Run + StartupApproved);
 /// - 2ª execução do .exe não abre outra cópia: avisa a 1ª, que reexibe o widget/abre o painel.
+///
+/// v0.4.0 (Onda 4) — instalador (Velopack) e atualização automática SILENCIOSA: consulta o
+/// GitHub 45 s após abrir e depois de hora em hora, baixa em segundo plano e reinicia sozinho
+/// num momento tranquilo (ver <see cref="ServicoAtualizacao"/> e <see cref="RegraMomentoTranquilo"/>).
 /// </summary>
 public partial class App : Application
 {
@@ -47,6 +52,27 @@ public partial class App : Application
     /// para ninguém esquecer o velocímetro parado para sempre.
     /// </summary>
     private volatile bool _pausado;
+
+    /// <summary>
+    /// Preenchido pelo Program.cs quando o processo foi reaberto pelo atualizador (versão nova).
+    /// Só vai para o log: o pedido do dono é atualizar sem atrapalhar — nada de aviso na tela.
+    /// </summary>
+    public static string? AtualizadoParaVersao { get; set; }
+
+    /// <summary>Atualização automática (v0.4.0). Só age na cópia instalada pelo Setup.</summary>
+    private readonly ServicoAtualizacao _atualizacao = new();
+
+    /// <summary>Relógio da atualização: consulta (45 s, depois 1 h) e, com versão baixada, procura o momento tranquilo (1 min).</summary>
+    private DispatcherTimer? _timerAtualizacao;
+
+    /// <summary>Menu do clique direito aberto — não reiniciar por baixo do usuário.</summary>
+    private bool _menuAberto;
+
+    private static readonly TimeSpan PrimeiraConsulta = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromHours(1);
+    private static readonly TimeSpan IntervaloMomentoTranquilo = TimeSpan.FromMinutes(1);
+    /// <summary>Após acordar da suspensão: espera o Wi-Fi voltar antes de consultar.</summary>
+    private static readonly TimeSpan ConsultaAposRetomada = TimeSpan.FromSeconds(30);
 
     private sealed record MedidorAtual(NetworkSampler Sampler, SpeedCalculator Calculadora);
 
@@ -88,6 +114,13 @@ public partial class App : Application
 
         Configuracoes cfg = _config.Atual;
         RegistrarLog($"=== Velocímetro de Internet v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} ===");
+        RegistrarLog(_atualizacao.EstaInstalado
+            ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
+            : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
+        if (AtualizadoParaVersao is not null)
+        {
+            RegistrarLog($"Reaberto pelo atualizador: agora na versão {AtualizadoParaVersao}.");
+        }
 
         ServicoTema.Aplicar(TemaWindows.AppsClaros());
 
@@ -140,11 +173,13 @@ public partial class App : Application
             RegistrarLog($"1º uso: início com o Windows ligado ({exeNovo}).");
         }
 
-        // Se o .exe foi movido de pasta, a entrada de início aponta para o lugar velho: corrige
-        if (Environment.ProcessPath is { } exe && _inicio.EstaLigado() && _inicio.ApontaParaOutroCaminho(exe))
+        // Entrada de início apontando para outro .exe: a cópia INSTALADA assume (é assim que a
+        // instalação substitui o antigo dist\); cópia solta só corrige se o .exe registrado
+        // sumiu — rodar um teste de bin\ não rouba mais a entrada do app instalado (v0.4.0).
+        if (Environment.ProcessPath is { } exe && _inicio.DeveReapontar(exe, _atualizacao.EstaInstalado))
         {
             _inicio.Definir(true, exe);
-            RegistrarLog("Entrada de início com o Windows corrigida para o caminho atual do .exe.");
+            RegistrarLog($"Entrada de início com o Windows reapontada para {exe}.");
         }
 
         // Reduz o working set inicial após o JIT carregar o XAML (02-ARQUITETURA.md §8)
@@ -158,6 +193,8 @@ public partial class App : Application
         {
             AlternarPainel(veioDaBandeja: false);
         }
+
+        IniciarAtualizacaoAutomatica();
     }
 
     /// <summary>
@@ -304,6 +341,8 @@ public partial class App : Application
                 _ = _host.AtualizarPosicaoAsync(forcarReencaixe: true);
             }
 
+            // O temporizador atrasado dispararia ao acordar ANTES de o Wi-Fi voltar: reagenda
+            ReagendarConsulta(ConsultaAposRetomada);
             return nint.Zero;
         }
 
@@ -376,7 +415,7 @@ public partial class App : Application
             return;
         }
 
-        _estudio = new EstudioCores(_config);
+        _estudio = new EstudioCores(_config, TextoVersaoRodape());
         _estudio.Closed += (_, _) =>
         {
             _estudio = null;
@@ -384,6 +423,20 @@ public partial class App : Application
         };
         _estudio.Show();
         _estudio.Activate();
+    }
+
+    /// <summary>Rodapé do estúdio: versão e se/como a atualização automática está agindo.</summary>
+    private string TextoVersaoRodape()
+    {
+        if (!_atualizacao.EstaInstalado)
+        {
+            return $"Versão {VersaoApp} · cópia sem instalador (não atualiza sozinha)";
+        }
+
+        string estado = _atualizacao.TemPendente
+            ? $"versão {_atualizacao.VersaoPendente} pronta, instala sozinha"
+            : _atualizacao.UltimaConsulta is { } u ? $"atualiza sozinho · consulta {u}" : "atualiza sozinho";
+        return $"Versão {_atualizacao.VersaoInstalada ?? VersaoApp} · {estado}";
     }
 
     // ------------------------------------------------------------------ menu
@@ -442,7 +495,24 @@ public partial class App : Application
         menu.Items.Add(new Separator());
 
         var itemSair = new MenuItem { Header = "Sair" };
-        itemSair.Click += (_, _) => Shutdown(0);
+        itemSair.Click += (_, _) =>
+        {
+            // Versão nova já baixada: instala depois que o processo fechar, sem reabrir
+            if (_atualizacao.TemPendente)
+            {
+                RegistrarLog($"Sair com a versão {_atualizacao.VersaoPendente} baixada: instala ao fechar.");
+                try
+                {
+                    _atualizacao.AplicarAoSair();
+                }
+                catch (Exception ex)
+                {
+                    RegistrarLog($"Falha ao agendar a atualização na saída: {ex.Message}");
+                }
+            }
+
+            Shutdown(0);
+        };
         menu.Items.Add(itemSair);
 
         // O widget é NOACTIVATE: sem trazer o processo para frente, o menu não fecharia ao
@@ -452,6 +522,8 @@ public partial class App : Application
             NativeMethods.SetForegroundWindow(_host.HwndWidget);
         }
 
+        menu.Opened += (_, _) => _menuAberto = true;
+        menu.Closed += (_, _) => _menuAberto = false;
         menu.IsOpen = true;
     }
 
@@ -490,6 +562,109 @@ public partial class App : Application
         }
 
         _painel?.SincronizarComConfiguracoes(_config.Atual, _inicio.EstaLigado());
+    }
+
+    // ------------------------------------------------------------------ atualização automática
+
+    /// <summary>
+    /// Liga o relógio da atualização. Fora da instalação (bin\, dist\) não faz nada — o Velopack
+    /// não tem onde aplicar e o desenvolvedor não quer o app se substituindo.
+    /// </summary>
+    private void IniciarAtualizacaoAutomatica()
+    {
+        if (!_atualizacao.EstaInstalado)
+        {
+            return;
+        }
+
+        _timerAtualizacao = new DispatcherTimer(DispatcherPriority.Background);
+        _timerAtualizacao.Tick += async (_, _) => await AoTickAtualizacaoAsync();
+        ReagendarConsulta(PrimeiraConsulta);
+    }
+
+    private void ReagendarConsulta(TimeSpan espera)
+    {
+        if (_timerAtualizacao is null || _atualizacao.TemPendente)
+        {
+            return; // fora da instalação, ou já baixou e está só esperando o momento tranquilo
+        }
+
+        _timerAtualizacao.Stop();
+        _timerAtualizacao.Interval = espera;
+        _timerAtualizacao.Start();
+    }
+
+    /// <summary>
+    /// Sem versão baixada: consulta/baixa e volta em 1 h. Com versão baixada: a cada minuto
+    /// confere o momento tranquilo e, se for, salva e reinicia na versão nova.
+    /// </summary>
+    private async Task AoTickAtualizacaoAsync()
+    {
+        if (_timerAtualizacao is null)
+        {
+            return;
+        }
+
+        _timerAtualizacao.Stop();
+
+        if (!_atualizacao.TemPendente)
+        {
+            bool baixou = await _atualizacao.VerificarEBaixarAsync();
+            RegistrarLog($"Atualização: {_atualizacao.UltimaConsulta}.");
+            _timerAtualizacao.Interval = baixou ? IntervaloMomentoTranquilo : IntervaloConsulta;
+            _timerAtualizacao.Start();
+            return;
+        }
+
+        if (!MomentoTranquiloAgora())
+        {
+            _timerAtualizacao.Start(); // tenta de novo daqui a 1 min
+            return;
+        }
+
+        RegistrarLog($"Momento tranquilo: aplicando a versão {_atualizacao.VersaoPendente} e reiniciando.");
+        // O processo termina dentro do Apply (não passa pelo OnExit): salva o consumo do dia e
+        // tira o ícone da bandeja agora, senão sobraria um ícone "fantasma" até passar o mouse.
+        _historico.SalvarConsumo();
+        if (_bandeja is not null)
+        {
+            _bandeja.Visivel = false;
+        }
+
+        try
+        {
+            _atualizacao.AplicarEReiniciar();
+        }
+        catch (Exception ex)
+        {
+            // Falhou antes de encerrar: o velocímetro segue normal na versão atual
+            RegistrarLog($"Falha ao aplicar a atualização: {ex.Message}");
+            AtualizarVisibilidadeBandeja();
+            _timerAtualizacao.Interval = IntervaloConsulta;
+            _timerAtualizacao.Start();
+        }
+    }
+
+    /// <summary>Lê o estado real da tela e aplica a <see cref="RegraMomentoTranquilo"/>.</summary>
+    private bool MomentoTranquiloAgora()
+    {
+        bool mouseSobre = false;
+        if (_host is not null && NativeMethods.GetCursorPos(out NativeMethods.POINT p))
+        {
+            // Janela sob o cursor, subindo até a de topo. NÃO usar IsMouseOver/IsActive do WPF:
+            // abertas por processo em segundo plano (o próprio reinício) elas ficam presas e enganam.
+            nint sob = NativeMethods.WindowFromPoint(p);
+            nint raiz = sob == nint.Zero ? nint.Zero : NativeMethods.GetAncestor(sob, NativeMethods.GA_ROOT);
+            mouseSobre = raiz == _host.HwndWidget;
+        }
+
+        return RegraMomentoTranquilo.Avaliar(
+            painelAberto: _painel is { IsVisible: true },
+            estudioAberto: _estudio is not null,
+            menuAberto: _menuAberto,
+            mouseSobreOApp: mouseSobre,
+            telaCheia: _host?.EmTelaCheia == true,
+            pausado: _pausado);
     }
 
     // ------------------------------------------------------------------ medição
@@ -638,6 +813,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _timerAtualizacao?.Stop();
         _ctsMedicao?.Cancel();
         _historico.SalvarConsumo();
         _bandeja?.Dispose();

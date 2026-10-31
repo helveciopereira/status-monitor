@@ -8,9 +8,13 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
  ↓ 38,7 MB/s     ← vermelho (download)
 ```
 
-> Status: **Ondas 0, 1 e 2 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.3.0** · 2026-10-31
+> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.4.0** · 2026-10-31
 >
-> **Como usar:** rode `dist\VelocimetroInternet.exe` (gerado por `tools\publicar.ps1`). Clique no widget = painel
+> **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/velocimetro-internet/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
+> (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.
+> **Publicar versão nova:** aumente `<Version>` no `.csproj` e rode `pwsh -File tools\publicar-atualizacao.ps1`.
+>
+> **Como usar:** clique no widget = painel
 > rápido; clique direito (widget ou ícone perto do relógio) = menu; "Cores e mais configurações" = estúdio.
 > Design escolhido: **Modelo 3 — Minimalismo Acrylic Pill** ([`design/modelo-3-acrylic-pill/`](design/modelo-3-acrylic-pill/)) · Unidade padrão: **`MB/s`** (configurável para `Mbps`)
 

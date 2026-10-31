@@ -77,15 +77,19 @@ derruba o app. → **0.3.0**
 
 **Aceite:** trocar a cor e ver na barra imediatamente; cor salva sobrevive ao reinício. → **0.4.0**
 
-## Onda 4 — Distribuição ⬜
+## Onda 4 — Distribuição ✅ (2026-10-31 · v0.4.0)
 
-- [ ] Instalador **sem administrador** + atualização automática silenciosa com **Velopack**
-      + GitHub Releases (receita já existe nesta máquina: skill `atualizacao-automatica-wpf-com-velopack`)
-- [ ] Ícone do app, versão no menu "Sobre"
-- [ ] Desinstalação limpa (remove a chave Run e a pasta de configuração, se o usuário quiser)
+- [x] Instalador **sem administrador** + atualização automática **silenciosa** com **Velopack**
+      + GitHub Releases (repo público `helveciopereira/velocimetro-internet`, feed direto
+      `releases/latest/download/`): consulta 45 s após abrir e de hora em hora, baixa só a
+      diferença, reinicia sozinho num momento tranquilo (nada aberto, mouse fora, sem tela cheia) — v0.4.0
+- [x] Ícone do app (v0.2.0); versão + estado da atualização no rodapé do estúdio — v0.4.0
+- [x] Desinstalação limpa da entrada Run (só se aponta para a cópia desinstalada). Os dados do
+      usuário (`%AppData%` / `%LocalAppData%\VelocimetroInternet`) ficam — pasta separada do packId — v0.4.0
 - [ ] (Opcional) assinatura de código para evitar aviso do SmartScreen
 
-**Aceite:** instalar num usuário limpo, publicar 0.4.1 e ver o app se atualizar sozinho. → **1.0.0**
+**Aceite:** ensaio local 1.0.0 → 1.0.1 provado (delta de 0,13 MB, reabriu sozinho em 173 s); a
+primeira atualização REAL pelo GitHub acontece na próxima versão publicada (0.4.1). → **1.0.0**
 
 ---
 

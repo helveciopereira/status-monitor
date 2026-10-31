@@ -9,9 +9,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Ícone do .exe (recurso 32512): Explorer, Alt+Tab do estúdio e a bandeja (IconeBandeja) -->
     <ApplicationIcon>Recursos/app.ico</ApplicationIcon>
-    <Version>0.3.0</Version>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
-    <FileVersion>0.3.0.0</FileVersion>
+    <Version>0.4.0</Version>
+    <AssemblyVersion>0.4.0.0</AssemblyVersion>
+    <FileVersion>0.4.0.0</FileVersion>
+    <!-- v0.4.0 (Onda 4): ponto de entrada próprio (Program.cs) — o Velopack precisa rodar ANTES
+         do WPF. StartupObject desempata com o Main que o WPF gera para o App.xaml. -->
+    <StartupObject>VelocimetroInternet.Program</StartupObject>
   </PropertyGroup>
 
   <!-- Blindagem: o hook de backup automático pode criar "backup\" DENTRO desta pasta quando o
@@ -24,6 +27,11 @@
     <Page Remove="**\backup\**" />
     <None Remove="**\backup\**" />
     <Content Remove="**\backup\**" />
+  </ItemGroup>
+  <!-- Único pacote externo: Velopack (instalador sem administrador + atualização automática
+       silenciosa pelas Releases do GitHub). A ferramenta "vpk" tem de estar na MESMA versão. -->
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
 </Project>

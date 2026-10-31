@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Win32;
 
 namespace VelocimetroInternet.Sistema;
@@ -58,6 +59,78 @@ public sealed class InicioComWindows
         using RegistryKey? run = Registry.CurrentUser.OpenSubKey(_subchaveRun);
         return run?.GetValue(NomeValor) is string comando
                && !string.Equals(comando, MontarComando(caminhoExeAtual), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Caminho do .exe gravado na entrada Run (sem aspas nem argumentos), ou null se não há entrada.
+    /// </summary>
+    public string? CaminhoRegistrado()
+    {
+        using RegistryKey? run = Registry.CurrentUser.OpenSubKey(_subchaveRun);
+        if (run?.GetValue(NomeValor) is not string comando || string.IsNullOrWhiteSpace(comando))
+        {
+            return null;
+        }
+
+        // Formato gravado por MontarComando: "C:\...\App.exe" --autostart
+        string c = comando.Trim();
+        if (c.StartsWith('"'))
+        {
+            int fim = c.IndexOf('"', 1);
+            return fim > 1 ? c[1..fim] : null;
+        }
+
+        int espaco = c.IndexOf(' ');
+        return espaco > 0 ? c[..espaco] : c;
+    }
+
+    /// <summary>
+    /// Decide se a entrada Run deve ser reapontada para o .exe que está rodando (v0.4.0).
+    /// - Cópia INSTALADA (Velopack): sempre — ela é a "oficial", e a pasta <c>current\</c> é
+    ///   estável entre atualizações. É assim que a instalação nova assume o lugar do antigo
+    ///   <c>dist\VelocimetroInternet.exe</c>.
+    /// - Cópia solta (bin\, dist\): só se o .exe registrado NÃO existe mais (foi movido).
+    ///   Antes da v0.4.0 qualquer execução de teste a partir de bin\ roubava a entrada do
+    ///   app instalado.
+    /// </summary>
+    /// <param name="caminhoExeAtual">Caminho do processo atual.</param>
+    /// <param name="estaInstalado">true se esta cópia foi instalada pelo Setup (Velopack).</param>
+    /// <param name="existe">Teste de existência de arquivo (injetável para testes).</param>
+    public bool DeveReapontar(string caminhoExeAtual, bool estaInstalado, Func<string, bool>? existe = null)
+    {
+        if (!EstaLigado() || !ApontaParaOutroCaminho(caminhoExeAtual))
+        {
+            return false; // desligado (respeita o usuário) ou já aponta para cá
+        }
+
+        if (estaInstalado)
+        {
+            return true;
+        }
+
+        string? registrado = CaminhoRegistrado();
+        return registrado is null || !(existe ?? File.Exists)(registrado);
+    }
+
+    /// <summary>
+    /// Usado na DESINSTALAÇÃO (gancho do Velopack): apaga a entrada só se ela aponta para o .exe
+    /// que está sendo desinstalado. Nunca lança — o desinstalador não pode falhar por isso.
+    /// </summary>
+    public static void DesligarSeApontaPara(string? caminhoExe)
+    {
+        try
+        {
+            var inicio = new InicioComWindows();
+            if (caminhoExe is not null && inicio.CaminhoRegistrado() is { } reg
+                && string.Equals(Path.GetFullPath(reg), Path.GetFullPath(caminhoExe), StringComparison.OrdinalIgnoreCase))
+            {
+                inicio.Definir(false, caminhoExe);
+            }
+        }
+        catch
+        {
+            // Registro inacessível: segue a desinstalação; no pior caso sobra uma entrada órfã
+        }
     }
 
     public void Definir(bool ligar, string caminhoExe)

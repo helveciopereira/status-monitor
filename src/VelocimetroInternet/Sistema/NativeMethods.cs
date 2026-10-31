@@ -147,6 +147,16 @@ public static class NativeMethods
     [DllImport("user32.dll")]
     public static extern nint MonitorFromPoint(POINT pt, uint dwFlags);
 
+    /// <summary>Janela sob um ponto da tela — "o mouse está em cima do widget?" (v0.4.0, atualização).</summary>
+    [DllImport("user32.dll")]
+    public static extern nint WindowFromPoint(POINT pt);
+
+    /// <summary>Sobe até a janela de topo (GA_ROOT = 2) a partir de uma janela filha.</summary>
+    public const uint GA_ROOT = 2;
+
+    [DllImport("user32.dll")]
+    public static extern nint GetAncestor(nint hwnd, uint gaFlags);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassNameW(nint hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 

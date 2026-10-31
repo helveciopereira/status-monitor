@@ -1,5 +1,70 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.4.0 — 2026-10-31 — Onda 4: instalador e atualização automática silenciosa (Velopack + GitHub)
+
+### O que mudou
+1. **Instalador sem administrador** (`VelocimetroInternetApp-win-Setup.exe`, nas Releases de
+   https://github.com/helveciopereira/velocimetro-internet). Instala em
+   `%LOCALAPPDATA%\VelocimetroInternetApp\current\`.
+2. **Atualização automática silenciosa** (pedido do dono: "baixar, instalar e rodar
+   automaticamente e de forma silenciosa"):
+   - consulta 45 s depois de abrir e depois **de hora em hora** (e 30 s depois de acordar da suspensão);
+   - baixa em segundo plano **só a diferença** (no ensaio: 0,13 MB em vez de 64 MB);
+   - aplica e **reabre sozinho** no 1º "momento tranquilo" (conferido a cada minuto): painel, estúdio
+     e menu fechados, mouse fora do widget, nada em tela cheia, medição não pausada. O widget
+     some por ~2 s e volta na versão nova — sem janela, sem aviso, sem clique;
+   - "Sair" com versão baixada: instala ao fechar, sem reabrir.
+3. **Rodapé do estúdio** mostra a versão e o estado ("Versão 0.4.0 · atualiza sozinho · consulta 31/10 14:05 — em dia").
+4. **"Iniciar com o Windows" mais esperto:** a cópia INSTALADA assume a entrada Run (é assim que a
+   instalação substitui o antigo `dist\`); uma cópia solta (bin\, dist\) só corrige a entrada se o
+   .exe registrado sumiu — antes, qualquer execução de teste roubava a entrada. Na desinstalação a
+   entrada é apagada só se aponta para a cópia desinstalada.
+5. **`tools\publicar-atualizacao.ps1`**: compila, roda os testes, publica, gera pacote completo +
+   diferença, envia a Release e confere que o feed direto já mostra a versão.
+
+### Por quê (decisões e causas)
+- **Feed direto `releases/latest/download/` em vez da API do GitHub:** a API aceita só 60
+  consultas/h por IP sem login; em rede compartilhada esgota e a atualização falharia calada
+  (lição do app Lembretes). Repositório público = nenhuma senha dentro do .exe.
+- **packId `VelocimetroInternetApp`, não `VelocimetroInternet`:** o desinstalador apaga a pasta de
+  instalação INTEIRA, e `%LOCALAPPDATA%\VelocimetroInternet` guarda o log e o consumo do dia.
+- **Publicação em pasta, sem arquivo único:** um .exe único comprimido muda quase inteiro a cada
+  versão; em pasta, o pacote de diferença fica em KB.
+- **"Momento tranquilo" por Win32 (WindowFromPoint), não `IsMouseOver`/`IsActive` do WPF:** aberto
+  por processo em segundo plano (o próprio reinício), o WPF prende esses estados e a atualização
+  nunca seria aplicada (defeito real do Lembretes v1.5.0).
+- **`vpk` exige `DOTNET_ROLL_FORWARD=Major`** nesta máquina: é ferramenta .NET 8 e só há o runtime
+  10 ("To install missing framework ... 8.0.0"). Já embutido no script.
+
+### Como usar
+- Usuário: executar o Setup uma vez. Pronto — atualizações chegam sozinhas.
+- Publicar versão nova: aumentar `<Version>` no `.csproj`, entrada no walkthrough, commit, e
+  `pwsh -File tools\publicar-atualizacao.ps1`.
+- Ensaiar sem publicar: variável `VELOCIMETRO_UPDATE_SOURCE=<pasta do feed>` (ver ensaio abaixo).
+
+### Arquivos
+`Program.cs` (novo: Velopack antes do WPF), `Sistema\ServicoAtualizacao.cs` (novo: serviço +
+`RegraMomentoTranquilo`), `App.xaml.cs` (relógio da atualização, Sair, retomada, entrada Run),
+`Sistema\InicioComWindows.cs` (`CaminhoRegistrado`, `DeveReapontar`, `DesligarSeApontaPara`),
+`Sistema\NativeMethods.cs` (`WindowFromPoint`, `GetAncestor`), `Apresentacao\TaskbarHost.cs`
+(`EmTelaCheia`), `Apresentacao\EstudioCores.xaml(.cs)` (rodapé de versão), `.csproj` (0.4.0,
+Velopack 1.2.161, `StartupObject`), `tools\publicar-atualizacao.ps1` (novo), `.gitignore`,
+`tests\Onda4Tests.cs` (novo, +13 testes), README, 03-PLANO.
+
+### Validação executada
+- Build Release 0 avisos/0 erros; testes **66/66**.
+- **Ensaio local do ciclo completo** (packId de teste `VelocimetroTeste`, feed numa pasta):
+  Setup `--silent` instalou a 1.0.0 → app aberto em segundo plano → 1.0.1 empacotada no feed →
+  consulta aos 49 s baixou o delta de **0,13 MB** → no momento tranquilo "Package version 1.0.1
+  applied successfully" → **reabriu sozinho na 1.0.1** (PID novo, 173 s no total; log do app:
+  "Reaberto pelo atualizador: agora na versão 1.0.1"). Depois: desinstalado, entrada Run e
+  `settings.json` conferidos iguais aos de antes (hash), pasta de dados intacta.
+- Publicação real da v0.4.0 e migração do `dist\` para a instalação: ver relato da sessão.
+
+### Validação manual recomendada
+1. Abrir o estúdio e conferir o rodapé "Versão 0.4.0 · atualiza sozinho".
+2. Na próxima versão publicada (0.4.1), deixar o PC ligado ~1 h: o widget pisca uma vez e o rodapé passa a mostrar 0.4.1.
+
 ## v0.3.0 — 2026-10-31 — Onda 2: referência no gráfico, pausar medição e retomada após suspensão
 
 ### O que mudou

@@ -85,6 +85,9 @@ public sealed class TaskbarHost : IDisposable
         }
     }
 
+    /// <summary>Há app em tela cheia agora (widget oculto por isso). Lido pela atualização automática (v0.4.0).</summary>
+    public bool EmTelaCheia => _ocultoPorTelaCheia;
+
     private bool DeveMostrar => !_ocultoPorTelaCheia && !_ocultoPorColisao && !_ocultoPeloUsuario;
 
     private void AplicarVisibilidade()

@@ -22,9 +22,11 @@ public partial class EstudioCores : Window
     private bool _carregando;
     private readonly Dictionary<string, RadioButton> _cartoes = [];
 
-    public EstudioCores(ServicoConfiguracoes servico)
+    /// <param name="textoVersao">Rodapé (v0.4.0), ex.: "Versão 0.4.0 · atualiza sozinho".</param>
+    public EstudioCores(ServicoConfiguracoes servico, string textoVersao = "")
     {
         InitializeComponent();
+        TextoVersao.Text = textoVersao;
         _servico = servico;
         _rascunho = servico.Atual.Clonar();
         MontarGaleria();

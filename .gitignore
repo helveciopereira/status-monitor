@@ -4,6 +4,9 @@
 [Pp]ub/
 # Executável autocontido gerado por "dotnet publish ... -o dist" (~62 MB, regenerável)
 dist/
+# Onda 4 (Velopack): pastas geradas por tools/publicar-atualizacao.ps1 (pacotes de ~64 MB)
+Releases/
+publicar-tmp/
 .vs/
 *.user
 *.suo
