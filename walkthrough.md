@@ -1,5 +1,44 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.9.0 — 2026-10-31 — Seletor visual de cor (fecha a Onda 3)
+
+### O que mudou
+- Na paleta **Personalizada** do estúdio, abaixo dos campos hexadecimais: **"Ajustar no seletor"** com um
+  segmento "↑ Envio / ↓ Download" (cada um com a amostra da cor atual), um **quadrado saturação × brilho** e
+  uma **barra de matiz**. Mouse (clicar/arrastar) e teclado (quadrado: ←/→ saturação, ↑/↓ brilho; barra: ←/→
+  matiz; Shift = passo maior).
+- `CorHsv` (novo): conversão RGB ⇄ HSV pura e testável. `SeletorCor` (novo): controle montado em código.
+
+### Por quê
+Último item aberto da Onda 3 ("hoje é campo hexadecimal"): escolher cor digitando hex exige saber hex.
+
+### Decisões
+- **O campo hex continua sendo a fonte da verdade.** O seletor só escreve no campo do alvo; o `TextChanged`
+  que já existia valida, atualiza o rascunho, a prévia e o "Alterações não aplicadas" — um caminho só.
+  Atribuir `SeletorCor.Cor` por código não dispara `CorAlterada`, então não há laço campo ⇄ seletor.
+- O seletor guarda o **matiz à parte**: ao arrastar até o branco/preto/cinza (onde o RGB não tem matiz) e
+  voltar, a cor continua na mesma família, em vez de pular para o vermelho.
+- Ida e volta RGB → HSV → RGB é **exata** (testado numa varredura do cubo RGB e em todas as cores das paletas):
+  abrir o seletor nunca altera 1 bit de uma cor já salva.
+
+### Onda 4 — assinatura de código: ⛔ bloqueada (não executável sem o dono)
+Exige certificado comprado em nome do dono (OV/EV ou Azure Trusted Signing). Detalhes e o comando de
+integração (`vpk pack --signParams` / `--azureTrustedSignFile`) registrados no `03-PLANO-DE-ONDAS.md`.
+
+### Arquivos tocados
+`Apresentacao/CorHsv.cs` (novo), `Apresentacao/SeletorCor.cs` (novo), `Apresentacao/EstudioCores.xaml(.cs)`,
+`VelocimetroInternet.csproj` (0.9.0), `tests/.../Onda3SeletorCorTests.cs` (novo), `03-PLANO-DE-ONDAS.md`, `README.md`.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Testes: **115/115** (10 novos: cores conhecidas, ida e volta exata,
+  limites/NaN, e o contrato do controle — atribuir não dispara evento, cinza guarda o matiz — em thread STA).
+- Estúdio desenhado fora da tela (`RenderTargetBitmap`) com a paleta Personalizada: marcador em #FF6B6B
+  (S 0,58 / V 1, matiz 0°). Teclas simuladas pelo próprio tratador: 10× ↓ no quadrado → `#CC5656` (V 0,8 —
+  0xFF × 0,8 = 0xCC) e "Alterações não aplicadas"; 6× → na barra → `#CC9156` (matiz +30°); a prévia da barra,
+  a amostra do segmento e o quadrado acompanharam; a cor de envio ficou intacta.
+- **Validação manual recomendada:** estúdio › Personalizada › arrastar no quadrado e na barra com o mouse,
+  trocar o alvo para "↓ Download", digitar um hex e ver o marcador pular; Aplicar e conferir a barra.
+
 ## v0.8.0 — 2026-10-31 — Itens adiados da Onda 2: intervalo, fonte/tamanho, ordem, Ctrl+arrastar, vários monitores
 
 ### O que mudou

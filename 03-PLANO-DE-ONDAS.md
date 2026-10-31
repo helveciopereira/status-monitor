@@ -68,14 +68,15 @@ as cores se adaptarem; jogo/vídeo em tela cheia não mostra o widget. → **ver
 **Aceite:** cada opção muda o widget **na hora**, sem reiniciar; apagar/corromper o JSON não
 derruba o app. → **0.3.0**
 
-## Onda 3 — Escolha de cores (o "futuro" do pedido) 🟡 (núcleo entregue na v0.2.0)
+## Onda 3 — Escolha de cores (o "futuro" do pedido) ✅ (núcleo na v0.2.0; seletor visual na v0.9.0 · 2026-10-31)
 
 - [x] Paleta personalizada (hex de upload e download); a variante da barra clara é **derivada** pelo
       motor WCAG em vez de escolhida à parte — v0.2.0
 - [x] Prévia ao vivo sobre amostras da barra escura e clara — v0.2.0
 - [x] **Selo de contraste** WCAG por barra; cores abaixo do mínimo são recalibradas sozinhas — v0.2.0
 - [x] "Restaurar padrão" + 5 predefinições do design (Clássico, Neon, Monocromático, Alto contraste, Bio) — v0.2.0
-- [ ] Seletor visual de cor (hoje é campo hexadecimal)
+- [x] Seletor visual de cor: quadrado saturação × brilho + barra de matiz, por mouse e teclado, editando
+      envio ou download; o campo hexadecimal continua e os dois se acompanham — v0.9.0 (2026-10-31)
 
 **Aceite:** trocar a cor e ver na barra imediatamente; cor salva sobrevive ao reinício. → **0.4.0**
 
@@ -88,7 +89,10 @@ derruba o app. → **0.3.0**
 - [x] Ícone do app (v0.2.0); versão + estado da atualização no rodapé do estúdio — v0.4.0
 - [x] Desinstalação limpa da entrada Run (só se aponta para a cópia desinstalada). Os dados do
       usuário (`%AppData%` / `%LocalAppData%\VelocimetroInternet`) ficam — pasta separada do packId — v0.4.0
-- [ ] (Opcional) assinatura de código para evitar aviso do SmartScreen
+- [ ] (Opcional) assinatura de código para evitar aviso do SmartScreen — ⛔ **bloqueado em 2026-10-31:**
+      exige um certificado comprado pelo dono (OV/EV de uma autoridade certificadora, ou Azure Trusted
+      Signing, ~US$ 10/mês) em nome dele. Com o certificado em mãos: `vpk pack --signParams` (signtool) ou
+      `--azureTrustedSignFile`. Certificado autoassinado NÃO resolve (o SmartScreen continua avisando).
 
 **Aceite:** ensaio local 1.0.0 → 1.0.1 provado (delta de 0,13 MB, reabriu sozinho em 173 s); a
 primeira atualização REAL pelo GitHub acontece na próxima versão publicada (0.4.1). → **1.0.0**

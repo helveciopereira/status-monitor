@@ -29,6 +29,7 @@ public partial class EstudioCores : Window
         TextoVersao.Text = textoVersao;
         _servico = servico;
         _rascunho = servico.Atual.Clonar();
+        Seletor.CorAlterada += AoMoverSeletor; // v0.9.0: seletor visual de cor
         MontarGaleria();
         CarregarNosControles();
         SourceInitialized += (_, _) => AplicarBarraDeTituloDoTema();
@@ -128,6 +129,7 @@ public partial class EstudioCores : Window
         }
 
         AtualizarPreVisualizacao();
+        SincronizarSeletor();
         AtualizarTextoSuavizacao();
         AtualizarInterfacesAtivas();
         AtualizarEstadoSalvo();
@@ -268,6 +270,7 @@ public partial class EstudioCores : Window
             AvisoCor.Text = "Formato #RRGGBB, ex.: #4CC2FF. Pense na barra escura; a versão clara é ajustada sozinha.";
             AvisoCor.SetResourceReference(TextBlock.ForegroundProperty, "Tema.TextoSecundario");
             AtualizarPreVisualizacao();
+            SincronizarSeletor(); // digitou um hex válido: o seletor e as amostras acompanham
             AtualizarEstadoSalvo();
         }
         else
@@ -276,6 +279,43 @@ public partial class EstudioCores : Window
             AvisoCor.Foreground = new SolidColorBrush(ServicoTema.ClaroAtivo ? Color.FromRgb(0xC4, 0x2B, 0x1C) : Color.FromRgb(0xFF, 0x99, 0xA4));
         }
     }
+
+    // ------------------------------------------------------------------ v0.9.0: seletor visual de cor
+
+    /// <summary>Qual campo hex o seletor está editando agora (segmento "↑ Envio" / "↓ Download").</summary>
+    private TextBox CampoDoAlvo => AlvoDownload.IsChecked == true ? CampoCorDownload : CampoCorUpload;
+
+    /// <summary>
+    /// Leva as cores do rascunho para o seletor e para as amostras do segmento. O campo hex é a fonte
+    /// da verdade: atribuir <see cref="SeletorCor.Cor"/> não dispara <see cref="SeletorCor.CorAlterada"/>,
+    /// então não há laço campo → seletor → campo.
+    /// </summary>
+    private void SincronizarSeletor()
+    {
+        if (Seletor is null || _rascunho is null)
+        {
+            return; // Checked do segmento disparado durante o InitializeComponent
+        }
+
+        bool upOk = Paletas.TentarHex(_rascunho.CorUploadPersonalizada, out Color up);
+        bool downOk = Paletas.TentarHex(_rascunho.CorDownloadPersonalizada, out Color down);
+        AmostraAlvoUpload.Background = upOk ? new SolidColorBrush(up) : Brushes.Transparent;
+        AmostraAlvoDownload.Background = downOk ? new SolidColorBrush(down) : Brushes.Transparent;
+
+        bool editandoDownload = AlvoDownload.IsChecked == true;
+        if (editandoDownload ? downOk : upOk)
+        {
+            Seletor.Cor = editandoDownload ? down : up;
+        }
+    }
+
+    private void AoEscolherAlvoCor(object sender, RoutedEventArgs e) => SincronizarSeletor();
+
+    /// <summary>
+    /// O usuário mexeu no seletor: escreve o hex no campo do alvo. O TextChanged do campo faz o resto
+    /// (valida, atualiza rascunho, pré-visualização e "Alterações não aplicadas") — um caminho só.
+    /// </summary>
+    private void AoMoverSeletor(Color cor) => CampoDoAlvo.Text = Paletas.ParaHex(cor);
 
     private void AoMudarSuavizacao(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
