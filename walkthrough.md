@@ -1,5 +1,27 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.4.2 — 2026-10-31 — Consulta de atualização a cada 5 min (era 1 h)
+
+### O que mudou
+O velocímetro instalado procura versão nova **a cada 5 minutos** (antes: de hora em hora). A 1ª
+consulta continua 45 s após abrir, e 30 s após acordar da suspensão.
+
+### Por quê
+Pedido do dono: a versão nova deve chegar logo. É barato: o feed direto
+`releases/latest/download/` não tem o limite de 60 consultas/h da API do GitHub, e cada consulta
+baixa só o `releases.win.json` (~1 KB) — 12 por hora por PC é desprezível. O intervalo só muda nos
+PCs depois que eles recebem esta versão (quem está na 0.4.0/0.4.1 ainda espera até 1 h).
+
+### Como usar
+Nada a fazer. Publicou → em até ~5 min (+ o próximo momento tranquilo) todos estão na versão nova.
+
+### Arquivos
+`App.xaml.cs` (`IntervaloConsulta`), `.csproj` (0.4.2), `tools\publicar-atualizacao.ps1` (comentário),
+03-PLANO, README, walkthrough.
+
+### Validação executada
+Build e testes pelo script de publicação; atualização real 0.4.0 → 0.4.2 pelo GitHub — resultado no relato abaixo.
+
 ## v0.4.1 — 2026-10-31 — Teste da atualização automática REAL pelo GitHub
 
 ### O que mudou

@@ -23,7 +23,7 @@ namespace VelocimetroInternet;
 /// - 2ª execução do .exe não abre outra cópia: avisa a 1ª, que reexibe o widget/abre o painel.
 ///
 /// v0.4.0 (Onda 4) — instalador (Velopack) e atualização automática SILENCIOSA: consulta o
-/// GitHub 45 s após abrir e depois de hora em hora, baixa em segundo plano e reinicia sozinho
+/// GitHub 45 s após abrir e depois a cada 5 min (v0.4.2), baixa em segundo plano e reinicia sozinho
 /// num momento tranquilo (ver <see cref="ServicoAtualizacao"/> e <see cref="RegraMomentoTranquilo"/>).
 /// </summary>
 public partial class App : Application
@@ -62,14 +62,19 @@ public partial class App : Application
     /// <summary>Atualização automática (v0.4.0). Só age na cópia instalada pelo Setup.</summary>
     private readonly ServicoAtualizacao _atualizacao = new();
 
-    /// <summary>Relógio da atualização: consulta (45 s, depois 1 h) e, com versão baixada, procura o momento tranquilo (1 min).</summary>
+    /// <summary>Relógio da atualização: consulta (45 s, depois 5 min) e, com versão baixada, procura o momento tranquilo (1 min).</summary>
     private DispatcherTimer? _timerAtualizacao;
 
     /// <summary>Menu do clique direito aberto — não reiniciar por baixo do usuário.</summary>
     private bool _menuAberto;
 
     private static readonly TimeSpan PrimeiraConsulta = TimeSpan.FromSeconds(45);
-    private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromHours(1);
+    /// <summary>
+    /// v0.4.2 (pedido do dono): 1 h → 5 min, para a versão nova chegar logo. Barato: o feed
+    /// direto (releases/latest/download) não tem o limite de 60 consultas/h da API do GitHub e
+    /// cada consulta baixa só o releases.win.json (~1 KB) — 12 por hora é desprezível.
+    /// </summary>
+    private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan IntervaloMomentoTranquilo = TimeSpan.FromMinutes(1);
     /// <summary>Após acordar da suspensão: espera o Wi-Fi voltar antes de consultar.</summary>
     private static readonly TimeSpan ConsultaAposRetomada = TimeSpan.FromSeconds(30);
@@ -595,7 +600,7 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Sem versão baixada: consulta/baixa e volta em 1 h. Com versão baixada: a cada minuto
+    /// Sem versão baixada: consulta/baixa e volta em 5 min. Com versão baixada: a cada minuto
     /// confere o momento tranquilo e, se for, salva e reinicia na versão nova.
     /// </summary>
     private async Task AoTickAtualizacaoAsync()

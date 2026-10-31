@@ -81,7 +81,7 @@ derruba o app. → **0.3.0**
 
 - [x] Instalador **sem administrador** + atualização automática **silenciosa** com **Velopack**
       + GitHub Releases (repo público `helveciopereira/velocimetro-internet`, feed direto
-      `releases/latest/download/`): consulta 45 s após abrir e de hora em hora, baixa só a
+      `releases/latest/download/`): consulta 45 s após abrir e a cada 5 min (v0.4.2; era 1 h), baixa só a
       diferença, reinicia sozinho num momento tranquilo (nada aberto, mouse fora, sem tela cheia) — v0.4.0
 - [x] Ícone do app (v0.2.0); versão + estado da atualização no rodapé do estúdio — v0.4.0
 - [x] Desinstalação limpa da entrada Run (só se aponta para a cópia desinstalada). Os dados do
