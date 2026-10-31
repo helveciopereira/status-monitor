@@ -31,6 +31,7 @@ public partial class PainelRapido : Window
 
     public event Action<bool>? UnidadeEscolhida;          // true = bits (Mbps)
     public event Action<bool>? FixarAlterado;
+    public event Action<bool>? MostrarSistemaAlterado;   // v0.5.0: CPU/RAM na barra
     public event Action<bool>? IniciarComWindowsAlterado;
     public event Action? AbrirEstudioPedido;
 
@@ -60,6 +61,7 @@ public partial class PainelRapido : Window
             OpcaoMBs.IsChecked = !bits;
             ChaveIniciar.IsChecked = iniciarComWindows;
             ChaveFixar.IsChecked = cfg.FixarNaBarra;
+            ChaveSistema.IsChecked = cfg.MostrarCpuRam;
             _velocidadeContratadaMbps = cfg.VelocidadeContratadaMbps;
 
             ModoUnidadeVelocidade modo = bits ? ModoUnidadeVelocidade.BitsPorSegundo : ModoUnidadeVelocidade.BytesPorSegundo;
@@ -381,6 +383,15 @@ public partial class PainelRapido : Window
         if (!_sincronizando)
         {
             FixarAlterado?.Invoke(ChaveFixar.IsChecked == true);
+        }
+    }
+
+    /// <summary>v0.5.0: chave "CPU e RAM na barra".</summary>
+    private void AoAlternarSistema(object sender, RoutedEventArgs e)
+    {
+        if (!_sincronizando)
+        {
+            MostrarSistemaAlterado?.Invoke(ChaveSistema.IsChecked == true);
         }
     }
 

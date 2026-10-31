@@ -1,5 +1,53 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.5.0 — 2026-10-31 — CPU e RAM (%) na barra, à esquerda da internet
+
+### O que mudou
+- O widget ganhou uma coluna à esquerda do upload/download: **CPU** em cima e **RAM** embaixo,
+  em porcentagem inteira (`CPU 5%` / `RAM 70%`), em pílulas de tom neutro (branco na barra
+  escura, preto na clara), para não disputar com as cores da paleta.
+- Modo compacto (barra cheia): `CPU 5% · RAM 70%  |  ↑ 1,2  |  ↓ 38,7 MB/s`.
+- Liga/desliga: chave **"CPU e RAM na barra"** no painel rápido e **"Mostrar CPU e RAM"** no
+  menu do clique direito. Padrão: ligado. Desligado, o widget fica exatamente como antes (156 px).
+- Dica do ícone da bandeja ganha a linha `CPU x% · RAM y%`; o log registra CPU/RAM nos ticks.
+- Correção de quebra: o argumento de diagnóstico `--compacto` alargava o widget sem mover o X,
+  invadindo o '^' da bandeja; agora mantém a borda direita (só afeta testes).
+
+### Por quê
+Pedido do dono: "começou com a ideia da internet, mas quero agora colocar consumo de CPU e RAM,
+tudo em porcentagem… à esquerda do upload ficaria CPU e abaixo da CPU ficaria a RAM", com opção
+de mostrar ou não nas configurações.
+
+### Como funciona
+- **CPU:** `GetSystemTimes` a cada segundo; % = (Δkernel + Δuser − Δocioso) ÷ (Δkernel + Δuser)
+  (o tempo de kernel do Windows já inclui o ocioso). Escolhido no lugar do `PerformanceCounter`,
+  que carrega a PDH (dezenas de MB e ~1 s na 1ª leitura) num widget que mira ~50 MB.
+  Pode ficar alguns pontos abaixo do Gerenciador de Tarefas em carga: o Win 11 mostra
+  "% Utilidade" (considera turbo); aqui é o "% Tempo do processador" clássico.
+- **RAM:** `GlobalMemoryStatusEx`; % = (total − disponível) ÷ total = "Em uso" do Gerenciador.
+- **Barra:** largura lógica +64 (normal) / +112 (compacto); cresce para a esquerda, borda
+  direita fixa no '^'. Com CPU/RAM o bloco compacta e oculta mais cedo quando a barra enche.
+
+### Arquivos
+`Medicao/MedidorSistema.cs` (novo), `Sistema/NativeMethods.cs` (GetSystemTimes,
+GlobalMemoryStatusEx), `Config/Configuracoes.cs` (`MostrarCpuRam`), `Apresentacao/TaskbarWidget.xaml/.cs`,
+`Apresentacao/TaskbarLayout.cs`, `Apresentacao/TaskbarHost.cs` (`MostrarSistema`, `--compacto`),
+`Apresentacao/PainelRapido.xaml/.cs`, `Apresentacao/EstudioCores.xaml.cs` (preserva a escolha no
+Salvar/Restaurar), `App.xaml.cs` (loop, menu, bandeja, log), `tests/.../Onda5Tests.cs` (novo),
+`.csproj` (0.5.0), README, 03-PLANO, walkthrough.
+
+### Validação executada
+- Build Release 0 avisos/0 erros; suíte inteira **80/80** (14 testes novos: conta da CPU com
+  kernel incluindo ocioso, intervalo vazio/contador voltando → sem número, RAM, arredondamento,
+  leitura real desta máquina, largura/estado na barra, padrão e clone da configuração).
+- Na barra real (2560×1600 a 150%), fotos ampliadas: normal 252 px com `CPU 5%`/`RAM 70%`
+  alinhados às pílulas ↑/↓; compacto 366 px encostado à esquerda do '^'; desligado 156 px
+  (idêntico ao anterior). RAM conferida com o Windows (CIM 70,3% × widget 70%).
+- Chave do painel clicada com o mouse de verdade: desligou → 156 px e `MostrarCpuRam=false`
+  salvo; religou → 252 px e `true`. (O `Toggle()` da UI Automation NÃO dispara o evento Click do
+  WPF — no teste só mudou o desenho da chave; por isso o clique real.) Configuração do usuário
+  restaurada (hash conferido).
+
 ## v0.4.3 — 2026-10-31 — Rótulo "auto update" no rodapé do estúdio
 
 ### O que mudou

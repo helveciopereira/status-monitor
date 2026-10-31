@@ -4,11 +4,14 @@ Monitor silencioso de velocidade de rede para Windows 11: fica **na barra de tar
 com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua seta e sua cor.
 
 ```
- ↑ 1,24 MB/s     ← azul  (upload)
- ↓ 38,7 MB/s     ← vermelho (download)
+ CPU  5%   ↑ 1,24 MB/s     ← azul  (upload)
+ RAM 70%   ↓ 38,7 MB/s     ← vermelho (download)
 ```
 
-> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.4.3** · 2026-10-31
+Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
+(liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
+
+> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.5.0** · 2026-10-31
 >
 > **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/velocimetro-internet/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

@@ -318,6 +318,37 @@ public static class NativeMethods
     public static extern bool EmptyWorkingSet(nint hProcess);
 
     // =========================================================================
+    // CPU e RAM do sistema (v0.5.0) — kernel32
+    // =========================================================================
+
+    /// <summary>
+    /// Tempos ACUMULADOS desde o boot, somando todos os núcleos, em unidades de 100 ns.
+    /// Atenção: o tempo de kernel INCLUI o tempo ocioso (por isso ocupado = kernel + user − idle).
+    /// </summary>
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetSystemTimes(out long lpIdleTime, out long lpKernelTime, out long lpUserTime);
+
+    /// <summary>Estado da memória física/virtual. <c>dwLength</c> PRECISA vir preenchido com o tamanho da struct.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MEMORYSTATUSEX
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;           // % de uso já arredondado pelo Windows (0–100)
+        public ulong ullTotalPhys;          // RAM física total (bytes)
+        public ulong ullAvailPhys;          // RAM física disponível (bytes) — base do "Em uso" do Gerenciador
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
+
+    // =========================================================================
     // IpHlpApi.dll — Contadores de Rede de 64 bits (GetIfTable2 / FreeMibTable)
     // =========================================================================
 

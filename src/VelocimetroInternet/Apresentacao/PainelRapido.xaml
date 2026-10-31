@@ -220,6 +220,17 @@
                               Click="AoAlternarFixar" AutomationProperties.Name="Fixar na barra" />
             </Grid>
 
+            <!-- v0.5.0: liga/desliga a coluna CPU/RAM (%) à esquerda do upload/download no widget -->
+            <Grid Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="CPU e RAM na barra" VerticalAlignment="Center" />
+                    <TextBlock Text="Uso do computador em %, à esquerda da internet." Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+                <ToggleButton x:Name="ChaveSistema" HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Style="{StaticResource Interruptor}"
+                              Click="AoAlternarSistema" AutomationProperties.Name="CPU e RAM na barra" />
+            </Grid>
+
             <Button Style="{StaticResource BotaoDiscreto}" Padding="8,6" HorizontalAlignment="Left"
                     Click="AoClicarEstudio" AutomationProperties.Name="Abrir estúdio de cores">
                 <StackPanel Orientation="Horizontal">

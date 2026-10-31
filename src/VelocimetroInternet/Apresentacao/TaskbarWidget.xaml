@@ -29,6 +29,12 @@
         <SolidColorBrush x:Key="CompactoFundoBrush" Color="#261E2026" />
         <SolidColorBrush x:Key="CompactoBordaBrush" Color="#33FFFFFF" />
         <SolidColorBrush x:Key="SeparadorBrush" Color="#55FFFFFF" />
+        <!-- v0.5.0: CPU/RAM em tom NEUTRO (branco na barra escura, preto na clara), para não
+             competir com as cores de upload/download. Ajustados por AplicarCores. -->
+        <SolidColorBrush x:Key="SistemaTextBrush" Color="#E6FFFFFF" />
+        <SolidColorBrush x:Key="SistemaRotuloBrush" Color="#A6FFFFFF" />
+        <SolidColorBrush x:Key="SistemaPillBgBrush" Color="#1AFFFFFF" />
+        <SolidColorBrush x:Key="SistemaPillBorderBrush" Color="#33FFFFFF" />
     </Window.Resources>
 
     <!-- Contêiner externo estilo botão Clima/Widgets do Windows 11 (hover suave arredondado de 4px) -->
@@ -55,9 +61,65 @@
                     <RowDefinition Height="2" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
+                <!-- v0.5.0: coluna 0 = CPU/RAM (some quando desligado), 1 = respiro, 2 = rede -->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="ColunaSistema" Width="61" />
+                    <ColumnDefinition x:Name="ColunaRespiro" Width="3" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Linha 0 / coluna 0: CPU (pílula neutra). Largura fixa = cabe "CPU 100%" sem cortar. -->
+                <Border x:Name="PilulaCpu" Grid.Row="0" Grid.Column="0"
+                        CornerRadius="4"
+                        Background="{DynamicResource SistemaPillBgBrush}"
+                        BorderBrush="{DynamicResource SistemaPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="5,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="CPU"
+                                   Foreground="{DynamicResource SistemaRotuloBrush}"
+                                   FontFamily="Segoe UI Variable Text" FontSize="9" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoCpu" Grid.Column="1" Text="12%"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="Segoe UI Variable Text" FontSize="10.5" FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoCpuBarra" />
+                    </Grid>
+                </Border>
+
+                <!-- Linha 2 / coluna 0: RAM, logo abaixo da CPU -->
+                <Border x:Name="PilulaRam" Grid.Row="2" Grid.Column="0"
+                        CornerRadius="4"
+                        Background="{DynamicResource SistemaPillBgBrush}"
+                        BorderBrush="{DynamicResource SistemaPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="5,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="RAM"
+                                   Foreground="{DynamicResource SistemaRotuloBrush}"
+                                   FontFamily="Segoe UI Variable Text" FontSize="9" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoRam" Grid.Column="1" Text="48%"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="Segoe UI Variable Text" FontSize="10.5" FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoRamBarra" />
+                    </Grid>
+                </Border>
 
                 <!-- Linha 0: Pílula de Upload (Azul #4CC2FF) -->
-                <Border Grid.Row="0"
+                <Border Grid.Row="0" Grid.Column="2"
                         CornerRadius="4"
                         Background="{DynamicResource UploadPillBgBrush}"
                         BorderBrush="{DynamicResource UploadPillBorderBrush}"
@@ -90,7 +152,7 @@
                 </Border>
 
                 <!-- Linha 2: Pílula de Download (Vermelho #FF6B6B) -->
-                <Border Grid.Row="2"
+                <Border Grid.Row="2" Grid.Column="2"
                         CornerRadius="4"
                         Background="{DynamicResource DownloadPillBgBrush}"
                         BorderBrush="{DynamicResource DownloadPillBorderBrush}"
@@ -134,6 +196,23 @@
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- v0.5.0: "CPU 12% · RAM 48%  |" antes do ↑↓ (some quando desligado) -->
+                    <StackPanel x:Name="CompactoSistema" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="TextoCompactoSistema"
+                                   Text="CPU 12% · RAM 48%"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoCompactoSistemaBarra" />
+                        <TextBlock Text="  |  "
+                                   Foreground="{DynamicResource SeparadorBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="9.5"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
                     <TextBlock x:Name="TextoCompactoUpload"
                                Text="↑ 1,2"
                                Foreground="{DynamicResource UploadTextBrush}"

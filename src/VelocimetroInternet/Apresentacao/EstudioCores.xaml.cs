@@ -316,6 +316,7 @@ public partial class EstudioCores : Window
         {
             FixarNaBarra = _rascunho.FixarNaBarra,
             Unidade = _rascunho.Unidade,
+            MostrarCpuRam = _rascunho.MostrarCpuRam, // v0.5.0: escolha do painel/menu, não é "aparência"
             // Sem isto, o próximo início religaria o "Iniciar com o Windows" que o usuário desligou
             InicioAutomaticoJaConfigurado = _rascunho.InicioAutomaticoJaConfigurado
         };
@@ -329,6 +330,7 @@ public partial class EstudioCores : Window
         Configuracoes atual = _servico.Atual;
         _rascunho.Unidade = atual.Unidade;
         _rascunho.FixarNaBarra = atual.FixarNaBarra;
+        _rascunho.MostrarCpuRam = atual.MostrarCpuRam; // v0.5.0: pode ter mudado pelo painel/menu
         _rascunho.InicioAutomaticoJaConfigurado = atual.InicioAutomaticoJaConfigurado;
         _servico.Salvar(_rascunho.Clonar());
         AtualizarEstadoSalvo();

@@ -118,7 +118,7 @@ public partial class App : Application
         }
 
         Configuracoes cfg = _config.Atual;
-        RegistrarLog($"=== Velocímetro de Internet v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} ===");
+        RegistrarLog($"=== Velocímetro de Internet v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
@@ -130,6 +130,7 @@ public partial class App : Application
         ServicoTema.Aplicar(TemaWindows.AppsClaros());
 
         _widget = new TaskbarWidget(UnidadeDe(cfg));
+        _widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
         AplicarPaleta();
         if (textoFixoPoC)
         {
@@ -143,7 +144,9 @@ public partial class App : Application
             usarModoA ? ModoEncaixeBarra.ModoA_FilhaDaBarra : ModoEncaixeBarra.ModoB_TopmostSobreBarra,
             RegistrarLog)
         {
-            ForcarModoCompactoTeste = usarCompacto
+            ForcarModoCompactoTeste = usarCompacto,
+            // v0.5.0: antes do InicializarAsync, para a 1ª posição já sair com a largura certa
+            MostrarSistema = cfg.MostrarCpuRam
         };
         await _host.InicializarAsync();
         _host.FixadoNaBarra = cfg.FixarNaBarra;
@@ -264,6 +267,8 @@ public partial class App : Application
         }
 
         _widget.DefinirUnidade(UnidadeDe(cfg));
+        _widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
+        _host.MostrarSistema = cfg.MostrarCpuRam; // recalcula a largura na barra se mudou
         _host.FixadoNaBarra = cfg.FixarNaBarra;
         AtualizarVisibilidadeBandeja();
         AplicarPaleta();
@@ -390,6 +395,7 @@ public partial class App : Application
             _painel = new PainelRapido(_historico);
             _painel.UnidadeEscolhida += bits => _config.Alterar(c => c.Unidade = bits ? "bits" : "bytes");
             _painel.FixarAlterado += fixar => _config.Alterar(c => c.FixarNaBarra = fixar);
+            _painel.MostrarSistemaAlterado += mostrar => _config.Alterar(c => c.MostrarCpuRam = mostrar);
             _painel.IniciarComWindowsAlterado += DefinirInicioComWindows;
             _painel.AbrirEstudioPedido += AbrirEstudio;
             _painel.IsVisibleChanged += (_, ev) =>
@@ -479,6 +485,11 @@ public partial class App : Application
         var itemFixar = new MenuItem { Header = "Fixar na barra", IsChecked = cfg.FixarNaBarra };
         itemFixar.Click += (_, _) => _config.Alterar(c => c.FixarNaBarra = !c.FixarNaBarra);
         menu.Items.Add(itemFixar);
+
+        // v0.5.0: CPU/RAM (%) à esquerda da internet
+        var itemSistema = new MenuItem { Header = "Mostrar CPU e RAM", IsChecked = cfg.MostrarCpuRam };
+        itemSistema.Click += (_, _) => _config.Alterar(c => c.MostrarCpuRam = !c.MostrarCpuRam);
+        menu.Items.Add(itemSistema);
 
         var itemPausar = new MenuItem { Header = "Pausar medição", IsChecked = _pausado };
         itemPausar.Click += (_, _) => DefinirPausa(!_pausado);
@@ -688,6 +699,10 @@ public partial class App : Application
         MedidorAtual? medidorAnterior = null;
         ulong recebidosAnt = 0, enviadosAnt = 0;
 
+        // v0.5.0: CPU/RAM do Windows. Lido em TODO tick (custo: 2 chamadas de kernel, sem
+        // alocação) — assim, ao ligar a opção, a base da CPU já é a do segundo anterior.
+        var medidorSistema = new MedidorSistema();
+
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         try
         {
@@ -697,6 +712,8 @@ public partial class App : Application
                 TimeSpan agora = cronometro.Elapsed;
                 TimeSpan decurso = agora - ultimoInstante;
                 ultimoInstante = agora;
+
+                UsoSistema uso = medidorSistema.Ler();
 
                 MedidorAtual? medidor = _medidor;
                 if (medidor is null || _pausado)
@@ -747,6 +764,7 @@ public partial class App : Application
                     TaskbarWidget w = _widget;
                     _ = w.Dispatcher.InvokeAsync(() =>
                     {
+                        bool mostrarSistema = _config.Atual.MostrarCpuRam;
                         if (semConexao)
                         {
                             w.MostrarSemConexao();
@@ -756,9 +774,19 @@ public partial class App : Application
                         {
                             w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo);
                             formatador.ModoUnidade = UnidadeDe(_config.Atual);
+                            // v0.5.0: com CPU/RAM ligados, a dica da bandeja ganha uma 3ª linha
+                            string linhaSistema = mostrarSistema
+                                ? $"\nCPU {MedidorSistema.Formatar(uso.CpuPercentual)} · RAM {MedidorSistema.Formatar(uso.RamPercentual)}"
+                                : "";
                             _bandeja?.DefinirDica(
                                 $"Velocímetro de Internet\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
-                                $"{formatador.FormatarComSeta("↓", vel.DownloadBytesPorSegundo)}");
+                                $"{formatador.FormatarComSeta("↓", vel.DownloadBytesPorSegundo)}{linhaSistema}");
+                        }
+
+                        // v0.5.0: CPU/RAM independem da rede — atualizam mesmo "sem conexão"
+                        if (mostrarSistema)
+                        {
+                            w.AtualizarSistema(uso.CpuPercentual, uso.RamPercentual);
                         }
 
                         _painel?.AtualizarAoVivo(semConexao);
@@ -771,6 +799,7 @@ public partial class App : Application
                     using var proc = Process.GetCurrentProcess();
                     RegistrarLog(
                         $"[Tick #{tick}] ↑{vel.UploadBytesPorSegundo:F0} B/s ↓{vel.DownloadBytesPorSegundo:F0} B/s | " +
+                        $"CPU {MedidorSistema.Formatar(uso.CpuPercentual)} RAM {MedidorSistema.Formatar(uso.RamPercentual)} | " +
                         $"RAM WorkingSet={proc.WorkingSet64 / 1048576.0:F1} MB (Privada={proc.PrivateMemorySize64 / 1048576.0:F1} MB)");
                 }
             }

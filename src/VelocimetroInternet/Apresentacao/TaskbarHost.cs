@@ -85,6 +85,30 @@ public sealed class TaskbarHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// v0.5.0: CPU/RAM ligados no widget → a vaga na barra fica mais larga. Ao mudar, recalcula
+    /// a posição na hora (senão o bloco ficaria cortado ou com sobra até o próximo evento da barra).
+    /// </summary>
+    public bool MostrarSistema
+    {
+        get => _mostrarSistema;
+        set
+        {
+            if (_mostrarSistema == value)
+            {
+                return;
+            }
+
+            _mostrarSistema = value;
+            if (_hwndWidget != nint.Zero)
+            {
+                _ = AtualizarPosicaoAsync(forcarReencaixe: false);
+            }
+        }
+    }
+
+    private bool _mostrarSistema;
+
     /// <summary>Há app em tela cheia agora (widget oculto por isso). Lido pela atualização automática (v0.4.0).</summary>
     public bool EmTelaCheia => _ocultoPorTelaCheia;
 
@@ -283,14 +307,21 @@ public sealed class TaskbarHost : IDisposable
                 rectBarra,
                 bordaAppsPx,
                 bordaBandejaPx,
-                escalaDpi);
+                escalaDpi,
+                _mostrarSistema);
 
             if (ForcarModoCompactoTeste)
             {
+                // v0.5.0: mantém a borda DIREITA (encostada no '^' da bandeja) ao alargar — antes o
+                // X ficava o do modo normal e a caixa compacta, mais larga, invadia o '^'.
+                int larguraCompacta = (int)Math.Round(TaskbarLayout.LarguraLogicaCompacta(_mostrarSistema) * escalaDpi);
+                int deslocamento = larguraCompacta - pos.LarguraFisicaPx;
                 pos = pos with
                 {
                     Estado = EstadoColisaoBarra.CompactoUmaLinha,
-                    LarguraFisicaPx = (int)Math.Round(TaskbarLayout.LarguraLogicaCompactaPx * escalaDpi)
+                    LarguraFisicaPx = larguraCompacta,
+                    XTelaPx = pos.XTelaPx - deslocamento,
+                    XRelativoBarraPx = pos.XRelativoBarraPx - deslocamento
                 };
             }
 

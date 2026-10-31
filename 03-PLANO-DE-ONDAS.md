@@ -93,6 +93,17 @@ primeira atualização REAL pelo GitHub acontece na próxima versão publicada (
 
 ---
 
+## Extra — CPU e RAM na barra ✅ (2026-10-31 · v0.5.0, pedido do dono)
+
+- [x] CPU (em cima) e RAM (embaixo), em %, à esquerda do upload/download, em pílulas de tom neutro;
+      no modo compacto, "CPU x% · RAM y%  |" antes do ↑↓ — v0.5.0
+- [x] Liga/desliga: chave "CPU e RAM na barra" no painel rápido e "Mostrar CPU e RAM" no menu;
+      padrão ligado; desligado, o widget volta ao tamanho de antes — v0.5.0
+- [x] A vaga na barra cresce para a esquerda (borda direita fixa no '^'); com CPU/RAM o bloco
+      compacta/oculta mais cedo quando a barra enche — v0.5.0
+
+---
+
 ## Validação padrão de toda onda
 
 1. `dotnet build -c Release` sem avisos novos

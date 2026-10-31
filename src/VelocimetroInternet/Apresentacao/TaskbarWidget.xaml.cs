@@ -52,6 +52,31 @@ public partial class TaskbarWidget : Window
     }
 
     /// <summary>
+    /// v0.5.0: mostra/esconde a coluna CPU (em cima) / RAM (embaixo) à esquerda do upload/download.
+    /// A LARGURA da janela é decidida pelo TaskbarHost (TaskbarLayout); aqui só some o conteúdo.
+    /// </summary>
+    public void DefinirMostrarSistema(bool mostrar)
+    {
+        Visibility v = mostrar ? Visibility.Visible : Visibility.Collapsed;
+        PilulaCpu.Visibility = v;
+        PilulaRam.Visibility = v;
+        CompactoSistema.Visibility = v;
+        // Coluna com largura fixa: precisa ir a 0, senão sobraria um vão vazio à esquerda
+        ColunaSistema.Width = new GridLength(mostrar ? 61 : 0);
+        ColunaRespiro.Width = new GridLength(mostrar ? 3 : 0);
+    }
+
+    /// <summary>Atualiza CPU e RAM (%) nos dois layouts. null = leitura indisponível ("—").</summary>
+    public void AtualizarSistema(double? cpuPercentual, double? ramPercentual)
+    {
+        string cpu = Medicao.MedidorSistema.Formatar(cpuPercentual);
+        string ram = Medicao.MedidorSistema.Formatar(ramPercentual);
+        TextoCpu.Text = cpu;
+        TextoRam.Text = ram;
+        TextoCompactoSistema.Text = $"CPU {cpu} · RAM {ram}";
+    }
+
+    /// <summary>
     /// Alterna entre o layout normal de 2 linhas (Acrylic Pill) e o layout compacto de 1 linha.
     /// </summary>
     public void AplicarEstadoColisao(EstadoColisaoBarra estado)
@@ -84,6 +109,14 @@ public partial class TaskbarWidget : Window
         Resources["CompactoFundoBrush"] = CriarBrush(cores.FundoCompacto);
         Resources["CompactoBordaBrush"] = CriarBrush(cores.BordaCompacto);
         Resources["SeparadorBrush"] = CriarBrush(cores.Separador);
+
+        // v0.5.0: CPU/RAM em tom neutro derivado do separador (branco na barra escura, preto na
+        // clara) — legível nos dois temas e sem disputar atenção com as cores da paleta.
+        Color neutro = Color.FromRgb(cores.Separador.R, cores.Separador.G, cores.Separador.B);
+        Resources["SistemaTextBrush"] = CriarBrush(Color.FromArgb(0xE6, neutro.R, neutro.G, neutro.B));
+        Resources["SistemaRotuloBrush"] = CriarBrush(Color.FromArgb(0xA6, neutro.R, neutro.G, neutro.B));
+        Resources["SistemaPillBgBrush"] = CriarBrush(Color.FromArgb(0x1A, neutro.R, neutro.G, neutro.B));
+        Resources["SistemaPillBorderBrush"] = CriarBrush(Color.FromArgb(0x33, neutro.R, neutro.G, neutro.B));
     }
 
     /// <summary>Troca MB/s ↔ Mbps na hora (o próximo tick já sai na unidade nova).</summary>
@@ -109,6 +142,7 @@ public partial class TaskbarWidget : Window
         TextoDownload.Text = "pausado";
         TextoCompactoUpload.Text = "↑ —";
         TextoCompactoDownload.Text = "↓ pausado";
+        AtualizarSistema(null, null); // pausa vale para tudo: nada de CPU/RAM congelados
     }
 
     /// <summary>Clique esquerdo no widget (abre o painel rápido, como o Clima abre os widgets).</summary>

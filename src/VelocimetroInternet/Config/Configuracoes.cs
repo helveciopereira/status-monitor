@@ -21,6 +21,13 @@ public sealed class Configuracoes
     /// <summary>"Fixar na Barra" do painel rápido: false esconde o widget (a bandeja continua).</summary>
     public bool FixarNaBarra { get; set; } = true;
 
+    /// <summary>
+    /// v0.5.0: mostra CPU (em cima) e RAM (embaixo), em %, à esquerda do upload/download.
+    /// Padrão LIGADO: foi pedido do dono e chega assim pela atualização automática; quem não
+    /// quiser desliga no painel rápido ou no menu do clique direito.
+    /// </summary>
+    public bool MostrarCpuRam { get; set; } = true;
+
     /// <summary>Mostrar o ícone na área de notificação. Se o widget também estiver oculto, a bandeja é forçada.</summary>
     public bool MostrarIconeBandeja { get; set; } = true;
 

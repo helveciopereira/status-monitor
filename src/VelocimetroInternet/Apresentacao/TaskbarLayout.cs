@@ -39,6 +39,22 @@ public static class TaskbarLayout
     public const int MargemSegurancaLogicaPx = 8;
 
     /// <summary>
+    /// v0.5.0: largura somada quando CPU/RAM estão ligados. Normal = coluna de pílulas "CPU 100%"
+    /// (+ 3 px de respiro); compacta = trecho "CPU 100% · RAM 100%  |" antes do ↑↓ na linha única.
+    /// Medidos no pior caso (100%), para o texto nunca ser cortado.
+    /// </summary>
+    public const int LarguraLogicaSistemaNormalPx = 64;
+    public const int LarguraLogicaSistemaCompactaPx = 112;
+
+    /// <summary>Largura lógica do widget normal (2 linhas), com ou sem a coluna CPU/RAM.</summary>
+    public static int LarguraLogicaNormal(bool mostrarSistema) =>
+        LarguraLogicaNormalPx + (mostrarSistema ? LarguraLogicaSistemaNormalPx : 0);
+
+    /// <summary>Largura lógica do widget compacto (1 linha), com ou sem CPU/RAM.</summary>
+    public static int LarguraLogicaCompacta(bool mostrarSistema) =>
+        LarguraLogicaCompactaPx + (mostrarSistema ? LarguraLogicaSistemaCompactaPx : 0);
+
+    /// <summary>
     /// Calcula a posição na vaga do Clima (à esquerda do botão '^' da bandeja quando a barra está alinhada
     /// à esquerda, ou quando o Widgets do Windows está ativo).
     /// </summary>
@@ -46,16 +62,18 @@ public static class TaskbarLayout
     /// <param name="bordaDireitaAppsPx">Maior X+Largura dos botões de apps (via UI Automation).</param>
     /// <param name="bordaEsquerdaBandejaPx">Menor X do SystemTrayIcon '^' ou TrayNotifyWnd.</param>
     /// <param name="escalaDpi">Fator de escala do monitor (ex.: 1.5 para 150% / 144 DPI).</param>
+    /// <param name="mostrarSistema">v0.5.0: CPU/RAM ligados → o bloco fica mais largo (e colide antes).</param>
     public static PosicaoWidgetBarra CalcularVagaDoClima(
         NativeMethods.RECT rectBarra,
         int bordaDireitaAppsPx,
         int bordaEsquerdaBandejaPx,
-        double escalaDpi)
+        double escalaDpi,
+        bool mostrarSistema = false)
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
 
-        int larguraNormalPx = (int)Math.Round(LarguraLogicaNormalPx * escala);
-        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompactaPx * escala);
+        int larguraNormalPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema) * escala);
+        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema) * escala);
         int alturaWidgetPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
 
@@ -101,3 +119,4 @@ public static class TaskbarLayout
             EspacoLivreFisicoPx: espacoLivrePx);
     }
 }
+
