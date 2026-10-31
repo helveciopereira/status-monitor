@@ -69,6 +69,166 @@ public static class NativeMethods
     [DllImport("shell32.dll")]
     public static extern int SHQueryUserNotificationState(out int pquns);
 
+    // =========================================================================
+    // AppBar (v0.2.0) — registrar o widget como "appbar" SEM reservar espaço
+    // (só ABM_NEW, nunca ABM_SETPOS) faz o shell nos avisar NA HORA, por mensagem,
+    // quando um app entra/sai de tela cheia (ABN_FULLSCREENAPP). Antes dependíamos
+    // do vigia de 1,5 s → o widget demorava a sumir (relato do dono, 2026-10-31).
+    // =========================================================================
+    public const uint ABM_NEW = 0x00000000;
+    public const uint ABM_REMOVE = 0x00000001;
+    public const int ABN_FULLSCREENAPP = 0x0000002;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct APPBARDATA
+    {
+        public uint cbSize;
+        public nint hWnd;
+        public uint uCallbackMessage;
+        public uint uEdge;
+        public RECT rc;
+        public nint lParam;
+    }
+
+    [DllImport("shell32.dll")]
+    public static extern nuint SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
+
+    // =========================================================================
+    // Geometria da janela em primeiro plano (checagem de tela cheia)
+    // =========================================================================
+    public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    public static extern nint MonitorFromWindow(nint hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetMonitorInfoW(nint hMonitor, ref MONITORINFO lpmi);
+
+    /// <summary>Repassa o direito de trazer janela para frente a outro processo (2ª → 1ª instância).</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AllowSetForegroundWindow(uint dwProcessId);
+
+    /// <summary>Barra de título escura (Win 10 20H1+/Win 11) para as janelas do app no tema escuro.</summary>
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(nint hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+    /// <summary>Ponto de tela (pixels físicos) — usado para ancorar o painel ao clique na bandeja.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetCursorPos(out POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    public static extern nint MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassNameW(nint hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(nint hWnd, out uint lpdwProcessId);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetForegroundWindow(nint hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PostMessageW(nint hWnd, uint Msg, nint wParam, nint lParam);
+
+
+    // =========================================================================
+    // Ícone da bandeja (Shell_NotifyIcon) — feito à mão para NÃO carregar o
+    // WinForms inteiro (~10 MB a mais de RAM só por causa de um ícone).
+    // =========================================================================
+    public const uint NIM_ADD = 0x00000000;
+    public const uint NIM_MODIFY = 0x00000001;
+    public const uint NIM_DELETE = 0x00000002;
+    public const uint NIM_SETVERSION = 0x00000004;
+    public const uint NIF_MESSAGE = 0x00000001;
+    public const uint NIF_ICON = 0x00000002;
+    public const uint NIF_TIP = 0x00000004;
+    public const uint NIF_SHOWTIP = 0x00000080;
+    public const uint NOTIFYICON_VERSION_4 = 4;
+    public const int WM_LBUTTONUP = 0x0202;
+    public const int WM_RBUTTONUP = 0x0205;
+    public const int WM_CONTEXTMENU = 0x007B;
+    public const int NIN_SELECT = 0x0400;
+    public const int NIN_KEYSELECT = 0x0401;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct NOTIFYICONDATAW
+    {
+        public uint cbSize;
+        public nint hWnd;
+        public uint uID;
+        public uint uFlags;
+        public uint uCallbackMessage;
+        public nint hIcon;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szTip;
+        public uint dwState;
+        public uint dwStateMask;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string szInfo;
+        public uint uVersion;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string szInfoTitle;
+        public uint dwInfoFlags;
+        public Guid guidItem;
+        public nint hBalloonIcon;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);
+
+    public const uint IMAGE_ICON = 1;
+    public const uint LR_DEFAULTCOLOR = 0x00000000;
+
+    /// <summary>ID do recurso de ícone que o apphost do .NET grava a partir de &lt;ApplicationIcon&gt;.</summary>
+    public const int IDI_APLICACAO = 32512;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern nint GetModuleHandleW(string? lpModuleName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern nint LoadImageW(nint hInst, nint name, uint type, int cx, int cy, uint fuLoad);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DestroyIcon(nint hIcon);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern uint ExtractIconExW(string lpszFile, int nIconIndex, out nint phiconLarge, out nint phiconSmall, uint nIcons);
+
+    /// <summary>SM_CXSMICON: lado do ícone pequeno (bandeja) — 16 px a 100%, 24 px a 150%.</summary>
+    public const int SM_CXSMICON = 49;
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetricsForDpi(int nIndex, uint dpi);
+
     public const int WM_MOUSEACTIVATE = 0x0021;
     public const int MA_NOACTIVATE = 3;
     public const int WM_DISPLAYCHANGE = 0x007E;

@@ -8,7 +8,10 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
  ↓ 38,7 MB/s     ← vermelho (download)
 ```
 
-> Status: **Onda 0 concluída (PoC validada)** · versão **0.1.0** · 2026-10-31
+> Status: **Ondas 0 e 1 concluídas; painel rápido (Onda 2) e estúdio de cores (Onda 3) entregues em boa parte** · versão **0.2.0** · 2026-10-31
+>
+> **Como usar:** rode `dist\VelocimetroInternet.exe` (gerado por `tools\publicar.ps1`). Clique no widget = painel
+> rápido; clique direito (widget ou ícone perto do relógio) = menu; "Cores e mais configurações" = estúdio.
 > Design escolhido: **Modelo 3 — Minimalismo Acrylic Pill** ([`design/modelo-3-acrylic-pill/`](design/modelo-3-acrylic-pill/)) · Unidade padrão: **`MB/s`** (configurável para `Mbps`)
 
 **Onde fica:** num bloco próprio na barra, **como o botão do Clima** — fora dos ícones da bandeja,

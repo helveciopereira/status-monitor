@@ -69,36 +69,61 @@ public partial class TaskbarWidget : Window
     }
 
     /// <summary>
-    /// Aplica a paleta correspondente ao tema da barra de tarefas do Windows (Escuro vs Claro).
-    /// Referência de contraste WCAG: 01-ANALISE.md §4.
+    /// Aplica as cores já resolvidas pelo motor de paletas (tema da barra + paleta escolhida +
+    /// ajuste de contraste WCAG). Substitui o antigo AplicarTemaBarra de cores fixas (v0.1.x).
     /// </summary>
-    public void AplicarTemaBarra(bool temaClaro)
+    public void AplicarCores(CoresResolvidas cores)
     {
-        if (temaClaro)
-        {
-            Resources["UploadTextBrush"] = CriarBrush("#FF005FB8");
-            Resources["DownloadTextBrush"] = CriarBrush("#FFC42B1C");
-            Resources["UploadPillBgBrush"] = CriarBrush("#24005FB8");
-            Resources["UploadPillBorderBrush"] = CriarBrush("#40005FB8");
-            Resources["DownloadPillBgBrush"] = CriarBrush("#24C42B1C");
-            Resources["DownloadPillBorderBrush"] = CriarBrush("#40C42B1C");
-            Resources["HoverContainerBrush"] = CriarBrush("#0D000000");
-        }
-        else
-        {
-            Resources["UploadTextBrush"] = CriarBrush("#FF4CC2FF");
-            Resources["DownloadTextBrush"] = CriarBrush("#FFFF6B6B");
-            Resources["UploadPillBgBrush"] = CriarBrush("#2E4CC2FF");
-            Resources["UploadPillBorderBrush"] = CriarBrush("#484CC2FF");
-            Resources["DownloadPillBgBrush"] = CriarBrush("#2EFF6B6B");
-            Resources["DownloadPillBorderBrush"] = CriarBrush("#48FF6B6B");
-            Resources["HoverContainerBrush"] = CriarBrush("#12FFFFFF");
-        }
+        Resources["UploadTextBrush"] = CriarBrush(cores.Upload);
+        Resources["DownloadTextBrush"] = CriarBrush(cores.Download);
+        Resources["UploadPillBgBrush"] = CriarBrush(cores.FundoPilulaUpload);
+        Resources["UploadPillBorderBrush"] = CriarBrush(cores.BordaPilulaUpload);
+        Resources["DownloadPillBgBrush"] = CriarBrush(cores.FundoPilulaDownload);
+        Resources["DownloadPillBorderBrush"] = CriarBrush(cores.BordaPilulaDownload);
+        Resources["HoverContainerBrush"] = CriarBrush(cores.Realce);
+        Resources["CompactoFundoBrush"] = CriarBrush(cores.FundoCompacto);
+        Resources["CompactoBordaBrush"] = CriarBrush(cores.BordaCompacto);
+        Resources["SeparadorBrush"] = CriarBrush(cores.Separador);
     }
 
-    private static SolidColorBrush CriarBrush(string hex)
+    /// <summary>Troca MB/s ↔ Mbps na hora (o próximo tick já sai na unidade nova).</summary>
+    public void DefinirUnidade(ModoUnidadeVelocidade modo)
     {
-        var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+        _formatadorUpload.ModoUnidade = modo;
+        _formatadorDownload.ModoUnidade = modo;
+    }
+
+    /// <summary>Mostra "—" quando não há interface física conectada (ideia "sem conexão" do 04-IDEIAS).</summary>
+    public void MostrarSemConexao()
+    {
+        TextoUpload.Text = "—";
+        TextoDownload.Text = "—";
+        TextoCompactoUpload.Text = "↑ —";
+        TextoCompactoDownload.Text = "↓ —";
+    }
+
+    /// <summary>Clique esquerdo no widget (abre o painel rápido, como o Clima abre os widgets).</summary>
+    public event Action? CliqueEsquerdo;
+
+    /// <summary>Clique direito no widget (menu).</summary>
+    public event Action? CliqueDireito;
+
+    protected override void OnMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonUp(e);
+        CliqueEsquerdo?.Invoke();
+    }
+
+    protected override void OnMouseRightButtonUp(System.Windows.Input.MouseButtonEventArgs e)
+    {
+        base.OnMouseRightButtonUp(e);
+        e.Handled = true;
+        CliqueDireito?.Invoke();
+    }
+
+    private static SolidColorBrush CriarBrush(Color cor)
+    {
+        var brush = new SolidColorBrush(cor);
         brush.Freeze();
         return brush;
     }

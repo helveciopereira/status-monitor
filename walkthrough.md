@@ -1,5 +1,78 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.2.0 — 2026-10-31 — Tela cheia instantânea, Onda 1 completa, painel rápido e estúdio de cores
+
+### O que mudou
+1. **Tela cheia some na hora.** Antes o widget só sumia no vigia de 1,5 s (o dono notou a demora).
+   Agora o widget se registra como *appbar* só para ouvir o shell (`ABM_NEW`, sem reservar espaço)
+   e recebe `ABN_FULLSCREENAPP` no instante em que um app entra/sai de tela cheia; o aviso é
+   reconfirmado por uma regra geométrica (`DetectorTelaCheia`: a janela da frente cobre o monitor
+   inteiro e não é o desktop/shell). Medido com `tools\medir-tela-cheia.ps1`: **some em 2–4 ms,
+   volta em ~48 ms** (antes: até 1,5 s).
+2. **Configurações persistidas** em `%AppData%\VelocimetroInternet\settings.json` (leitura
+   tolerante: arquivo corrompido vira `.bak` e o app abre com padrões; gravação atômica).
+3. **Motor de paletas do Modelo 3** (`Paletas`): 5 predefinidas + personalizada; o contraste WCAG
+   é calculado sobre o fundo real da pílula e a cor é recalibrada até passar (4,5:1; 7:1 no Alto
+   Contraste). O widget segue o tema da **barra**; menu, painel e estúdio seguem o tema dos **apps**,
+   e trocam ao vivo (`WM_SETTINGCHANGE "ImmersiveColorSet"`).
+4. **Ícone na bandeja** (Shell_NotifyIcon próprio, sem WinForms) com dica mostrando as velocidades
+   e **menu** estilizado: painel rápido · estúdio · Unidade (MB/s / Mbps) · Fixar na barra ·
+   Iniciar com o Windows · Mostrar ícone · Sair. O ícone volta sozinho quando o Explorer reinicia.
+5. **Painel rápido** (Quick Flyout do design) ao clicar no widget/ícone: Envio e Download com pico
+   de 60 s e barra de uso (contra o plano informado ou o link da placa), gráfico dos últimos 60 s,
+   "Ao vivo · Wi-Fi", **consumo do dia** (em bytes reais, persistido em `consumo.json`, zera na
+   virada do dia), seletor Mbps/MB/s e interruptores Iniciar com o Windows / Fixar na barra.
+   Fecha ao perder o foco, com Esc e quando algo entra em tela cheia.
+6. **Estúdio de cores e configurações**: prévia nas barras escura e clara com selo de contraste,
+   galeria das paletas, cores personalizadas em hex, suavização, velocidade do plano, interfaces
+   ignoradas (mostra o que está sendo medido), ícone da bandeja, restaurar padrão. Edita uma cópia;
+   só vale ao clicar Aplicar.
+7. **Iniciar com o Windows** real (`HKCU\...\Run` + `StartupApproved`), **ligado no 1º uso** (o pedido
+   é "iniciar com o sistema"; se o dono desligar, não é religado) e corrigido se o .exe mudar de pasta.
+8. **Instância única útil:** abrir o .exe de novo abre o painel na cópia que já roda.
+9. Ícone do aplicativo (`Recursos\app.ico`, gerado por `tools\gerar-icone.ps1`), log renomeado
+   para `velocimetro.log` com rodízio em 1 MB, memória aparada ao fechar painel/estúdio.
+
+### Por quê (causas raiz)
+- **Demora na tela cheia:** a única fonte era um temporizador de 1,5 s + `SHQueryUserNotificationState`.
+  O shell já avisa appbars na hora; faltava se registrar.
+- **2ª execução não fazia nada:** `HWND_BROADCAST` não alcança janelas WPF com `ShowInTaskbar=False`,
+  que ganham um dono oculto — o broadcast só chega a janelas de topo sem dono. Corrigido com
+  `FindWindow` pelo título do widget + `PostMessage` direto + `AllowSetForegroundWindow`.
+- **RAM 185 MB com o estúdio aberto e nada devolvido ao fechar:** coleta + `EmptyWorkingSet` ao
+  fechar painel/estúdio → volta para ~54 MB.
+
+### Como usar
+- Gerar: `pwsh -File tools\publicar.ps1 -Abrir` → `dist\VelocimetroInternet.exe`.
+- Clique no widget = painel; clique direito = menu; no painel, "Cores e mais configurações".
+- Argumentos de diagnóstico: `--painel` (abre o painel ao iniciar), `--compacto`, `--poc-fixo`, `--modo-a`.
+
+### Arquivos
+Novos: `Apresentacao\{Paletas,ServicoTema,PainelRapido.xaml(.cs),EstudioCores.xaml(.cs)}.cs`,
+`Config\{Configuracoes,ServicoConfiguracoes}.cs`, `Medicao\HistoricoRede.cs`,
+`Sistema\{DetectorTelaCheia,IconeBandeja,InicioComWindows,TemaWindows}.cs`, `Recursos\app.ico`,
+`tools\{publicar,medir-tela-cheia,gerar-icone}.ps1`, `tests\...\Onda1a3Tests.cs`.
+Alterados: `App.xaml(.cs)`, `TaskbarHost.cs`, `TaskbarWidget.xaml(.cs)`, `NetworkSampler.cs`
+(velocidade de link + interface principal), `SpeedFormatter.cs` (consumo, link), `NativeMethods.cs`,
+`.csproj` (0.2.0, ícone), `.gitignore` (`dist/`), README, 03-PLANO.
+
+### Validação executada
+- `dotnet build -c Release`: 0 avisos, 0 erros. `dotnet test`: **44/44** (8 antigos + 36 novos:
+  WCAG/paletas nas duas barras, tela cheia, settings corrompido, início com o Windows numa
+  subchave de TESTE, histórico/virada do dia, formatações).
+- Na sessão real (UI Automation + captura de tela): widget com valores ao vivo; 2ª execução abre o
+  painel; trocar para Mbps pelo painel grava `settings.json`; estúdio abre pelo painel; escolher
+  Neon + Aplicar recolore o widget na barra; chave Run gravada no 1º uso; tela cheia 2–4 ms
+  (3 rodadas); RAM em repouso ~54 MB.
+- As preferências alteradas pelo teste (Mbps, Neon) foram devolvidas a MB/s + Clássico.
+
+### Validação manual recomendada (não automatizada)
+1. **Reiniciar o PC** e conferir que o widget aparece sozinho.
+2. Configurações → Personalização → Cores → alternar Claro/Escuro: widget, menu e painel acompanham.
+3. Baixar um arquivo grande e comparar com o Gerenciador de Tarefas (±3%).
+4. Vídeo do YouTube em tela cheia (F) e um jogo: o widget some na hora e volta ao sair.
+5. Reiniciar o Explorer: widget e ícone da bandeja voltam (o ícone fica no "^" até ser arrastado para a barra).
+
 ## v0.1.1 — 2026-10-31 — Correção: o widget não aparecia na barra
 
 ### Sintoma relatado pelo dono

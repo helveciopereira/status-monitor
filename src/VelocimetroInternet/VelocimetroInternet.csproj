@@ -7,9 +7,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.1.1</Version>
-    <AssemblyVersion>0.1.1.0</AssemblyVersion>
-    <FileVersion>0.1.1.0</FileVersion>
+    <!-- Ícone do .exe (recurso 32512): Explorer, Alt+Tab do estúdio e a bandeja (IconeBandeja) -->
+    <ApplicationIcon>Recursos/app.ico</ApplicationIcon>
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
   </PropertyGroup>
+
+  <!-- Blindagem: o hook de backup automático pode criar "backup\" DENTRO desta pasta quando o
+       diretório de trabalho do agente está aqui — o SDK incluiria as cópias e a compilação
+       quebraria com "definição duplicada" (aconteceu em 2026-10-31). -->
+  <ItemGroup>
+    <Compile Remove="backup\**" />
+    <Page Remove="backup\**" />
+    <None Remove="backup\**" />
+    <Content Remove="backup\**" />
+  </ItemGroup>
 
 </Project>

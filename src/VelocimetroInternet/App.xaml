@@ -3,5 +3,243 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
+        <!--
+            Tokens de tema das janelas do app (menu, painel rápido, estúdio) — Modelo 3.
+            Valores iniciais = tema ESCURO; ServicoTema.Aplicar troca tudo quando o Windows muda
+            (AppsUseLightTheme). Sempre usar via DynamicResource para a troca ser instantânea.
+        -->
+        <SolidColorBrush x:Key="Tema.Superficie" Color="#202020" />
+        <SolidColorBrush x:Key="Tema.SuperficieElevada" Color="#2A2A2A" />
+        <SolidColorBrush x:Key="Tema.SuperficieRecuada" Color="#1B1C1C" />
+        <SolidColorBrush x:Key="Tema.Borda" Color="#3E484F" />
+        <SolidColorBrush x:Key="Tema.Texto" Color="#E5E2E1" />
+        <SolidColorBrush x:Key="Tema.TextoSecundario" Color="#BDC8D1" />
+        <SolidColorBrush x:Key="Tema.Acento" Color="#4CC2FF" />
+        <SolidColorBrush x:Key="Tema.TextoSobreAcento" Color="#00344B" />
+        <SolidColorBrush x:Key="Tema.Realce" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="Tema.AoVivo" Color="#6DCC60" />
+
+        <FontFamily x:Key="Tema.Fonte">Segoe UI Variable Text, Segoe UI</FontFamily>
+
+        <!-- Menu de contexto (bandeja e clique direito no widget) -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="HasDropShadow" Value="False" />
+            <Setter Property="FontFamily" Value="{DynamicResource Tema.Fonte}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{DynamicResource Tema.Superficie}"
+                                BorderBrush="{DynamicResource Tema.Borda}"
+                                BorderThickness="1" CornerRadius="8" Padding="4">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Separator" x:Key="{x:Static MenuItem.SeparatorStyleKey}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1" Margin="8,4" Background="{DynamicResource Tema.Borda}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Item de menu: marca ✓ à esquerda (itens alternáveis), seta › para submenu -->
+        <Style TargetType="MenuItem">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Fundo" Background="Transparent" CornerRadius="4" Padding="8,7,12,7" MinWidth="220">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="22" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="Marca" Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="12" Foreground="{DynamicResource Tema.Acento}"
+                                           VerticalAlignment="Center" Visibility="Collapsed" />
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True"
+                                                  VerticalAlignment="Center" />
+                                <TextBlock x:Name="SetaSubmenu" Grid.Column="2" Text="&#xE76C;"
+                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10"
+                                           Foreground="{DynamicResource Tema.TextoSecundario}"
+                                           VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed" />
+                                <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="6" VerticalOffset="-5"
+                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                       AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                    <Border Background="{DynamicResource Tema.Superficie}"
+                                            BorderBrush="{DynamicResource Tema.Borda}"
+                                            BorderThickness="1" CornerRadius="8" Padding="4">
+                                        <StackPanel IsItemsHost="True" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Tema.Realce}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Marca" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="SetaSubmenu" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="Role" Value="TopLevelHeader">
+                                <Setter TargetName="SetaSubmenu" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            Interruptor (toggle) do painel rápido — "Iniciar com o Windows" / "Fixar na Barra".
+            Trilho 40x20 arredondado; ligado = acento com bolinha clara à direita.
+        -->
+        <Style x:Key="Interruptor" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Trilho" Width="40" Height="20" CornerRadius="10"
+                                Background="Transparent" BorderThickness="1"
+                                BorderBrush="{DynamicResource Tema.TextoSecundario}">
+                            <Ellipse x:Name="Bola" Width="12" Height="12" Margin="4,0"
+                                     HorizontalAlignment="Left" VerticalAlignment="Center"
+                                     Fill="{DynamicResource Tema.TextoSecundario}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Trilho" Property="Background" Value="{DynamicResource Tema.Acento}" />
+                                <Setter TargetName="Trilho" Property="BorderBrush" Value="{DynamicResource Tema.Acento}" />
+                                <Setter TargetName="Bola" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="Bola" Property="Width" Value="14" />
+                                <Setter TargetName="Bola" Property="Height" Value="14" />
+                                <Setter TargetName="Bola" Property="Margin" Value="3,0" />
+                                <Setter TargetName="Bola" Property="Fill" Value="{DynamicResource Tema.TextoSobreAcento}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Trilho" Property="BorderBrush" Value="{DynamicResource Tema.Texto}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmento do seletor "Unidade de Exibição" (Mbps | MB/s) -->
+        <Style x:Key="Segmento" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Fundo" CornerRadius="4" Padding="12,4" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Tema.Acento}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSobreAcento}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão discreto (ícone de fechar, links do rodapé) -->
+        <Style x:Key="BotaoDiscreto" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Fundo" CornerRadius="4" Padding="{TemplateBinding Padding}" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Tema.Realce}" />
+                                <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Tema.Realce}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão principal (acento cheio) — "Aplicar" no estúdio -->
+        <Style x:Key="BotaoPrincipal" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSobreAcento}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="16,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Fundo" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                Background="{DynamicResource Tema.Acento}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fundo" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Fundo" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão secundário (contorno) — "Restaurar padrão", "Cancelar" -->
+        <Style x:Key="BotaoSecundario" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="Padding" Value="16,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Fundo" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                                Background="{DynamicResource Tema.SuperficieElevada}"
+                                BorderBrush="{DynamicResource Tema.Borda}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Tema.Realce}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>

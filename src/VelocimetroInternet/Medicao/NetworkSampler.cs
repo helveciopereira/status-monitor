@@ -10,7 +10,11 @@ public readonly record struct LeituraAcumuladaRede(
     ulong TotalBytesRecebidos,
     ulong TotalBytesEnviados,
     int InterfacesFisicasAtivas,
-    string ResumoInterfacesAtivas);
+    string ResumoInterfacesAtivas,
+    // v0.2.0 (painel rápido): maior velocidade de link entre as interfaces contadas (bits/s;
+    // 0 = desconhecida) e o apelido curto da interface principal ("Wi-Fi", "Ethernet")
+    ulong VelocidadeLinkBitsPorSegundo = 0,
+    string NomeInterfacePrincipal = "");
 
 /// <summary>
 /// Lê os contadores acumulados de 64 bits (InOctets / OutOctets) diretamente do kernel/NDIS
@@ -57,6 +61,8 @@ public sealed class NetworkSampler
             ulong somaEnviados = 0;
             int contadas = 0;
             List<string>? nomesAtivos = null;
+            ulong maiorLink = 0;
+            string principal = string.Empty;
             HashSet<ulong> luidsVistos = [];
 
             for (int i = 0; i < numEntries; i++)
@@ -88,6 +94,19 @@ public sealed class NetworkSampler
                     contadas++;
                     nomesAtivos ??= new List<string>(2);
                     nomesAtivos.Add($"{amostra.Alias} ({amostra.Descricao})");
+
+                    // A interface de maior link é tratada como a "principal" no painel. O valor
+                    // 0xFFFFFFFFFFFFFFFF significa "desconhecido" na API e é descartado.
+                    ulong link = Math.Max(row.ReceiveLinkSpeed, row.TransmitLinkSpeed);
+                    if (link != ulong.MaxValue && link > maiorLink)
+                    {
+                        maiorLink = link;
+                        principal = amostra.Alias;
+                    }
+                    else if (principal.Length == 0)
+                    {
+                        principal = amostra.Alias;
+                    }
                 }
             }
 
@@ -95,7 +114,7 @@ public sealed class NetworkSampler
                 ? string.Join(" + ", nomesAtivos)
                 : "Nenhuma interface física conectada";
 
-            return new LeituraAcumuladaRede(somaRecebidos, somaEnviados, contadas, resumo);
+            return new LeituraAcumuladaRede(somaRecebidos, somaEnviados, contadas, resumo, maiorLink, principal);
         }
         finally
         {
@@ -106,3 +125,4 @@ public sealed class NetworkSampler
         }
     }
 }
+

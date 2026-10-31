@@ -1,0 +1,234 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.EstudioCores"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Velocímetro de Internet — cores e configurações"
+        Width="780" Height="720" MinWidth="560" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Tema.Superficie}"
+        Foreground="{DynamicResource Tema.Texto}"
+        FontFamily="{DynamicResource Tema.Fonte}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="EstudioCoresVelocimetro">
+
+    <!--
+        Estúdio de Cores & Configurações — Onda 3, a partir do Modelo 3 (design/modelo-3-acrylic-pill):
+        simulador nas barras escura (#1C1C1C) e clara (#F3F3F3) com selo de contraste WCAG,
+        galeria das 5 paletas + personalizada, e as demais preferências.
+        Edita uma CÓPIA da configuração: nada muda na barra até "Aplicar".
+    -->
+    <Window.Resources>
+        <Style x:Key="Titulo" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="Rotulo" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Cartao" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Tema.SuperficieElevada}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Tema.Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource Tema.SuperficieRecuada}" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Tema.Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Caixa" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Caixa" Property="BorderBrush" Value="{DynamicResource Tema.Acento}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Cartão selecionável da galeria de paletas -->
+        <Style x:Key="CartaoPaleta" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="Width" Value="216" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Caixa" Background="{DynamicResource Tema.SuperficieRecuada}"
+                                BorderBrush="{DynamicResource Tema.Borda}" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Caixa" Property="BorderBrush" Value="{DynamicResource Tema.Acento}" />
+                                <Setter TargetName="Caixa" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Caixa" Property="Background" Value="{DynamicResource Tema.Realce}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Caixa" Property="BorderBrush" Value="{DynamicResource Tema.Texto}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,20,24,4">
+            <StackPanel>
+                <!-- 1. Simulador nas duas barras -->
+                <TextBlock Text="Como fica na barra" Style="{StaticResource Titulo}" />
+                <TextBlock Style="{StaticResource Rotulo}" Margin="0,0,0,12"
+                           Text="O Windows pode usar barra escura ou clara. As cores são recalibradas automaticamente para manter o texto legível (contraste mínimo 4,5:1)." />
+
+                <UniformGrid Columns="2" Margin="0,0,0,20">
+                    <StackPanel Margin="0,0,8,0">
+                        <Border Background="#1C1C1C" CornerRadius="6" Height="64" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <ContentControl x:Name="AmostraEscura" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="Barra escura" Style="{StaticResource Rotulo}" VerticalAlignment="Center" />
+                            <Border x:Name="SeloEscuro" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" BorderThickness="1">
+                                <TextBlock x:Name="TextoSeloEscuro" FontSize="11" AutomationProperties.Name="ContrasteBarraEscura" />
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Margin="8,0,0,0">
+                        <Border Background="#F3F3F3" CornerRadius="6" Height="64" BorderBrush="#26000000" BorderThickness="1">
+                            <ContentControl x:Name="AmostraClara" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="Barra clara" Style="{StaticResource Rotulo}" VerticalAlignment="Center" />
+                            <Border x:Name="SeloClaro" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" BorderThickness="1">
+                                <TextBlock x:Name="TextoSeloClaro" FontSize="11" AutomationProperties.Name="ContrasteBarraClara" />
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </UniformGrid>
+
+                <!-- 2. Galeria -->
+                <TextBlock Text="Paleta" Style="{StaticResource Titulo}" />
+                <TextBlock Style="{StaticResource Rotulo}" Margin="0,0,0,12" Text="Seta para cima = envio (upload). Seta para baixo = download." />
+                <WrapPanel x:Name="Galeria" Margin="0,0,0,6" />
+
+                <!-- Personalizada -->
+                <Border x:Name="PainelPersonalizada" Style="{StaticResource Cartao}">
+                    <StackPanel>
+                        <TextBlock Text="Cores personalizadas" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="32" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="↑ Envio" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="CampoCorUpload" Grid.Column="1" MaxLength="7" TextChanged="AoMudarCorPersonalizada"
+                                     AutomationProperties.Name="Cor de envio (hexadecimal)" />
+                            <TextBlock Grid.Column="3" Text="↓ Download" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="CampoCorDownload" Grid.Column="4" MaxLength="7" TextChanged="AoMudarCorPersonalizada"
+                                     AutomationProperties.Name="Cor de download (hexadecimal)" />
+                        </Grid>
+                        <TextBlock x:Name="AvisoCor" Style="{StaticResource Rotulo}" Margin="0,8,0,0"
+                                   Text="Formato #RRGGBB, ex.: #4CC2FF. Pense na barra escura; a versão clara é ajustada sozinha." />
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. Medição e exibição -->
+                <TextBlock Text="Medição" Style="{StaticResource Titulo}" />
+                <Border Style="{StaticResource Cartao}">
+                    <StackPanel>
+                        <TextBlock Text="Suavização" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Rotulo}" Text="Mais suave = números mais estáveis, reação mais lenta a picos." Margin="0,2,0,6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Imediata" Style="{StaticResource Rotulo}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <Slider x:Name="ControleSuavizacao" Grid.Column="1" Minimum="0" Maximum="0.9" TickFrequency="0.1"
+                                    IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="AoMudarSuavizacao"
+                                    AutomationProperties.Name="Suavização" />
+                            <TextBlock Grid.Column="2" Text="Suave" Style="{StaticResource Rotulo}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                            <TextBlock x:Name="TextoSuavizacao" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <TextBlock Text="Velocidade do seu plano" FontWeight="SemiBold" Margin="0,16,0,0" />
+                        <TextBlock Style="{StaticResource Rotulo}" Margin="0,2,0,6"
+                                   Text="Usada nas barras de progresso do painel rápido. Em branco ou 0 = usa a velocidade de link da placa de rede." />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="CampoPlano" Width="100" TextChanged="AoMudarPlano" AutomationProperties.Name="Velocidade do plano em Mbps" />
+                            <TextBlock Text="Mbps" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+
+                        <TextBlock Text="Ignorar interfaces de rede" FontWeight="SemiBold" Margin="0,16,0,0" />
+                        <TextBlock Style="{StaticResource Rotulo}" Margin="0,2,0,6"
+                                   Text="Um trecho de nome por linha (ex.: Ethernet 2). VPNs e adaptadores virtuais já são ignorados automaticamente." />
+                        <TextBox x:Name="CampoExcluir" AcceptsReturn="True" Height="64" VerticalScrollBarVisibility="Auto"
+                                 TextWrapping="NoWrap" TextChanged="AoMudarExclusoes" AutomationProperties.Name="Interfaces ignoradas" />
+                        <TextBlock x:Name="TextoInterfacesAtivas" Style="{StaticResource Rotulo}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Bandeja -->
+                <TextBlock Text="Área de notificação" Style="{StaticResource Titulo}" />
+                <Border Style="{StaticResource Cartao}">
+                    <Grid>
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Text="Mostrar ícone perto do relógio" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Rotulo}"
+                                       Text="Fica sempre visível quando o widget não está fixado na barra — é o caminho para reabrir o app." />
+                        </StackPanel>
+                        <ToggleButton x:Name="ChaveBandeja" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource Interruptor}" Click="AoAlternarBandeja"
+                                      AutomationProperties.Name="Mostrar ícone na bandeja" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Rodapé de ações -->
+        <Border Grid.Row="1" Background="{DynamicResource Tema.SuperficieRecuada}" BorderBrush="{DynamicResource Tema.Borda}"
+                BorderThickness="0,1,0,0" Padding="24,12">
+            <Grid>
+                <Button Style="{StaticResource BotaoSecundario}" Content="Restaurar padrão" HorizontalAlignment="Left"
+                        Click="AoRestaurarPadrao" AutomationProperties.Name="Restaurar padrão" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock x:Name="TextoEstadoSalvo" Style="{StaticResource Rotulo}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button Style="{StaticResource BotaoSecundario}" Content="Fechar" Margin="0,0,8,0" IsCancel="True"
+                            Click="AoFechar" AutomationProperties.Name="Fechar" />
+                    <Button x:Name="BotaoAplicar" Style="{StaticResource BotaoPrincipal}" Content="Aplicar" IsDefault="True"
+                            Click="AoAplicar" AutomationProperties.Name="Aplicar" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,213 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.PainelRapido"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Velocímetro de Internet — painel rápido"
+        Width="360" SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="{DynamicResource Tema.Fonte}"
+        FontSize="13"
+        Foreground="{DynamicResource Tema.Texto}"
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="PainelRapidoVelocimetro">
+
+    <!--
+        Painel rápido — "NetTraffic Quick Flyout" do Modelo 3 (design/modelo-3-acrylic-pill).
+        Abre acima do widget (como o Clima abre os Widgets) ou acima da bandeja.
+        Cores de Envio/Download vêm da paleta ativa, resolvidas para o tema dos APPS.
+    -->
+    <Window.Resources>
+        <SolidColorBrush x:Key="Painel.Upload" Color="#4CC2FF" />
+        <SolidColorBrush x:Key="Painel.Download" Color="#FF6B6B" />
+        <SolidColorBrush x:Key="Painel.UploadVeu" Color="#1A4CC2FF" />
+        <SolidColorBrush x:Key="Painel.DownloadVeu" Color="#1AFF6B6B" />
+        <SolidColorBrush x:Key="Painel.UploadBorda" Color="#404CC2FF" />
+        <SolidColorBrush x:Key="Painel.DownloadBorda" Color="#40FF6B6B" />
+        <SolidColorBrush x:Key="Painel.Trilho" Color="#24FFFFFF" />
+
+        <Style x:Key="Rotulo" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Moldura"
+            Background="{DynamicResource Tema.Superficie}"
+            BorderBrush="{DynamicResource Tema.Borda}"
+            BorderThickness="1" CornerRadius="8" Padding="16,14,16,16">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="Deslize" Y="0" />
+        </Border.RenderTransform>
+
+        <StackPanel>
+            <!-- Cabeçalho: título + "● Ao Vivo · Wi-Fi" + fechar -->
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xEC4A;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                   Foreground="{DynamicResource Tema.Acento}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Velocímetro de Internet" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                        <Ellipse x:Name="PontoAoVivo" Width="7" Height="7" Fill="{DynamicResource Tema.AoVivo}"
+                                 VerticalAlignment="Center" Margin="1,0,6,0" />
+                        <TextBlock x:Name="TextoStatus" Text="Ao vivo" FontSize="12"
+                                   Foreground="{DynamicResource Tema.AoVivo}" VerticalAlignment="Center"
+                                   AutomationProperties.Name="StatusPainel" />
+                    </StackPanel>
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource BotaoDiscreto}" Padding="8" VerticalAlignment="Top"
+                        Click="AoClicarFechar" ToolTip="Fechar (Esc)" AutomationProperties.Name="Fechar painel">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11" />
+                </Button>
+            </Grid>
+
+            <!-- Cartões Envio / Download -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Background="{DynamicResource Painel.UploadVeu}" BorderBrush="{DynamicResource Painel.UploadBorda}"
+                        BorderThickness="1" CornerRadius="6" Padding="12,10">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource Painel.Upload}">
+                                <Run Text="↑" FontWeight="Bold" /> <Run Text="Envio" />
+                            </TextBlock>
+                        </Grid>
+                        <TextBlock Margin="0,4,0,8" Foreground="{DynamicResource Painel.Upload}">
+                            <Run x:Name="NumeroUpload" Text="0,00" FontSize="26" FontWeight="SemiBold"
+                                 Typography.NumeralAlignment="Tabular" />
+                            <Run x:Name="UnidadeUpload" Text="KB/s" FontSize="12" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                        </TextBlock>
+                        <Grid Height="4" x:Name="TrilhoUpload">
+                            <Border Background="{DynamicResource Painel.Trilho}" CornerRadius="2" />
+                            <Border x:Name="BarraUpload" Background="{DynamicResource Painel.Upload}" CornerRadius="2"
+                                    HorizontalAlignment="Left" Width="0" />
+                        </Grid>
+                        <!-- Pico da janela de 60 s: linha própria (na mesma linha do rótulo, "Download" e o pico se sobrepunham) -->
+                        <TextBlock x:Name="TextoPicoUpload" FontSize="11" Margin="0,6,0,0"
+                                   Style="{StaticResource Rotulo}" Text="Pico: 0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="{DynamicResource Painel.DownloadVeu}" BorderBrush="{DynamicResource Painel.DownloadBorda}"
+                        BorderThickness="1" CornerRadius="6" Padding="12,10">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource Painel.Download}">
+                                <Run Text="↓" FontWeight="Bold" /> <Run Text="Download" />
+                            </TextBlock>
+                        </Grid>
+                        <TextBlock Margin="0,4,0,8" Foreground="{DynamicResource Painel.Download}">
+                            <Run x:Name="NumeroDownload" Text="0,00" FontSize="26" FontWeight="SemiBold"
+                                 Typography.NumeralAlignment="Tabular" />
+                            <Run x:Name="UnidadeDownload" Text="KB/s" FontSize="12" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                        </TextBlock>
+                        <Grid Height="4" x:Name="TrilhoDownload">
+                            <Border Background="{DynamicResource Painel.Trilho}" CornerRadius="2" />
+                            <Border x:Name="BarraDownload" Background="{DynamicResource Painel.Download}" CornerRadius="2"
+                                    HorizontalAlignment="Left" Width="0" />
+                        </Grid>
+                        <!-- Pico da janela de 60 s: linha própria (na mesma linha do rótulo, "Download" e o pico se sobrepunham) -->
+                        <TextBlock x:Name="TextoPicoDownload" FontSize="11" Margin="0,6,0,0"
+                                   Style="{StaticResource Rotulo}" Text="Pico: 0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Telemetria dos últimos 60 s -->
+            <Border Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock Text="Últimos 60 segundos" FontSize="12" />
+                        <TextBlock x:Name="TextoLink" HorizontalAlignment="Right" FontSize="11"
+                                   Foreground="{DynamicResource Tema.Acento}" Text="" />
+                    </Grid>
+                    <Canvas x:Name="Grafico" Height="72" ClipToBounds="True" SizeChanged="AoMudarTamanhoGrafico">
+                        <Path x:Name="AreaDownload" Fill="{DynamicResource Painel.DownloadVeu}" />
+                        <Path x:Name="LinhaDownload" Stroke="{DynamicResource Painel.Download}" StrokeThickness="1.5"
+                              StrokeLineJoin="Round" />
+                        <Path x:Name="AreaUpload" Fill="{DynamicResource Painel.UploadVeu}" />
+                        <Path x:Name="LinhaUpload" Stroke="{DynamicResource Painel.Upload}" StrokeThickness="1.5"
+                              StrokeLineJoin="Round" />
+                    </Canvas>
+                    <TextBlock x:Name="TextoEscala" FontSize="10" Margin="0,4,0,0" Style="{StaticResource Rotulo}"
+                               Text="Aguardando amostras…" />
+                </StackPanel>
+            </Border>
+
+            <!-- Consumo do dia -->
+            <Border BorderBrush="{DynamicResource Tema.Borda}" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,0,0,12">
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE9D9;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                   Foreground="{DynamicResource Tema.TextoSecundario}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Consumo de hoje" VerticalAlignment="Center" FontSize="12" />
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                               Typography.NumeralAlignment="Tabular" AutomationProperties.Name="ConsumoHoje">
+                        <Run x:Name="ConsumoUpload" Text="↑ 0 B" Foreground="{DynamicResource Painel.Upload}" />
+                        <Run Text=" · " Foreground="{DynamicResource Tema.TextoSecundario}" />
+                        <Run x:Name="ConsumoDownload" Text="↓ 0 B" Foreground="{DynamicResource Painel.Download}" />
+                    </TextBlock>
+                </Grid>
+            </Border>
+
+            <Border Height="1" Background="{DynamicResource Tema.Borda}" Margin="0,0,0,10" />
+
+            <!-- Configurações rápidas -->
+            <Grid Margin="0,0,0,10">
+                <TextBlock Text="Unidade de exibição" VerticalAlignment="Center" />
+                <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}"
+                        CornerRadius="6" Padding="2">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="OpcaoMbps" GroupName="Unidade" Style="{StaticResource Segmento}" Content="Mbps"
+                                     Checked="AoEscolherUnidade" AutomationProperties.Name="Unidade Mbps" />
+                        <RadioButton x:Name="OpcaoMBs" GroupName="Unidade" Style="{StaticResource Segmento}" Content="MB/s"
+                                     Checked="AoEscolherUnidade" AutomationProperties.Name="Unidade MB/s" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Margin="0,0,0,10">
+                <TextBlock Text="Iniciar com o Windows" VerticalAlignment="Center" />
+                <ToggleButton x:Name="ChaveIniciar" HorizontalAlignment="Right" Style="{StaticResource Interruptor}"
+                              Click="AoAlternarIniciar" AutomationProperties.Name="Iniciar com o Windows" />
+            </Grid>
+
+            <Grid Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Fixar na barra" VerticalAlignment="Center" />
+                    <TextBlock Text="Desligado, fica só o ícone perto do relógio." Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+                <ToggleButton x:Name="ChaveFixar" HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Style="{StaticResource Interruptor}"
+                              Click="AoAlternarFixar" AutomationProperties.Name="Fixar na barra" />
+            </Grid>
+
+            <Button Style="{StaticResource BotaoDiscreto}" Padding="8,6" HorizontalAlignment="Left"
+                    Click="AoClicarEstudio" AutomationProperties.Name="Abrir estúdio de cores">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                               VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Tema.Acento}" />
+                    <TextBlock Text="Cores e mais configurações" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Tema.Acento}" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Border>
+</Window>

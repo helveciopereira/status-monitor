@@ -55,7 +55,79 @@ public sealed class TaskbarHost : IDisposable
     // O delegate fica num campo para o GC não coletá-lo enquanto o Windows ainda o chama.
     private NativeMethods.WinEventDelegate? _callbackForeground;
     private nint _hookForeground;
+
+    // Três motivos independentes para o widget ficar oculto (v0.2.0). Ele só aparece quando
+    // NENHUM está ativo — antes cada caminho mexia em Visibility por conta própria e um
+    // desfazia o outro (ex.: sair da tela cheia reexibia um widget que o usuário escondeu).
     private bool _ocultoPorTelaCheia;
+    private bool _ocultoPorColisao;
+    private bool _ocultoPeloUsuario;
+
+    // Registro como "appbar" para receber ABN_FULLSCREENAPP instantaneamente
+    private uint _msgCallbackAppBar;
+    private bool _appBarRegistrada;
+    private readonly uint _pidProprio = (uint)Environment.ProcessId;
+
+    /// <summary>Disparado quando o estado de tela cheia muda (o painel rápido também se fecha).</summary>
+    public event Action<bool>? TelaCheiaMudou;
+
+    /// <summary>
+    /// "Fixar na Barra" do painel rápido (Modelo 3). false = widget escondido pelo usuário;
+    /// o app continua medindo e o ícone da bandeja continua disponível para reabrir.
+    /// </summary>
+    public bool FixadoNaBarra
+    {
+        get => !_ocultoPeloUsuario;
+        set
+        {
+            _ocultoPeloUsuario = !value;
+            AplicarVisibilidade();
+        }
+    }
+
+    private bool DeveMostrar => !_ocultoPorTelaCheia && !_ocultoPorColisao && !_ocultoPeloUsuario;
+
+    private void AplicarVisibilidade()
+    {
+        Visibility alvo = DeveMostrar ? Visibility.Visible : Visibility.Hidden;
+        if (_widget.Visibility != alvo)
+        {
+            _widget.Visibility = alvo;
+        }
+    }
+
+    /// <summary>
+    /// Registra o widget como appbar SEM reservar espaço (apenas ABM_NEW). O shell passa a
+    /// enviar ABN_FULLSCREENAPP para esta janela no instante em que um app entra/sai de tela
+    /// cheia. Precisa ser refeito quando o Explorer reinicia (TaskbarCreated).
+    /// </summary>
+    private void RegistrarAppBar()
+    {
+        if (_appBarRegistrada)
+        {
+            RemoverAppBar();
+        }
+
+        var dados = new NativeMethods.APPBARDATA
+        {
+            cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.APPBARDATA>(),
+            hWnd = _hwndWidget,
+            uCallbackMessage = _msgCallbackAppBar
+        };
+        _appBarRegistrada = NativeMethods.SHAppBarMessage(NativeMethods.ABM_NEW, ref dados) != 0;
+        _logger?.Invoke($"Registro como appbar (aviso instantâneo de tela cheia): {(_appBarRegistrada ? "ok" : "falhou — fica o vigia de 1,5 s")}");
+    }
+
+    private void RemoverAppBar()
+    {
+        var dados = new NativeMethods.APPBARDATA
+        {
+            cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.APPBARDATA>(),
+            hWnd = _hwndWidget
+        };
+        NativeMethods.SHAppBarMessage(NativeMethods.ABM_REMOVE, ref dados);
+        _appBarRegistrada = false;
+    }
 
     /// <summary>
     /// Padrão = Modo B. Motivo (v0.1.1, verificado na sessão real do usuário em 2026-10-31):
@@ -91,6 +163,9 @@ public sealed class TaskbarHost : IDisposable
         var source = HwndSource.FromHwnd(_hwndWidget);
         source?.AddHook(WndProc);
 
+        _msgCallbackAppBar = NativeMethods.RegisterWindowMessageW("VelocimetroInternet_AppBarCallback");
+        RegistrarAppBar();
+
         AplicarEstilosExJanela();
         await AtualizarPosicaoAsync(forcarReencaixe: true);
         _timerVigiaLayout.Start();
@@ -106,7 +181,8 @@ public sealed class TaskbarHost : IDisposable
     /// <summary>
     /// Só no Modo B: (1) se houver app em tela cheia, esconde o widget para não cobrir jogo/vídeo;
     /// (2) caso contrário, coloca o widget de volta acima da barra (que também é topmost).
-    /// Custo: uma chamada ao shell + um SetWindowPos sem mover/redimensionar.
+    /// Chamado pelo aviso do shell (ABN_FULLSCREENAPP, instantâneo), pela troca de janela em
+    /// primeiro plano e pelo vigia de 1,5 s (rede de segurança).
     /// </summary>
     private void ReafirmarTopoOuOcultar()
     {
@@ -115,25 +191,18 @@ public sealed class TaskbarHost : IDisposable
             return;
         }
 
-        bool telaCheia = NativeMethods.SHQueryUserNotificationState(out int estado) == 0
-                         && estado is 2 or 3 or 4;
-
-        if (telaCheia)
+        bool telaCheia = DetectorTelaCheia.HaTelaCheiaAgora(_pidProprio);
+        if (telaCheia != _ocultoPorTelaCheia)
         {
-            if (!_ocultoPorTelaCheia)
-            {
-                _ocultoPorTelaCheia = true;
-                _widget.Visibility = Visibility.Hidden;
-                _logger?.Invoke($"Tela cheia detectada (QUNS={estado}) — widget oculto.");
-            }
-            return;
+            _ocultoPorTelaCheia = telaCheia;
+            _logger?.Invoke(telaCheia ? "Tela cheia detectada — widget oculto." : "Saiu da tela cheia — widget de volta.");
+            AplicarVisibilidade();
+            TelaCheiaMudou?.Invoke(telaCheia);
         }
 
-        if (_ocultoPorTelaCheia)
+        if (!DeveMostrar)
         {
-            _ocultoPorTelaCheia = false;
-            _widget.Visibility = Visibility.Visible;
-            _logger?.Invoke("Saiu da tela cheia — widget visível de novo.");
+            return;
         }
 
         NativeMethods.SetWindowPos(
@@ -224,10 +293,18 @@ public sealed class TaskbarHost : IDisposable
 
             UltimaPosicao = pos;
 
-            if (pos.Estado == EstadoColisaoBarra.OcultoPorColisao)
+            bool colisaoSevera = pos.Estado == EstadoColisaoBarra.OcultoPorColisao;
+            if (colisaoSevera != _ocultoPorColisao)
             {
-                _widget.Visibility = Visibility.Hidden;
-                _logger?.Invoke($"Colisão severa detectada (espaço livre={pos.EspacoLivreFisicoPx}px). Widget oculto temporariamente.");
+                _ocultoPorColisao = colisaoSevera;
+                _logger?.Invoke(colisaoSevera
+                    ? $"Colisão severa detectada (espaço livre={pos.EspacoLivreFisicoPx}px). Widget oculto temporariamente."
+                    : "Espaço liberado — widget volta a aparecer.");
+            }
+
+            if (colisaoSevera)
+            {
+                AplicarVisibilidade();
                 return;
             }
 
@@ -246,10 +323,7 @@ public sealed class TaskbarHost : IDisposable
                 _widget.Top = pos.YTelaPx / escalaDpi;
             }
 
-            if (_widget.Visibility != Visibility.Visible && !_ocultoPorTelaCheia)
-            {
-                _widget.Visibility = Visibility.Visible;
-            }
+            AplicarVisibilidade();
 
             if (forcarReencaixe || taskbarMudou)
             {
@@ -307,7 +381,7 @@ public sealed class TaskbarHost : IDisposable
         int y = ehWsChild ? pos.YRelativoBarraPx : pos.YTelaPx;
 
         // Em tela cheia não força SWP_SHOWWINDOW (senão o vigia de 1,5 s reexibiria o widget por cima do jogo)
-        uint flags = NativeMethods.SWP_NOACTIVATE | (_ocultoPorTelaCheia ? 0u : NativeMethods.SWP_SHOWWINDOW);
+        uint flags = NativeMethods.SWP_NOACTIVATE | (DeveMostrar ? NativeMethods.SWP_SHOWWINDOW : 0u);
         NativeMethods.SetWindowPos(
             _hwndWidget,
             NativeMethods.HWND_TOPMOST,
@@ -406,12 +480,24 @@ public sealed class TaskbarHost : IDisposable
             return new nint(NativeMethods.MA_NOACTIVATE);
         }
 
+        // Aviso instantâneo do shell: lParam != 0 → um app ENTROU em tela cheia; 0 → saiu.
+        // Não confiamos cegamente no lParam (ele também dispara ao clicar na área de trabalho):
+        // reconfirmamos com a regra geométrica do DetectorTelaCheia.
+        if (_msgCallbackAppBar != 0 && (uint)msg == _msgCallbackAppBar && wParam == NativeMethods.ABN_FULLSCREENAPP)
+        {
+            ReafirmarTopoOuOcultar();
+            handled = true;
+            return nint.Zero;
+        }
+
         if (_msgTaskbarCreated != 0 && (uint)msg == _msgTaskbarCreated)
         {
             _logger?.Invoke("Evento TaskbarCreated recebido (Explorer reiniciou)! Reencaixando widget...");
+            TaskbarRecriada?.Invoke();
             _ = _widget.Dispatcher.InvokeAsync(async () =>
             {
                 await Task.Delay(800);
+                RegistrarAppBar(); // o registro de appbar morre com o Explorer antigo
                 await AtualizarPosicaoAsync(forcarReencaixe: true);
             });
         }
@@ -423,9 +509,22 @@ public sealed class TaskbarHost : IDisposable
         return nint.Zero;
     }
 
+    /// <summary>Disparado quando o Explorer recria a barra (o ícone da bandeja precisa ser readicionado).</summary>
+    public event Action? TaskbarRecriada;
+
+    /// <summary>Janela nativa do widget (usada pelo ícone da bandeja e pelo painel rápido).</summary>
+    public nint HwndWidget => _hwndWidget;
+
+    /// <summary>Permite que outros componentes (bandeja, instância única) escutem mensagens do widget.</summary>
+    public void AdicionarGanchoMensagens(HwndSourceHook gancho) => HwndSource.FromHwnd(_hwndWidget)?.AddHook(gancho);
+
     public void Dispose()
     {
         _timerVigiaLayout.Stop();
+        if (_appBarRegistrada)
+        {
+            RemoverAppBar();
+        }
         if (_hookForeground != nint.Zero)
         {
             NativeMethods.UnhookWinEvent(_hookForeground);

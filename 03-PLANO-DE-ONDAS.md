@@ -28,43 +28,48 @@ do Win 11 e o consumo de memória.
 
 **Aceite:** captura de tela do widget mostrando os dois números nítidos a 150% DPI (tema escuro, tema claro, modo compacto 1-linha e tempo real); evento `TaskbarCreated` reencaixando o widget automaticamente; RAM < 60 MB. → **versão 0.1.0**
 
-## Onda 1 — MVP funcional ⬜ (o pedido completo)
+## Onda 1 — MVP funcional ✅ (concluída em 2026-10-31 · v0.2.0)
 
-- [ ] `NetworkSampler` + `InterfaceFilter` + `SpeedCalculator` (com testes)
-- [ ] `SpeedFormatter`: unidade automática, histerese, vírgula, largura fixa (com testes)
-- [ ] `TaskbarWidget`: ↑ upload azul em cima, ↓ download vermelho embaixo
-- [ ] `TaskbarHost` + `TaskbarLayout` completos: vaga do Clima, vigia de colisão (compactar →
-      ocultar), TaskbarCreated, DPI, tela cheia, auto-ocultar
-- [ ] Aparência estilo Clima: realce arredondado ao passar o mouse; clique-direito = menu
-- [ ] `ThemeWatcher`: paleta escura/clara automática
-- [ ] Instância única, sem Alt+Tab, sem foco, log de erros em `%LocalAppData%`
-- [ ] `TrayIcon` com menu: Pausar · Iniciar com o Windows ✓ · Sair
-- [ ] `StartupManager` (chave Run) — ligado por padrão no primeiro uso
+- [x] `NetworkSampler` + `InterfaceFilter` + `SpeedCalculator` (com testes) — v0.1.0
+- [x] `SpeedFormatter`: unidade automática, histerese, vírgula, largura fixa (com testes) — v0.1.0
+- [x] `TaskbarWidget`: ↑ upload azul em cima, ↓ download vermelho embaixo — v0.1.0
+- [x] `TaskbarHost` + `TaskbarLayout`: vaga do Clima, vigia de colisão, TaskbarCreated, DPI — v0.1.1;
+      **tela cheia instantânea** (appbar `ABN_FULLSCREENAPP` + regra geométrica: some em 2–4 ms) — v0.2.0
+- [x] Aparência estilo Clima: realce ao passar o mouse; clique-direito = menu — v0.2.0
+- [x] Tema: widget segue a barra (`SystemUsesLightTheme`), janelas seguem os apps; troca ao vivo — v0.2.0
+- [x] Instância única (2ª execução abre o painel na 1ª), sem Alt+Tab, sem foco, log com rodízio — v0.2.0
+- [x] Ícone na bandeja + menu: painel · estúdio · Unidade · Fixar na barra · Iniciar com o Windows ·
+      Mostrar ícone · Sair — v0.2.0 (⬜ "Pausar" ficou para depois)
+- [x] Início com o Windows (Run + StartupApproved), **ligado no 1º uso** e corrigido se o .exe mudar de pasta — v0.2.0
 
 **Aceite:** baixar um arquivo grande e o valor bater ±3% com o Gerenciador de Tarefas;
 reiniciar o PC e o widget aparecer sozinho; Alt+Tab não mostra o app; trocar tema claro/escuro e
 as cores se adaptarem; jogo/vídeo em tela cheia não mostra o widget. → **versão 0.2.0**
+> v0.2.0: tela cheia, Alt+Tab e instância única comprovados por automação; **reinício do PC,
+> comparação ±3% e troca de tema ficam como validação manual do dono** (ver walkthrough).
 
-## Onda 2 — Configurações e robustez ⬜
+## Onda 2 — Configurações e robustez 🟡 (boa parte entregue na v0.2.0)
 
-- [ ] `SettingsService` com `settings.json` (leitura tolerante, gravação atômica)
-- [ ] Janela de Configurações: unidade bits/bytes, intervalo, suavização, posição, fonte/tamanho,
-      interfaces incluídas/excluídas, ordem das linhas
+- [x] `ServicoConfiguracoes` com `settings.json` (leitura tolerante, gravação atômica, .bak) — v0.2.0
+- [x] Configurações: unidade bits/bytes, suavização, interfaces excluídas, velocidade do plano — v0.2.0 (no estúdio)
+- [ ] Intervalo de atualização, posição, fonte/tamanho, ordem das linhas
 - [ ] Posição **manual por arrastar** (Ctrl + arrastar o widget)
-- [ ] **Flyout do clique** (como o painel do Clima): mini gráfico 60 s, pico, interface ativa
+- [x] **Painel rápido do clique** (Quick Flyout do Modelo 3): Envio/Download com pico e barra,
+      gráfico 60 s, link da placa, consumo do dia persistido, unidade, iniciar com o Windows, fixar — v0.2.0
 - [ ] Vários monitores (opção "mostrar em todas as barras")
-- [ ] Comportamento ao suspender/hibernar/trocar de rede
+- [ ] Comportamento ao suspender/hibernar/trocar de rede (só o básico: contador que volta é descartado)
 
 **Aceite:** cada opção muda o widget **na hora**, sem reiniciar; apagar/corromper o JSON não
 derruba o app. → **0.3.0**
 
-## Onda 3 — Escolha de cores (o "futuro" do pedido) ⬜
+## Onda 3 — Escolha de cores (o "futuro" do pedido) 🟡 (núcleo entregue na v0.2.0)
 
-- [ ] Seletor de cor para upload e download, **separado por tema** (escuro/claro)
-- [ ] Prévia ao vivo sobre uma amostra da barra
-- [ ] **Aviso de contraste** se a cor escolhida ficar ilegível no fundo (< 4,5:1)
-- [ ] Botão "restaurar padrão" + 4–5 predefinições (Clássico azul/vermelho, Neon, Monocromático,
-      Alto contraste, Verde/laranja)
+- [x] Paleta personalizada (hex de upload e download); a variante da barra clara é **derivada** pelo
+      motor WCAG em vez de escolhida à parte — v0.2.0
+- [x] Prévia ao vivo sobre amostras da barra escura e clara — v0.2.0
+- [x] **Selo de contraste** WCAG por barra; cores abaixo do mínimo são recalibradas sozinhas — v0.2.0
+- [x] "Restaurar padrão" + 5 predefinições do design (Clássico, Neon, Monocromático, Alto contraste, Bio) — v0.2.0
+- [ ] Seletor visual de cor (hoje é campo hexadecimal)
 
 **Aceite:** trocar a cor e ver na barra imediatamente; cor salva sobrevive ao reinício. → **0.4.0**
 

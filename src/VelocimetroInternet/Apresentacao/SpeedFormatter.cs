@@ -127,6 +127,48 @@ public sealed class SpeedFormatter
         return $"{numeroFormatado} {nomesUnidades[_indiceEscalaAtual]}";
     }
 
+    /// <summary>
+    /// Quantidade transferida para o "Consumo Acumulado" do painel (base 1024, 1 casa):
+    /// "0 B", "512 KB", "14,8 GB". Sem histerese — o valor só cresce ao longo do dia.
+    /// </summary>
+    public static string FormatarQuantidade(ulong bytes)
+    {
+        string[] unidades = ["B", "KB", "MB", "GB", "TB"];
+        double valor = bytes;
+        int i = 0;
+        while (valor >= 1000 && i < unidades.Length - 1)
+        {
+            valor /= 1024.0;
+            i++;
+        }
+
+        string numero = i == 0 || valor >= 100
+            ? Math.Round(valor).ToString("0", CulturaPtBr)
+            : valor.ToString("0.0", CulturaPtBr);
+        return $"{numero} {unidades[i]}";
+    }
+
+    /// <summary>Velocidade de link da placa ("300 Mbps", "2,4 Gbps") — sempre em bits, como o Windows mostra.</summary>
+    public static string FormatarLink(ulong bitsPorSegundo)
+    {
+        if (bitsPorSegundo >= 1_000_000_000)
+        {
+            double g = bitsPorSegundo / 1e9;
+            return $"{(g % 1 == 0 ? g.ToString("0", CulturaPtBr) : g.ToString("0.0", CulturaPtBr))} Gbps";
+        }
+
+        return $"{Math.Round(bitsPorSegundo / 1e6).ToString("0", CulturaPtBr)} Mbps";
+    }
+
+    /// <summary>
+    /// Separa "38,7 MB/s" em ("38,7", "MB/s") — o painel mostra o número grande e a unidade menor.
+    /// </summary>
+    public static (string Numero, string Unidade) SepararNumeroEUnidade(string texto)
+    {
+        int espaco = texto.LastIndexOf(' ');
+        return espaco < 0 ? (texto, string.Empty) : (texto[..espaco], texto[(espaco + 1)..]);
+    }
+
     private static string FormatarNumeroSignificativo(double valor)
     {
         if (valor < 0.005)
@@ -147,3 +189,4 @@ public sealed class SpeedFormatter
         return Math.Round(valor).ToString("0", CulturaPtBr);
     }
 }
+

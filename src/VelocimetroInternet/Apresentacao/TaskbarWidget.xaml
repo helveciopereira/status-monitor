@@ -25,6 +25,10 @@
         <SolidColorBrush x:Key="DownloadPillBgBrush" Color="#2EFF6B6B" />
         <SolidColorBrush x:Key="DownloadPillBorderBrush" Color="#48FF6B6B" />
         <SolidColorBrush x:Key="HoverContainerBrush" Color="#12FFFFFF" />
+        <!-- v0.2.0: modo compacto também segue o tema/paleta (antes era fixo no escuro) -->
+        <SolidColorBrush x:Key="CompactoFundoBrush" Color="#261E2026" />
+        <SolidColorBrush x:Key="CompactoBordaBrush" Color="#33FFFFFF" />
+        <SolidColorBrush x:Key="SeparadorBrush" Color="#55FFFFFF" />
     </Window.Resources>
 
     <!-- Contêiner externo estilo botão Clima/Widgets do Windows 11 (hover suave arredondado de 4px) -->
@@ -123,8 +127,8 @@
             <Border x:Name="PainelCompactoUmaLinha"
                     Visibility="Collapsed"
                     CornerRadius="4"
-                    Background="#261E2026"
-                    BorderBrush="#33FFFFFF"
+                    Background="{DynamicResource CompactoFundoBrush}"
+                    BorderBrush="{DynamicResource CompactoBordaBrush}"
                     BorderThickness="0.75"
                     Padding="6,3"
                     VerticalAlignment="Center"
@@ -140,7 +144,7 @@
                                VerticalAlignment="Center"
                                AutomationProperties.Name="TextoCompactoUploadBarra" />
                     <TextBlock Text="  |  "
-                               Foreground="#55FFFFFF"
+                               Foreground="{DynamicResource SeparadorBrush}"
                                FontFamily="Segoe UI Variable Text"
                                FontSize="9.5"
                                VerticalAlignment="Center" />
