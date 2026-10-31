@@ -161,6 +161,52 @@ public sealed class SpeedFormatter
     }
 
     /// <summary>
+    /// Escala "redonda" para o gráfico de 60 s do painel: o menor valor da série 1-2-5
+    /// (1, 2, 5, 10, 20, 50, 100, 200, 500) que cabe o pico, na unidade em uso.
+    /// Ex.: pico de 690 KB/s → topo "1 MB/s" e meio "512 KB/s"; pico de 38,7 Mbps → "50 Mbps"/"25 Mbps".
+    /// Números redondos dão noção de grandeza de relance — "o pico chegou a ~70% de 1 MB/s" —
+    /// coisa que um topo igual ao próprio pico (ex.: "690 KB/s") não dá.
+    /// </summary>
+    /// <returns>Topo em BYTES por segundo (para desenhar) e os rótulos do topo e do meio.</returns>
+    public static (double TopoBytesPorSegundo, string RotuloTopo, string RotuloMeio) EscalaRedonda(
+        double picoBytesPorSegundo,
+        ModoUnidadeVelocidade modo)
+    {
+        bool bits = modo == ModoUnidadeVelocidade.BitsPorSegundo;
+        double multiplicador = bits ? 8.0 : 1.0;
+        double divisor = bits ? 1000.0 : 1024.0;
+        string[] unidades = bits ? UnidadesBits : UnidadesBytes;
+
+        // Piso de 1 KB/s (1 Kbps): em repouso o gráfico não "amplia" ruído de poucos bytes
+        int escala = 1;
+        double valor = Math.Max(picoBytesPorSegundo * multiplicador, divisor) / divisor;
+        while (valor > 500 && escala < unidades.Length - 1)
+        {
+            // Acima de 500 na escala atual, o próximo degrau (1000) é a unidade seguinte
+            escala++;
+            valor /= divisor;
+        }
+
+        double[] serie = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+        double redondo = serie.First(s => s >= valor - 1e-9);
+
+        double topoNaUnidade = redondo * Math.Pow(divisor, escala);
+        double topoBytes = topoNaUnidade / multiplicador;
+
+        // Meio: na mesma unidade quando dá ≥ 1 ("25 Mbps", "2,5 MB/s"); senão uma unidade abaixo
+        // (metade de 1 MB/s = "512 KB/s"; de 1 Mbps = "500 Kbps"; de 1 KB/s = "512 B/s").
+        // Não usa o formatador da barra: ele nunca desce de KB e daria "0,50 KB/s".
+        string rotuloTopo = $"{FormatarRedondo(redondo)} {unidades[escala]}";
+        string rotuloMeio = redondo / 2 >= 1
+            ? $"{FormatarRedondo(redondo / 2)} {unidades[escala]}"
+            : $"{FormatarRedondo(redondo / 2 * divisor)} {unidades[escala - 1]}";
+        return (topoBytes, rotuloTopo, rotuloMeio);
+    }
+
+    private static string FormatarRedondo(double v) =>
+        v % 1 == 0 ? v.ToString("0", CulturaPtBr) : v.ToString("0.#", CulturaPtBr);
+
+    /// <summary>
     /// Separa "38,7 MB/s" em ("38,7", "MB/s") — o painel mostra o número grande e a unidade menor.
     /// </summary>
     public static (string Numero, string Unidade) SepararNumeroEUnidade(string texto)

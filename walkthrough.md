@@ -1,5 +1,49 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.3.0 — 2026-10-31 — Onda 2: referência no gráfico, pausar medição e retomada após suspensão
+
+### O que mudou
+1. **Gráfico "Últimos 60 segundos" com referência visual** (pedido do dono). O topo do gráfico agora
+   é um valor **redondo** da série 1-2-5 logo acima do pico do minuto (pico 94 KB/s → topo
+   **100 KB/s**; 690 KB/s → **1 MB/s**; 38,7 Mbps → **50 Mbps**), marcado por uma linha tracejada com
+   rótulo; a **metade** ganha uma linha pontilhada também rotulada (50 KB/s, 512 KB/s, 25 Mbps).
+   Abaixo, legenda das cores (━ Envio · ━ Download). O texto "Topo do gráfico: 690 KB/s" saiu.
+2. **Pausar medição** no menu do clique direito: o widget mostra "pausado"; ao retomar, linha de base
+   nova (sem pico falso somando o tempo parado). Vale só na sessão — reabrir o app volta a medir.
+3. **Retomada após suspender/hibernar:** ao receber `WM_POWERBROADCAST/PBT_APMRESUMEAUTOMATIC` o
+   medidor recomeça (a média móvel não carrega o valor de antes de dormir) e o widget reencaixa.
+4. **Blindagem do .csproj ampliada** para `**\backup\**` (ver causa abaixo).
+
+### Por quê
+- Com o topo igual ao próprio pico ("690 KB/s"), a curva sempre batia no teto e não dava noção de
+  grandeza. Com números redondos dá para ler de relance "uns 70% de 1 MB/s". A série 1-2-5 garante
+  que o topo fica entre 1× e 2,5× o pico (a curva ocupa sempre ≥ 40% da altura — testado).
+- A metade de 1 KB/s saía "0,50 KB/s" porque o formatador da barra nunca desce de KB; o rótulo do
+  gráfico desce uma unidade por conta própria ("512 B/s", "500 Kbps").
+- **Build quebrou com erros de "definição duplicada":** o hook de backup automático criou
+  `src\VelocimetroInternet\Apresentacao\backup\` (o diretório de trabalho do agente estava ali) e a
+  blindagem só cobria `backup\` na raiz do projeto. Cópias movidas para `backup\v0.2.0-src-*` na raiz
+  do repositório (ignorada pelo git) e o padrão virou `**\backup\**`.
+
+### Como usar
+Clique no widget → painel → gráfico com as duas linhas de referência. Clique direito → "Pausar medição".
+
+### Arquivos
+`SpeedFormatter.cs` (`EscalaRedonda`), `PainelRapido.xaml(.cs)` (guias, rótulos, legenda),
+`App.xaml.cs` (pausa, retomada), `TaskbarWidget.xaml.cs` (`MostrarPausado`), `NativeMethods.cs`
+(`WM_POWERBROADCAST`), `.csproj` (0.3.0, blindagem), `Onda1a3Tests.cs` (+9 testes), README, 03-PLANO.
+
+### Validação executada
+- Build Release 0 avisos/0 erros; testes **53/53** (8 casos de escala em bytes e bits, piso em repouso,
+  e a garantia 1×–2,5× do pico).
+- Na sessão real: painel aberto pela 2ª execução, captura com topo "100 KB/s", meio "50 KB/s" e
+  legenda, pico do minuto 94 KB/s dentro da escala.
+
+### Validação manual recomendada
+1. Clique direito → Pausar medição: widget mostra "pausado"; desmarcar volta a medir sem pico falso.
+2. Suspender o PC e voltar: números normais no 1º segundo, widget no lugar.
+3. Baixar algo grande com o painel aberto: o topo sobe de degrau (ex.: 10 → 20 → 50 MB/s).
+
 ## v0.2.0 — 2026-10-31 — Tela cheia instantânea, Onda 1 completa, painel rápido e estúdio de cores
 
 ### O que mudou

@@ -102,6 +102,15 @@ public partial class TaskbarWidget : Window
         TextoCompactoDownload.Text = "↓ —";
     }
 
+    /// <summary>Medição pausada pelo menu (v0.3.0): texto explícito em vez de números congelados.</summary>
+    public void MostrarPausado()
+    {
+        TextoUpload.Text = "pausado";
+        TextoDownload.Text = "pausado";
+        TextoCompactoUpload.Text = "↑ —";
+        TextoCompactoDownload.Text = "↓ pausado";
+    }
+
     /// <summary>Clique esquerdo no widget (abre o painel rápido, como o Clima abre os widgets).</summary>
     public event Action? CliqueEsquerdo;
 

@@ -255,9 +255,14 @@ public partial class PainelRapido : Window
         }
     }
 
+    /// <summary>Espaço acima da linha de topo, reservado ao rótulo dela (px lógicos).</summary>
+    private const double FaixaRotuloTopo = 13;
+
     /// <summary>
-    /// Áreas sobrepostas (download atrás, upload na frente) numa escala comum = maior valor da
-    /// janela. As 60 posições ocupam a largura toda; com menos amostras, encostam à direita
+    /// Áreas sobrepostas (download atrás, upload na frente) numa escala comum. O topo é um valor
+    /// REDONDO (<see cref="SpeedFormatter.EscalaRedonda"/>) marcado por uma linha tracejada com
+    /// rótulo, e a metade por uma linha pontilhada — referência visual de "quanto é isso".
+    /// As 60 posições ocupam a largura toda; com menos amostras, encostam à direita
     /// (o "agora" fica sempre na borda direita).
     /// </summary>
     private void DesenharGrafico(InstantaneoHistorico h)
@@ -268,28 +273,56 @@ public partial class PainelRapido : Window
         if (largura <= 0 || altura <= 0 || h.Pontos.Count < 2)
         {
             AreaDownload.Data = LinhaDownload.Data = AreaUpload.Data = LinhaUpload.Data = null;
+            MostrarGuias(false);
             TextoEscala.Text = "Aguardando amostras…";
             return;
         }
 
-        double maximo = Math.Max(1024, Math.Max(h.PicoUpload, h.PicoDownload)) * 1.1;
+        (double topo, string rotuloTopo, string rotuloMeio) =
+            SpeedFormatter.EscalaRedonda(Math.Max(h.PicoUpload, h.PicoDownload), _formatadorUp.ModoUnidade);
+
+        // Linha 0 do gráfico = base; linha de topo em FaixaRotuloTopo; o meio a meio caminho
+        double yTopo = FaixaRotuloTopo;
+        double yMeio = yTopo + (altura - yTopo) / 2;
+        PosicionarGuia(GuiaTopo, RotuloTopo, rotuloTopo, yTopo, largura);
+        PosicionarGuia(GuiaMeio, RotuloMeio, rotuloMeio, yMeio, largura);
+        MostrarGuias(true);
+
         double passo = largura / (HistoricoRede.JanelaSegundos - 1);
         double x0 = largura - passo * (h.Pontos.Count - 1);
 
-        (Geometry areaD, Geometry linhaD) = MontarSerie(h.Pontos, p => p.DownloadBps, x0, passo, altura, maximo);
-        (Geometry areaU, Geometry linhaU) = MontarSerie(h.Pontos, p => p.UploadBps, x0, passo, altura, maximo);
+        (Geometry areaD, Geometry linhaD) = MontarSerie(h.Pontos, p => p.DownloadBps, x0, passo, altura, yTopo, topo);
+        (Geometry areaU, Geometry linhaU) = MontarSerie(h.Pontos, p => p.UploadBps, x0, passo, altura, yTopo, topo);
         AreaDownload.Data = areaD;
         LinhaDownload.Data = linhaD;
         AreaUpload.Data = areaU;
         LinhaUpload.Data = linhaU;
 
-        var f = new SpeedFormatter(_formatadorUp.ModoUnidade);
-        TextoEscala.Text = $"Topo do gráfico: {f.FormatarValorEUnidade(maximo / 1.1)}";
+        TextoEscala.Text = string.Empty;
+    }
+
+    /// <summary>Linha horizontal de ponta a ponta + rótulo encostado à esquerda, logo ACIMA dela.</summary>
+    private static void PosicionarGuia(System.Windows.Shapes.Line linha, TextBlock rotulo, string texto, double y, double largura)
+    {
+        // +0,5: linha de 1 px no meio do pixel fica nítida (sem borrão de antialias)
+        double yNitido = Math.Round(y) + 0.5;
+        linha.X1 = 0;
+        linha.X2 = largura;
+        linha.Y1 = linha.Y2 = yNitido;
+        rotulo.Text = texto;
+        Canvas.SetLeft(rotulo, 0);
+        Canvas.SetTop(rotulo, yNitido - 13);
+    }
+
+    private void MostrarGuias(bool mostrar)
+    {
+        Visibility v = mostrar ? Visibility.Visible : Visibility.Collapsed;
+        GuiaTopo.Visibility = GuiaMeio.Visibility = RotuloTopo.Visibility = RotuloMeio.Visibility = v;
     }
 
     private static (Geometry Area, Geometry Linha) MontarSerie(
         IReadOnlyList<PontoHistorico> pontos, Func<PontoHistorico, double> valor,
-        double x0, double passo, double altura, double maximo)
+        double x0, double passo, double altura, double yTopo, double maximo)
     {
         var linha = new StreamGeometry();
         var area = new StreamGeometry();
@@ -298,7 +331,8 @@ public partial class PainelRapido : Window
         {
             for (int i = 0; i < pontos.Count; i++)
             {
-                var p = new Point(x0 + passo * i, altura - Math.Min(1, valor(pontos[i]) / maximo) * (altura - 2));
+                // 0 → base (altura); "maximo" → exatamente sobre a linha de topo
+                var p = new Point(x0 + passo * i, altura - Math.Min(1, valor(pontos[i]) / maximo) * (altura - yTopo));
                 if (i == 0)
                 {
                     cl.BeginFigure(p, isFilled: false, isClosed: false);

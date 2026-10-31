@@ -48,16 +48,20 @@ as cores se adaptarem; jogo/vídeo em tela cheia não mostra o widget. → **ver
 > v0.2.0: tela cheia, Alt+Tab e instância única comprovados por automação; **reinício do PC,
 > comparação ±3% e troca de tema ficam como validação manual do dono** (ver walkthrough).
 
-## Onda 2 — Configurações e robustez 🟡 (boa parte entregue na v0.2.0)
+## Onda 2 — Configurações e robustez ✅ (concluída em 2026-10-31 · v0.3.0, com 3 itens adiados)
 
 - [x] `ServicoConfiguracoes` com `settings.json` (leitura tolerante, gravação atômica, .bak) — v0.2.0
 - [x] Configurações: unidade bits/bytes, suavização, interfaces excluídas, velocidade do plano — v0.2.0 (no estúdio)
-- [ ] Intervalo de atualização, posição, fonte/tamanho, ordem das linhas
-- [ ] Posição **manual por arrastar** (Ctrl + arrastar o widget)
+- [ ] ⏭ Adiado: intervalo de atualização (exige o histórico contar segundos, não amostras), fonte/tamanho, ordem das linhas
+- [ ] ⏭ Adiado: posição **manual por arrastar** (Ctrl + arrastar o widget)
 - [x] **Painel rápido do clique** (Quick Flyout do Modelo 3): Envio/Download com pico e barra,
       gráfico 60 s, link da placa, consumo do dia persistido, unidade, iniciar com o Windows, fixar — v0.2.0
-- [ ] Vários monitores (opção "mostrar em todas as barras")
-- [ ] Comportamento ao suspender/hibernar/trocar de rede (só o básico: contador que volta é descartado)
+- [x] Gráfico com **linhas de referência**: topo em valor redondo 1-2-5 (ex.: 100 KB/s, 50 Mbps) e
+      metade pontilhada, ambas rotuladas, + legenda Envio/Download — v0.3.0 (pedido do dono)
+- [x] **Pausar medição** no menu (só na sessão; ao retomar, linha de base nova) — v0.3.0
+- [ ] ⏭ Adiado: vários monitores (opção "mostrar em todas as barras")
+- [x] Suspender/hibernar: na retomada (`PBT_APMRESUMEAUTOMATIC`) o medidor recomeça e o widget reencaixa;
+      troca de rede: contador que volta é descartado — v0.3.0
 
 **Aceite:** cada opção muda o widget **na hora**, sem reiniciar; apagar/corromper o JSON não
 derruba o app. → **0.3.0**

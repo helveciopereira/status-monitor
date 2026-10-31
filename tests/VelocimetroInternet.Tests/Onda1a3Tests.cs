@@ -274,6 +274,38 @@ public sealed class Onda1a3Tests : IDisposable
     [InlineData(2_400_000_000UL, "2,4 Gbps")]
     public void Formato_Link(ulong bps, string esperado) => Assert.Equal(esperado, SpeedFormatter.FormatarLink(bps));
 
+    // ---------------------------------------------------------------- escala do gráfico (v0.3.0)
+
+    [Theory]
+    // pico em bytes/s, modo bits?, topo esperado, meio esperado
+    [InlineData(690 * 1024.0, false, "1 MB/s", "512 KB/s")]       // pico do teste real da v0.2.0
+    [InlineData(38.7 * 1024 * 1024, false, "50 MB/s", "25 MB/s")]
+    [InlineData(140 * 1024.0, false, "200 KB/s", "100 KB/s")]
+    [InlineData(3.0 * 1024, false, "5 KB/s", "2,5 KB/s")]
+    [InlineData(10.0, false, "1 KB/s", "512 B/s")]                 // repouso: piso de 1 KB/s
+    [InlineData(38.7e6 / 8, true, "50 Mbps", "25 Mbps")]
+    [InlineData(300e6 / 8, true, "500 Mbps", "250 Mbps")]
+    [InlineData(2.4e9 / 8, true, "5 Gbps", "2,5 Gbps")]
+    public void Grafico_EscalaRedonda(double picoBps, bool bits, string topo, string meio)
+    {
+        (double topoBps, string rTopo, string rMeio) = SpeedFormatter.EscalaRedonda(
+            picoBps, bits ? ModoUnidadeVelocidade.BitsPorSegundo : ModoUnidadeVelocidade.BytesPorSegundo);
+        Assert.Equal(topo, rTopo);
+        Assert.Equal(meio, rMeio);
+        Assert.True(topoBps >= picoBps, "o topo nunca pode cortar o pico");
+    }
+
+    [Fact]
+    public void Grafico_EscalaNuncaPassaDe2_5xOPico()
+    {
+        // Série 1-2-5: o topo fica entre 1x e 2,5x o pico — a curva sempre ocupa ≥ 40% da altura
+        for (double pico = 2048; pico < 5e9; pico *= 1.37)
+        {
+            (double topo, _, _) = SpeedFormatter.EscalaRedonda(pico, ModoUnidadeVelocidade.BytesPorSegundo);
+            Assert.InRange(topo / pico, 1.0, 2.6);
+        }
+    }
+
     [Fact]
     public void Formato_SepararNumeroEUnidade() =>
         Assert.Equal(("38,7", "MB/s"), SpeedFormatter.SepararNumeroEUnidade("38,7 MB/s"));

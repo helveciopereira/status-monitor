@@ -8,7 +8,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
  ↓ 38,7 MB/s     ← vermelho (download)
 ```
 
-> Status: **Ondas 0 e 1 concluídas; painel rápido (Onda 2) e estúdio de cores (Onda 3) entregues em boa parte** · versão **0.2.0** · 2026-10-31
+> Status: **Ondas 0, 1 e 2 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.3.0** · 2026-10-31
 >
 > **Como usar:** rode `dist\VelocimetroInternet.exe` (gerado por `tools\publicar.ps1`). Clique no widget = painel
 > rápido; clique direito (widget ou ícone perto do relógio) = menu; "Cores e mais configurações" = estúdio.

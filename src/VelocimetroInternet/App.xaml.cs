@@ -42,6 +42,12 @@ public partial class App : Application
     /// <summary>Medidor recriado quando muda filtro de interfaces ou suavização (lido pelo loop).</summary>
     private volatile MedidorAtual? _medidor;
 
+    /// <summary>
+    /// "Pausar medição" do menu (v0.3.0). Só vale na sessão — reabrir o app volta a medir,
+    /// para ninguém esquecer o velocímetro parado para sempre.
+    /// </summary>
+    private volatile bool _pausado;
+
     private sealed record MedidorAtual(NetworkSampler Sampler, SpeedCalculator Calculadora);
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -287,7 +293,21 @@ public partial class App : Application
             return nint.Zero;
         }
 
-        // 3) Tema claro/escuro alterado nas Configurações do Windows
+        // 3) Voltou de suspensão/hibernação: linha de base nova (a média móvel não pode carregar
+        //    o valor de antes de dormir) e reencaixe (a barra pode ter mudado de monitor/DPI)
+        if (msg == NativeMethods.WM_POWERBROADCAST && wParam == NativeMethods.PBT_APMRESUMEAUTOMATIC)
+        {
+            RegistrarLog("Retomada após suspensão: medidor reiniciado e widget reencaixado.");
+            RecriarMedidor(_config.Atual);
+            if (_host is not null)
+            {
+                _ = _host.AtualizarPosicaoAsync(forcarReencaixe: true);
+            }
+
+            return nint.Zero;
+        }
+
+        // 4) Tema claro/escuro alterado nas Configurações do Windows
         if (msg == NativeMethods.WM_SETTINGCHANGE && lParam != nint.Zero
             && Marshal.PtrToStringUni(lParam) == TemaWindows.SinalMudancaTema)
         {
@@ -401,6 +421,10 @@ public partial class App : Application
         itemFixar.Click += (_, _) => _config.Alterar(c => c.FixarNaBarra = !c.FixarNaBarra);
         menu.Items.Add(itemFixar);
 
+        var itemPausar = new MenuItem { Header = "Pausar medição", IsChecked = _pausado };
+        itemPausar.Click += (_, _) => DefinirPausa(!_pausado);
+        menu.Items.Add(itemPausar);
+
         var itemInicio = new MenuItem { Header = "Iniciar com o Windows", IsChecked = _inicio.EstaLigado() };
         itemInicio.Click += (_, _) => DefinirInicioComWindows(!_inicio.EstaLigado());
         menu.Items.Add(itemInicio);
@@ -429,6 +453,23 @@ public partial class App : Application
         }
 
         menu.IsOpen = true;
+    }
+
+    /// <summary>Pausa/retoma. Ao retomar, linha de base nova — senão o 1º tick somaria a pausa toda.</summary>
+    private void DefinirPausa(bool pausar)
+    {
+        _pausado = pausar;
+        if (pausar)
+        {
+            _widget?.MostrarPausado();
+            _bandeja?.DefinirDica("Velocímetro de Internet — medição pausada");
+        }
+        else
+        {
+            RecriarMedidor(_config.Atual);
+        }
+
+        RegistrarLog(pausar ? "Medição pausada pelo usuário." : "Medição retomada.");
     }
 
     private void DefinirInicioComWindows(bool ligar)
@@ -477,7 +518,7 @@ public partial class App : Application
                 ultimoInstante = agora;
 
                 MedidorAtual? medidor = _medidor;
-                if (medidor is null)
+                if (medidor is null || _pausado)
                 {
                     continue;
                 }

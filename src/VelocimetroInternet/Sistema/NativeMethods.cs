@@ -117,6 +117,10 @@ public static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetMonitorInfoW(nint hMonitor, ref MONITORINFO lpmi);
 
+    /// <summary>Aviso de energia; com PBT_APMRESUMEAUTOMATIC = o PC voltou de suspensão/hibernação.</summary>
+    public const int WM_POWERBROADCAST = 0x0218;
+    public static readonly nint PBT_APMRESUMEAUTOMATIC = 0x0012;
+
     /// <summary>Repassa o direito de trazer janela para frente a outro processo (2ª → 1ª instância).</summary>
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

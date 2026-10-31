@@ -137,7 +137,20 @@
                         <TextBlock x:Name="TextoLink" HorizontalAlignment="Right" FontSize="11"
                                    Foreground="{DynamicResource Tema.Acento}" Text="" />
                     </Grid>
-                    <Canvas x:Name="Grafico" Height="72" ClipToBounds="True" SizeChanged="AoMudarTamanhoGrafico">
+                    <!--
+                        v0.3.0: linhas-guia de referência. O topo do gráfico é um valor REDONDO
+                        (1-2-5: 1 MB/s, 20 Mbps…) e a linha do meio é a metade — dá noção de grandeza
+                        de relance. Ficam ATRÁS das curvas e com rótulo pequeno à esquerda.
+                    -->
+                    <Canvas x:Name="Grafico" Height="84" ClipToBounds="True" SizeChanged="AoMudarTamanhoGrafico">
+                        <Line x:Name="GuiaTopo" Stroke="{DynamicResource Tema.TextoSecundario}" StrokeThickness="1"
+                              StrokeDashArray="3 3" Opacity="0.55" Visibility="Collapsed" />
+                        <Line x:Name="GuiaMeio" Stroke="{DynamicResource Tema.TextoSecundario}" StrokeThickness="1"
+                              StrokeDashArray="1 4" Opacity="0.4" Visibility="Collapsed" />
+                        <TextBlock x:Name="RotuloTopo" FontSize="10" Foreground="{DynamicResource Tema.TextoSecundario}"
+                                   Visibility="Collapsed" AutomationProperties.Name="EscalaTopoGrafico" />
+                        <TextBlock x:Name="RotuloMeio" FontSize="10" Foreground="{DynamicResource Tema.TextoSecundario}"
+                                   Opacity="0.85" Visibility="Collapsed" />
                         <Path x:Name="AreaDownload" Fill="{DynamicResource Painel.DownloadVeu}" />
                         <Path x:Name="LinhaDownload" Stroke="{DynamicResource Painel.Download}" StrokeThickness="1.5"
                               StrokeLineJoin="Round" />
@@ -145,8 +158,16 @@
                         <Path x:Name="LinhaUpload" Stroke="{DynamicResource Painel.Upload}" StrokeThickness="1.5"
                               StrokeLineJoin="Round" />
                     </Canvas>
-                    <TextBlock x:Name="TextoEscala" FontSize="10" Margin="0,4,0,0" Style="{StaticResource Rotulo}"
-                               Text="Aguardando amostras…" />
+                    <!-- Legenda das cores + estado (aguardando amostras) -->
+                    <Grid Margin="0,6,0,0">
+                        <TextBlock FontSize="10" Foreground="{DynamicResource Tema.TextoSecundario}">
+                            <Run Text="━" Foreground="{DynamicResource Painel.Upload}" /> <Run Text="Envio" />
+                            <Run Text="   " />
+                            <Run Text="━" Foreground="{DynamicResource Painel.Download}" /> <Run Text="Download" />
+                        </TextBlock>
+                        <TextBlock x:Name="TextoEscala" FontSize="10" HorizontalAlignment="Right" Style="{StaticResource Rotulo}"
+                                   Text="Aguardando amostras…" />
+                    </Grid>
                 </StackPanel>
             </Border>
 
