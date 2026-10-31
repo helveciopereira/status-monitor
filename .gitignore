@@ -1,0 +1,21 @@
+# Compilação .NET / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Pp]ub/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+project.lock.json
+project.assets.json
+*.nuget.props
+*.nuget.targets
+
+# Backups locais (convenção da casa)
+backup/
+*.bak
+*.tmp
+
+# Artefatos de captura temporários
+capturas/

@@ -1,0 +1,905 @@
+﻿<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NetTraffic Monitor WPF .NET 10 — Telemetria Técnica &amp; HUD de Precisão</title>
+<!-- Fontes Oficiais do Windows 11 e Família Monoespacial Técnica -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Segoe+UI+Variable+Static+Display:wght@400;600;700&amp;family=Segoe+UI+Variable+Static+Small:wght@400;500;600&amp;family=Segoe+UI+Variable+Static+Text:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined (Literal) -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS com Plugins Form e Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#ffb3b0",
+            "on-secondary": "#68000f",
+            "outline-variant": "#3e484f",
+            "outline": "#88929a",
+            "surface-container-low": "#1b1c1c",
+            "primary-fixed": "#c6e7ff",
+            "surface-dim": "#131313",
+            "primary": "#a1daff",
+            "on-error-container": "#ffdad6",
+            "on-surface": "#e5e2e1",
+            "on-primary-container": "#004d6d",
+            "on-error": "#690005",
+            "error": "#ffb4ab",
+            "inverse-primary": "#00658d",
+            "on-surface-variant": "#bdc8d1",
+            "on-primary-fixed-variant": "#004c6b",
+            "surface-tint": "#81cfff",
+            "surface-bright": "#393939",
+            "secondary-fixed": "#ffdad8",
+            "primary-fixed-dim": "#81cfff",
+            "surface-container-highest": "#353535",
+            "on-secondary-container": "#ff9e9b",
+            "primary-container": "#4cc2ff",
+            "on-tertiary-fixed": "#002201",
+            "tertiary-fixed-dim": "#7cdc6e",
+            "tertiary-fixed": "#97f987",
+            "on-primary-fixed": "#001e2d",
+            "on-tertiary-fixed-variant": "#005306",
+            "background": "#131313",
+            "surface-variant": "#353535",
+            "on-secondary-fixed": "#410006",
+            "on-background": "#e5e2e1",
+            "inverse-on-surface": "#303030",
+            "on-secondary-fixed-variant": "#8c1520",
+            "tertiary": "#88e979",
+            "surface-container": "#202020",
+            "tertiary-container": "#6dcc60",
+            "surface-container-lowest": "#0e0e0e",
+            "secondary-container": "#901822",
+            "on-tertiary": "#003a03",
+            "error-container": "#93000a",
+            "secondary": "#ffb3b0",
+            "on-tertiary-container": "#005506",
+            "surface": "#131313",
+            "inverse-surface": "#e5e2e1",
+            "on-primary": "#00344b",
+            "surface-container-high": "#2a2a2a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-lg": "1rem",
+            "gutter": "0.75rem",
+            "margin-window": "1rem",
+            "margin": "1.5rem",
+            "gutter-compact": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "space-xxl": "2rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body": ["Segoe UI Variable", "sans-serif"],
+            "title-lg": ["Segoe UI Variable", "sans-serif"],
+            "title": ["Segoe UI Variable", "sans-serif"],
+            "tabular-metric-lg": ["JetBrains Mono", "Cascadia Mono", "monospace"],
+            "body-strong": ["Segoe UI Variable", "sans-serif"],
+            "caption": ["Segoe UI Variable", "sans-serif"],
+            "subtitle": ["Segoe UI Variable", "sans-serif"],
+            "tabular-metric-sm": ["JetBrains Mono", "Cascadia Mono", "monospace"],
+            "display": ["Segoe UI Variable", "sans-serif"],
+            "caption-strong": ["Segoe UI Variable", "sans-serif"],
+            "body-large": ["Segoe UI Variable", "sans-serif"],
+            "mono": ["JetBrains Mono", "Cascadia Mono", "Consolas", "monospace"]
+          },
+          "fontSize": {
+            "body": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "title-lg": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+            "title": ["20px", { "lineHeight": "26px", "fontWeight": "600" }],
+            "tabular-metric-lg": ["24px", { "lineHeight": "30px", "letterSpacing": "0px", "fontWeight": "600" }],
+            "body-strong": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "subtitle": ["16px", { "lineHeight": "22px", "fontWeight": "600" }],
+            "tabular-metric-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "400" }],
+            "display": ["40px", { "lineHeight": "52px", "fontWeight": "600" }],
+            "caption-strong": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+            "body-large": ["16px", { "lineHeight": "22px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    /* Mica & Acrylic layer simulation */
+    .mica-window {
+      background: radial-gradient(130% 90% at 50% 0%, #20242b 0%, #15181d 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface select-none font-body text-body antialiased overflow-hidden h-screen w-screen flex flex-col justify-between">
+<!-- ========================================================================= -->
+<!-- 1. TOPO DA APLICAÇÃO WPF: TopNavBar (Conforme Shared Components JSON)     -->
+<!-- ========================================================================= -->
+<header class="bg-surface-container-low border-b border-outline-variant/30 flex justify-between items-center w-full px-space-md h-12 select-none z-30 flex-shrink-0">
+<!-- Brand Anchor & Nome do Produto -->
+<div class="flex items-center gap-space-sm text-subtitle font-subtitle text-on-surface">
+<div class="w-6 h-6 rounded bg-primary-container/20 border border-primary-container/40 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+</div>
+<span class="tracking-tight text-on-surface font-body-strong text-body">NetTraffic Monitor WPF .NET 10</span>
+<span class="ml-2 px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-surface-variant text-primary border border-outline-variant/40">v10.0.12-preview</span>
+</div>
+<!-- Links de Navegação da TopBar -->
+<nav class="hidden md:flex items-center space-x-6 text-body font-body">
+<a class="text-primary border-b-2 border-primary pb-1 font-body-strong hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150" href="#overview">Overview</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-colors duration-150" href="#adapters">Adapters</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-colors duration-150" href="#diagnostics">Diagnostics</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-colors duration-150" href="#wcag">WCAG Tools</a>
+</nav>
+<!-- Barra de Pesquisa & Controles da Janela do Windows 11 -->
+<div class="flex items-center gap-space-sm">
+<div class="relative hidden sm:flex items-center">
+<span class="material-symbols-outlined absolute left-2 text-on-surface-variant text-[14px]">search</span>
+<input class="bg-surface-container text-body text-[12px] pl-7 pr-3 py-1 rounded border border-outline-variant/40 focus:border-primary-container focus:ring-0 outline-none w-44 placeholder-on-surface-variant/60" placeholder="Filtrar telemetria..." type="text"/>
+</div>
+<!-- Caption Controls Nativo Win11 -->
+<div class="flex items-center ml-2 border-l border-outline-variant/30 pl-2">
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-bright/30 hover:text-on-surface rounded transition-colors" title="Minimizar">
+<span class="material-symbols-outlined text-[16px]">minimize</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-bright/30 hover:text-on-surface rounded transition-colors" title="Maximizar / Restaurar">
+<span class="material-symbols-outlined text-[14px]">crop_square</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error rounded transition-colors" title="Fechar">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</header>
+<!-- ========================================================================= -->
+<!-- 2. CANVAS PRINCIPAL COM SIDEBAR: Layout WPF Client Desktop                 -->
+<!-- ========================================================================= -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- SideNavBar (Conforme Shared Components JSON) -->
+<aside class="bg-surface-container-low border-r border-outline-variant/30 flex flex-col justify-between h-full p-space-sm w-60 select-none flex-shrink-0 z-20">
+<div class="flex flex-col gap-1">
+<!-- Cabeçalho do Trilho Lateral -->
+<div class="px-space-sm py-space-sm mb-1 flex items-center justify-between border-b border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-alt="Network Adapter Telemetry Icon">lan</span>
+<div>
+<div class="text-subtitle font-subtitle text-primary text-[14px] leading-tight">NIC Monitor</div>
+<div class="text-[11px] text-on-surface-variant font-mono">.NET 10 Core Engine</div>
+</div>
+</div>
+</div>
+<!-- 5 Tabs do SideNav com Active State em 'Dashboard Telemetry' -->
+<div class="space-y-1">
+<!-- Tab 1 (Ativa por Intenção da Página) -->
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded bg-surface-variant/50 text-primary font-body-strong relative before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-primary before:rounded-full hover:bg-surface-bright/20 transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+<span class="text-body text-[13px]">Dashboard Telemetry</span>
+</button>
+<!-- Tab 2 -->
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded text-on-surface-variant hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">lan</span>
+<span class="text-body text-[13px]">Interface Bandwidth</span>
+</button>
+<!-- Tab 3 -->
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded text-on-surface-variant hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">widgets</span>
+<span class="text-body text-[13px]">Widget Gallery</span>
+</button>
+<!-- Tab 4 -->
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded text-on-surface-variant hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">contrast</span>
+<span class="text-body text-[13px]">WCAG Contrast</span>
+</button>
+<!-- Tab 5 -->
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded text-on-surface-variant hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+<span class="text-body text-[13px]">Settings</span>
+</button>
+</div>
+<!-- CTA "Refresh Adapters" -->
+<div class="mt-4 px-1">
+<button class="w-full py-1.5 px-3 bg-surface-variant/40 hover:bg-surface-bright/30 border border-outline-variant/30 text-on-surface text-[12px] font-body-strong rounded flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[15px] text-primary">sync</span>
+<span>Refresh Adapters</span>
+</button>
+</div>
+</div>
+<!-- Rodapé do SideNav -->
+<div class="border-t border-outline-variant/20 pt-2">
+<button class="w-full flex items-center gap-3 px-3 py-2 text-left rounded text-on-surface-variant hover:bg-surface-bright/20 hover:text-on-surface transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+<span class="text-body text-[13px]">Help &amp; Feedback</span>
+</button>
+</div>
+</aside>
+<!-- Área de Conteúdo / Canvas Principal (Rolagem Independente) -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-28 mica-window">
+<!-- Cabeçalho do Workspace Dev -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-outline-variant/30 pb-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-primary-container/15 text-primary border border-primary/30">WPF XAML .NET 10</span>
+<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-tertiary/15 text-tertiary border border-tertiary/30">Win32 IPHLPAPI Driver</span>
+</div>
+<h1 class="text-title-lg font-title-lg text-on-surface mt-1">NetTraffic Dev Studio · HUD &amp; Telemetria de Engenharia</h1>
+<p class="text-caption font-caption text-on-surface-variant">Pipeline P/Invoke nativo assíncrono para amostragem em microsegundos com sobreposição de HUD em taskbar Win11.</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="bg-surface-container border border-outline-variant/40 rounded px-3 py-1.5 flex items-center gap-3">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-caption font-mono text-on-surface-variant">Taxa de Polling: <span class="text-on-surface font-semibold">1.000 ms</span></span>
+</div>
+<button class="bg-primary-container text-black font-body-strong text-body px-3 py-1.5 rounded border border-outline-variant/30 hover:bg-primary-fixed-dim transition-colors flex items-center gap-1.5 text-[13px]">
+<span class="material-symbols-outlined text-[16px]">code</span>
+<span>Exportar DataTemplate</span>
+</button>
+</div>
+</div>
+<!-- ===================================================================== -->
+<!-- SEÇÃO 1: Comparativo de Layouts do Widget de Barra (Templates XAML)     -->
+<!-- ===================================================================== -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-title font-title text-on-surface">Comparativo de Layouts do Widget de Barra</h2>
+<p class="text-caption font-caption text-on-surface-variant">4 DataTemplates XAML desenvolvidos para docking de alto desempenho na Taskbar do Windows 11.</p>
+</div>
+<span class="text-caption font-mono text-primary bg-surface-container px-2.5 py-1 rounded border border-outline-variant/30">Target: ~88px × 40px</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Template V1: Clássico Tabular -->
+<div class="bg-surface-container rounded-lg p-4 border border-outline-variant/30 flex flex-col justify-between hover:border-primary/50 transition-all group">
+<div>
+<div class="flex items-center justify-between text-caption font-caption text-on-surface-variant mb-2">
+<span class="font-semibold text-on-surface">(V1) Clássico Tabular</span>
+<span class="text-[10px] font-mono px-1 rounded bg-surface-variant">Align-Right</span>
+</div>
+<p class="text-[12px] text-on-surface-variant mb-3">Números com glifos direcionais em grade rígida monospaçada.</p>
+<!-- Preview HUD Zoomed -->
+<div class="bg-[#141619] p-3 rounded border border-[#2D3748] flex items-center justify-center mb-3">
+<div class="w-[88px] h-[38px] bg-[#1F242C] rounded border border-[#2D3748] px-2 py-1 flex flex-col justify-center font-mono text-[11px] leading-tight">
+<div class="flex items-center justify-between text-[#4CC2FF]">
+<span>↑</span>
+<span class="tracking-tight font-medium">1,24 Mbps</span>
+</div>
+<div class="flex items-center justify-between text-[#FF6B6B]">
+<span>↓</span>
+<span class="tracking-tight font-medium">38,70 Mbps</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-1.5 text-[12px] font-body text-primary hover:bg-surface-bright/20 border border-primary/30 rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copiar XAML (V1)</span>
+</button>
+</div>
+<!-- Template V2: Micro-Barras de Intensidade (O Escolhido Ativo no Shell) -->
+<div class="bg-surface-container rounded-lg p-4 border border-primary-container/60 shadow-lg relative flex flex-col justify-between group">
+<span class="absolute -top-2 right-3 text-[10px] font-semibold bg-primary-container text-black px-2 py-0.5 rounded-full uppercase tracking-wider">HUD Ativo</span>
+<div>
+<div class="flex items-center justify-between text-caption font-caption text-on-surface-variant mb-2">
+<span class="font-semibold text-primary">(V2) Micro-Barras de Intensidade</span>
+<span class="text-[10px] font-mono px-1 rounded bg-primary/20 text-primary">Ativo</span>
+</div>
+<p class="text-[12px] text-on-surface-variant mb-3">Colunas verticais medidoras de saturação do link (3px de espessura).</p>
+<!-- Preview HUD Zoomed -->
+<div class="bg-[#141619] p-3 rounded border border-[#2D3748] flex items-center justify-center mb-3">
+<div class="w-[88px] h-[38px] bg-[#1F242C] rounded border border-[#2D3748] px-1.5 py-0.5 flex flex-col justify-center font-mono text-[11px] leading-tight shadow-inner">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1 text-[#4CC2FF]">
+<span class="text-[9px]">↑</span>
+<span class="font-medium text-[10.5px]">1,24 Mbps</span>
+</div>
+<div class="w-[3px] h-[12px] bg-surface-variant rounded-sm overflow-hidden flex flex-col justify-end">
+<div class="w-full bg-[#4CC2FF] h-[35%]"></div>
+</div>
+</div>
+<div class="flex items-center justify-between gap-1 mt-0.5">
+<div class="flex items-center gap-1 text-[#FF6B6B]">
+<span class="text-[9px]">↓</span>
+<span class="font-medium text-[10.5px]">38,70 Mbps</span>
+</div>
+<div class="w-[3px] h-[12px] bg-surface-variant rounded-sm overflow-hidden flex flex-col justify-end">
+<div class="w-full bg-[#FF6B6B] h-[78%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-1.5 text-[12px] font-body bg-primary-container/20 text-primary hover:bg-primary-container/30 border border-primary-container/50 rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copiar XAML (V2)</span>
+</button>
+</div>
+<!-- Template V3: Mini-Sparkline de Fundo -->
+<div class="bg-surface-container rounded-lg p-4 border border-outline-variant/30 flex flex-col justify-between hover:border-primary/50 transition-all group">
+<div>
+<div class="flex items-center justify-between text-caption font-caption text-on-surface-variant mb-2">
+<span class="font-semibold text-on-surface">(V3) Mini-Sparkline Fundo</span>
+<span class="text-[10px] font-mono px-1 rounded bg-surface-variant">SVG Wave</span>
+</div>
+<p class="text-[12px] text-on-surface-variant mb-3">Onda gráfica vetorial suave semipenetrável por trás do texto numérico.</p>
+<!-- Preview HUD Zoomed -->
+<div class="bg-[#141619] p-3 rounded border border-[#2D3748] flex items-center justify-center mb-3">
+<div class="relative w-[88px] h-[38px] bg-[#1F242C] rounded border border-[#2D3748] px-2 py-1 flex flex-col justify-center font-mono text-[11px] leading-tight overflow-hidden">
+<svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" preserveaspectratio="none" viewbox="0 0 88 38">
+<path d="M0,28 Q15,10 30,22 T60,8 T88,18 L88,38 L0,38 Z" fill="#4CC2FF"></path>
+</svg>
+<div class="relative z-10 flex items-center justify-between text-[#4CC2FF]">
+<span>↑</span>
+<span class="font-medium">1,24 M</span>
+</div>
+<div class="relative z-10 flex items-center justify-between text-[#FF6B6B]">
+<span>↓</span>
+<span class="font-medium">38,70 M</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-1.5 text-[12px] font-body text-primary hover:bg-surface-bright/20 border border-primary/30 rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copiar XAML (V3)</span>
+</button>
+</div>
+<!-- Template V4: Modo Compacto 1-Linha -->
+<div class="bg-surface-container rounded-lg p-4 border border-outline-variant/30 flex flex-col justify-between hover:border-primary/50 transition-all group">
+<div>
+<div class="flex items-center justify-between text-caption font-caption text-on-surface-variant mb-2">
+<span class="font-semibold text-on-surface">(V4) Compacto 1-Linha</span>
+<span class="text-[10px] font-mono px-1 rounded bg-surface-variant">Anti-Colisão</span>
+</div>
+<p class="text-[12px] text-on-surface-variant mb-3">Layout horizontal inline para taskbars com dezenas de instâncias abertas.</p>
+<!-- Preview HUD Zoomed -->
+<div class="bg-[#141619] p-3 rounded border border-[#2D3748] flex items-center justify-center mb-3">
+<div class="w-[88px] h-[38px] bg-[#1F242C] rounded border border-[#2D3748] px-1.5 flex items-center justify-center font-mono text-[10px] tracking-tighter leading-none">
+<div class="flex items-center gap-1">
+<span class="text-[#4CC2FF] font-medium">↑1,2M</span>
+<span class="text-outline-variant">|</span>
+<span class="text-[#FF6B6B] font-medium">↓38,7M</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-1.5 text-[12px] font-body text-primary hover:bg-surface-bright/20 border border-primary/30 rounded flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copiar XAML (V4)</span>
+</button>
+</div>
+</div>
+</section>
+<!-- ===================================================================== -->
+<!-- SEÇÃO 2: Parâmetros de Engenharia & Amostragem (Controles Fluent)      -->
+<!-- ===================================================================== -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Bloco de Ajustes da Engine .NET 10 -->
+<div class="lg:col-span-7 bg-surface-container rounded-lg p-5 border border-outline-variant/30 space-y-4">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h2 class="text-subtitle font-subtitle text-on-surface">Parâmetros de Engenharia &amp; Amostragem</h2>
+</div>
+<span class="text-caption font-mono text-tertiary">Engine: High-Precision QPC</span>
+</div>
+<!-- Controle de Amostragem (Pills) -->
+<div>
+<label class="block text-body-strong font-body-strong text-on-surface mb-2">Intervalo de Amostragem (Polling)</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 px-3 rounded bg-surface-variant/40 hover:bg-surface-bright/20 border border-outline-variant/40 text-caption font-body text-center transition-colors">
+<div class="font-mono font-semibold text-on-surface">500 ms</div>
+<div class="text-[11px] text-on-surface-variant">Alta Taxa (Dev/Lab)</div>
+</button>
+<button class="py-2 px-3 rounded bg-primary-container/20 border border-primary text-caption font-body text-center transition-colors">
+<div class="font-mono font-semibold text-primary">1000 ms</div>
+<div class="text-[11px] text-primary/80">Padrão Win11 HUD</div>
+</button>
+<button class="py-2 px-3 rounded bg-surface-variant/40 hover:bg-surface-bright/20 border border-outline-variant/40 text-caption font-body text-center transition-colors">
+<div class="font-mono font-semibold text-on-surface">2000 ms</div>
+<div class="text-[11px] text-on-surface-variant">Econômico (Bateria)</div>
+</button>
+</div>
+</div>
+<!-- Histerese & Unidade -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+<div>
+<label class="block text-caption-strong font-caption-strong text-on-surface mb-1">Escalonamento de Unidades</label>
+<select class="w-full bg-surface-container-high border border-outline-variant/50 rounded py-1.5 px-3 text-body font-mono text-[13px] text-on-surface focus:border-primary">
+<option selected="">Auto-Scale (bps → Kbps → Mbps → Gbps)</option>
+<option>Forçar sempre em Mbps (Padrão HUD)</option>
+<option>Bytes/segundo (KB/s · MB/s)</option>
+</select>
+</div>
+<div>
+<label class="block text-caption-strong font-caption-strong text-on-surface mb-1">Tratamento Anti-Dupla Contagem</label>
+<div class="flex items-center gap-2 mt-2">
+<input checked="" class="w-4 h-4 rounded text-primary-container bg-surface-variant border-outline-variant focus:ring-0" type="checkbox"/>
+<span class="text-caption font-body text-on-surface-variant">Ignorar túneis VPN &amp; WSL vEthernet</span>
+</div>
+</div>
+</div>
+<!-- Suavização Exponencial (EMA) -->
+<div class="pt-2 border-t border-outline-variant/20">
+<div class="flex items-center justify-between mb-1">
+<span class="text-caption-strong font-caption-strong text-on-surface">Suavização Exponencial (EMA α = 0,50)</span>
+<span class="text-caption font-mono text-primary">Fator Alpha: 0.50</span>
+</div>
+<input class="w-full h-1 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-[#4CC2FF]" max="10" min="1" type="range" value="5"/>
+<div class="flex justify-between text-[11px] font-mono text-on-surface-variant mt-1">
+<span>0.1 (Máx. Suavizado / Menos Ruído)</span>
+<span>1.0 (Cru / Telemetria Pura)</span>
+</div>
+</div>
+</div>
+<!-- Bloco de Arquitetura Técnica P/Invoke -->
+<div class="lg:col-span-5 bg-surface-container rounded-lg p-5 border border-outline-variant/30 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">memory</span>
+<h3 class="text-subtitle font-subtitle text-on-surface">P/Invoke Native Pipeline</h3>
+</div>
+<span class="text-[11px] font-mono px-2 py-0.5 rounded bg-surface-variant text-on-surface">C# 13 Unsafe</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded font-mono text-[11px] leading-relaxed text-on-surface-variant border border-outline-variant/20 space-y-1">
+<div><span class="text-[#FF6B6B]">fixed</span> (<span class="text-[#4CC2FF]">MIB_IF_TABLE2*</span> pTable = &amp;buffer) {</div>
+<div class="pl-4 text-outline">// Amostragem direta de kernel sem WMI</div>
+<div class="pl-4"><span class="text-[#4CC2FF]">uint</span> res = <span class="text-tertiary">GetIfTable2</span>(out pTable);</div>
+<div class="pl-4">deltaIn = pTable-&gt;InOctets - prevIn;</div>
+<div class="pl-4">mbpsIn = (deltaIn * 8) / (deltaTime * 1000000.0);</div>
+<div>}</div>
+</div>
+<div class="mt-3 space-y-2">
+<div class="flex justify-between text-caption text-on-surface-variant">
+<span>Consumo de CPU em Background:</span>
+<span class="font-mono text-tertiary">&lt; 0.04%</span>
+</div>
+<div class="flex justify-between text-caption text-on-surface-variant">
+<span>Alocação de Memória (GC Heap):</span>
+<span class="font-mono text-tertiary">0 B/amostra (Zero Alloc)</span>
+</div>
+</div>
+</div>
+<div class="pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="text-[11px] text-on-surface-variant font-mono">Status: Win32 API Ok</span>
+<span class="flex items-center gap-1.5 text-[11px] text-tertiary font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              Driver Conectado
+            </span>
+</div>
+</div>
+</section>
+<!-- ===================================================================== -->
+<!-- SEÇÃO 3: Matriz de Cores & Auditoria WCAG 2.1 (Acessibilidade)         -->
+<!-- ===================================================================== -->
+<section class="bg-surface-container rounded-lg p-5 border border-outline-variant/30 space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">contrast</span>
+<h2 class="text-subtitle font-subtitle text-on-surface">Matriz de Cores &amp; Auditoria WCAG 2.1</h2>
+</div>
+<p class="text-caption font-caption text-on-surface-variant">Validação ótica para conformidade com displays HDR e modos Claro/Escuro do Windows 11.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded text-[11px] font-mono bg-tertiary/20 text-tertiary border border-tertiary/40">100% WCAG AAA Compliant</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Teste 1: Fundo Escuro Barra #141619 -->
+<div class="bg-[#141619] p-3.5 rounded border border-[#2D3748] space-y-2">
+<div class="flex justify-between items-center text-[11px] font-mono text-outline">
+<span>Dark Taskbar (#141619)</span>
+<span class="text-tertiary font-bold">AAA</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#4CC2FF] font-semibold text-body">↑ 1,24 Mbps</span>
+<span class="text-[11px] text-[#4CC2FF] bg-[#4CC2FF]/10 px-1.5 py-0.5 rounded">9.2 : 1</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#FF6B6B] font-semibold text-body">↓ 38,70 Mbps</span>
+<span class="text-[11px] text-[#FF6B6B] bg-[#FF6B6B]/10 px-1.5 py-0.5 rounded">7.4 : 1</span>
+</div>
+</div>
+<!-- Teste 2: Fundo Widget Dock #1F242C -->
+<div class="bg-[#1F242C] p-3.5 rounded border border-[#2D3748] space-y-2">
+<div class="flex justify-between items-center text-[11px] font-mono text-outline">
+<span>Widget Hull (#1F242C)</span>
+<span class="text-tertiary font-bold">AAA</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#4CC2FF] font-semibold text-body">↑ 1,24 Mbps</span>
+<span class="text-[11px] text-[#4CC2FF] bg-[#4CC2FF]/10 px-1.5 py-0.5 rounded">8.6 : 1</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#FF6B6B] font-semibold text-body">↓ 38,70 Mbps</span>
+<span class="text-[11px] text-[#FF6B6B] bg-[#FF6B6B]/10 px-1.5 py-0.5 rounded">7.1 : 1</span>
+</div>
+</div>
+<!-- Teste 3: Modo Claro Windows #F3F3F3 -->
+<div class="bg-[#F3F3F3] p-3.5 rounded border border-gray-300 space-y-2 text-black">
+<div class="flex justify-between items-center text-[11px] font-mono text-gray-600">
+<span>Light Mode (#F3F3F3)</span>
+<span class="text-green-700 font-bold">AAA</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#005B94] font-semibold text-body">↑ 1,24 Mbps</span>
+<span class="text-[11px] text-[#005B94] bg-[#005B94]/10 px-1.5 py-0.5 rounded">7.8 : 1</span>
+</div>
+<div class="flex items-center justify-between font-mono">
+<span class="text-[#C51A1A] font-semibold text-body">↓ 38,70 Mbps</span>
+<span class="text-[11px] text-[#C51A1A] bg-[#C51A1A]/10 px-1.5 py-0.5 rounded">8.2 : 1</span>
+</div>
+</div>
+<!-- Teste 4: Seletor de Paleta do Usuário -->
+<div class="bg-surface-container-high p-3.5 rounded border border-outline-variant/30 flex flex-col justify-between">
+<div>
+<span class="text-caption-strong font-caption-strong text-on-surface block mb-1">Paleta Ativa do Monitor</span>
+<select class="w-full bg-surface-container border border-outline-variant/50 rounded py-1 px-2 text-[12px] font-body text-on-surface">
+<option selected="">Clássico Azul (#4CC2FF) / Coral (#FF6B6B)</option>
+<option>Cyber Neon (Aqua #00F5D4 / Magenta #F72585)</option>
+<option>Monocromático Técnico (Verde Fosfórico #00FF66)</option>
+<option>Alto Contraste Oficial Windows (Amarelo / Ciano)</option>
+</select>
+</div>
+<div class="text-[11px] text-on-surface-variant font-mono mt-2">
+              Divergência DeltaE &lt; 1.2
+            </div>
+</div>
+</div>
+</section>
+</main>
+<!-- ========================================================================= -->
+<!-- 3. FLYOUT / POPUP DE TELEMETRIA AO CLICAR (Task Manager Fluent Flutuante) -->
+<!-- ========================================================================= -->
+<div class="absolute bottom-14 right-4 w-[430px] max-h-[839px] bg-[#16191E]/95 backdrop-blur-2xl rounded-lg border border-[#2A303C] shadow-2xl p-4 z-40 flex flex-col gap-3.5 overflow-hidden transition-all duration-200" id="telemetry-flyout">
+<!-- Cabeçalho do Flyout Estilo Task Manager Dev -->
+<div class="flex items-start justify-between border-b border-[#2A303C] pb-3">
+<div class="space-y-0.5">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<h3 class="text-subtitle font-subtitle text-on-surface text-[14px]">Telemetria em Tempo Real</h3>
+</div>
+<div class="text-[12px] text-on-surface-variant flex items-center gap-2">
+<span>Wi-Fi 6 AX211</span>
+<span class="text-[#2A303C]">|</span>
+<span class="font-mono text-tertiary">802.11ax 1.2 Gbps Link</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-[10px] font-mono bg-surface-variant text-primary px-1.5 py-0.5 rounded border border-outline-variant/40">.NET 10 Native</span>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/30 rounded p-1 transition-colors" id="close-flyout">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<!-- Grade com 3 Cards de Métricas em Destaque -->
+<div class="grid grid-cols-3 gap-2">
+<!-- Card 1: Upload -->
+<div class="bg-[#1C2027] p-2.5 rounded border border-[#2D3748] flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-medium text-outline">Upload</span>
+<span class="material-symbols-outlined text-[14px] text-[#4CC2FF]">arrow_upward</span>
+</div>
+<div class="my-1">
+<div class="font-mono font-bold text-[16px] text-[#4CC2FF] leading-tight">1,24 <span class="text-[10px] font-normal">Mbps</span></div>
+</div>
+<div class="text-[9.5px] font-mono text-on-surface-variant leading-tight">
+<div>Pico: <span class="text-on-surface">18,4 M</span></div>
+<div>Méd: <span class="text-on-surface">820 K</span></div>
+</div>
+</div>
+<!-- Card 2: Download -->
+<div class="bg-[#1C2027] p-2.5 rounded border border-[#2D3748] flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-medium text-outline">Download</span>
+<span class="material-symbols-outlined text-[14px] text-[#FF6B6B]">arrow_downward</span>
+</div>
+<div class="my-1">
+<div class="font-mono font-bold text-[16px] text-[#FF6B6B] leading-tight">38,70 <span class="text-[10px] font-normal">Mbps</span></div>
+</div>
+<div class="text-[9.5px] font-mono text-on-surface-variant leading-tight">
+<div>Pico: <span class="text-on-surface">245,0 M</span></div>
+<div>Méd: <span class="text-on-surface">29,4 M</span></div>
+</div>
+</div>
+<!-- Card 3: Latência & Ping -->
+<div class="bg-[#1C2027] p-2.5 rounded border border-[#2D3748] flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-medium text-outline">Latência</span>
+<span class="material-symbols-outlined text-[14px] text-[#3FB950]">network_ping</span>
+</div>
+<div class="my-1">
+<div class="font-mono font-bold text-[16px] text-[#3FB950] leading-tight">11 <span class="text-[10px] font-normal">ms</span></div>
+</div>
+<div class="text-[9.5px] font-mono text-on-surface-variant leading-tight">
+<div>Jitter: <span class="text-on-surface">1,2 ms</span></div>
+<div class="truncate">DNS: 1.1.1.1</div>
+</div>
+</div>
+</div>
+<!-- Gráfico de Desempenho de 60 Segundos com Canvas Vetorial -->
+<div class="bg-[#1C2027] p-3 rounded border border-[#2D3748] space-y-2">
+<div class="flex items-center justify-between text-[11px]">
+<span class="font-mono text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">show_chart</span>
+            Histórico de 60 Segundos
+          </span>
+<div class="flex items-center bg-[#141619] rounded p-0.5 border border-[#2D3748] text-[10px] font-mono">
+<button class="px-2 py-0.5 rounded bg-surface-variant text-on-surface font-medium">Linear</button>
+<button class="px-2 py-0.5 text-on-surface-variant hover:text-on-surface">Logarítmico</button>
+</div>
+</div>
+<!-- Canvas Gráfico SVG com Linha Guia Tracejada e Picos -->
+<div class="relative h-28 w-full bg-[#13151A] rounded border border-[#252A33] overflow-hidden">
+<!-- Linhas de Grade de Precisão -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none p-1 opacity-25">
+<div class="w-full border-b border-dashed border-[#4CC2FF]/40 text-[9px] font-mono text-right text-outline">500 Mbps Link Contratado</div>
+<div class="w-full border-b border-gray-700"></div>
+<div class="w-full border-b border-gray-700"></div>
+<div class="w-full border-b border-gray-700 text-[9px] font-mono text-right text-outline">0 bps</div>
+</div>
+<!-- Gráfico SVG Vetorial em Tempo Real -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 400 110">
+<!-- Área e Linha de Download (Coral) -->
+<path d="M0,110 L0,95 L30,90 L60,70 L90,82 L120,45 L150,55 L180,30 L210,40 L240,25 L270,48 L300,35 L330,50 L360,20 L390,32 L400,32 L400,110 Z" fill="rgba(255, 107, 107, 0.12)"></path>
+<path d="M0,95 L30,90 L60,70 L90,82 L120,45 L150,55 L180,30 L210,40 L240,25 L270,48 L300,35 L330,50 L360,20 L390,32 L400,32" fill="none" stroke="#FF6B6B" stroke-linecap="round" stroke-width="2"></path>
+<!-- Área e Linha de Upload (Ciano) -->
+<path d="M0,110 L0,105 L30,103 L60,101 L90,98 L120,95 L150,92 L180,88 L210,94 L240,90 L270,92 L300,89 L330,93 L360,86 L390,89 L400,89 L400,110 Z" fill="rgba(76, 194, 255, 0.15)"></path>
+<path d="M0,105 L30,103 L60,101 L90,98 L120,95 L150,92 L180,88 L210,94 L240,90 L270,92 L300,89 L330,93 L360,86 L390,89 L400,89" fill="none" stroke="#4CC2FF" stroke-linecap="round" stroke-width="1.5"></path>
+<!-- Marcador de Pico Ao Vivo -->
+<circle cx="360" cy="20" fill="#FF6B6B" r="3.5" stroke="#ffffff" stroke-width="1.5"></circle>
+</svg>
+<!-- Label Flutuante do Marcador -->
+<div class="absolute top-2 right-12 bg-black/80 px-1.5 py-0.5 rounded border border-[#FF6B6B]/40 text-[9px] font-mono text-[#FF6B6B]">
+            Pico: 245 Mbps
+          </div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-mono text-outline-variant">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1 text-[#4CC2FF]"><span class="w-2 h-0.5 bg-[#4CC2FF]"></span> Upload</span>
+<span class="flex items-center gap-1 text-[#FF6B6B]"><span class="w-2 h-0.5 bg-[#FF6B6B]"></span> Download</span>
+</div>
+<span>Buffer: 60s @ 1Hz</span>
+</div>
+</div>
+<!-- Seção 'Auditoria de Interfaces de Rede (Win32 GetIfTable2)' -->
+<div class="space-y-2">
+<div class="flex items-center justify-between text-[11px] font-body-strong text-on-surface">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-primary">lan</span>
+            Auditoria de Interfaces (Win32 GetIfTable2)
+          </span>
+<span class="font-mono text-[10px] text-on-surface-variant">4 Encontradas</span>
+</div>
+<div class="space-y-1.5 font-mono text-[11px]">
+<!-- Interface 1: Wi-Fi 6 AX211 -->
+<div class="bg-[#1C2027] p-2 rounded border border-primary/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[16px]">wifi</span>
+<div>
+<div class="text-on-surface font-semibold text-[11.5px]">Wi-Fi 6 (Intel AX211 160MHz)</div>
+<div class="text-[9.5px] text-tertiary">Ativo · 802.11ax 1.2 Gbps</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-[#FF6B6B] font-bold">38,7 Mbps</div>
+<div class="text-[9.5px] text-on-surface-variant">MAC: E4:54:E8:..</div>
+</div>
+</div>
+<!-- Interface 2: Ethernet Realtek -->
+<div class="bg-[#1C2027]/70 p-2 rounded border border-[#2D3748] flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[16px]">settings_ethernet</span>
+<div>
+<div class="text-on-surface text-[11.5px]">Ethernet (Realtek 2.5GbE)</div>
+<div class="text-[9.5px] text-outline">Cabo Desconectado</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-outline font-semibold">0 bps</div>
+<div class="text-[9.5px] text-outline">Status 0x02</div>
+</div>
+</div>
+<!-- Interface 3: Tailscale Tunnel -->
+<div class="bg-[#181B22] p-1.5 px-2 rounded border border-[#252A33] flex items-center justify-between text-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[15px]">vpn_lock</span>
+<span class="text-[11px] text-on-surface-variant">Tailscale Tunnel (tun0)</span>
+</div>
+<span class="text-[9.5px] bg-surface-variant/40 text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30">Filtro Ativo: Ignorado</span>
+</div>
+<!-- Interface 4: Radmin VPN -->
+<div class="bg-[#181B22] p-1.5 px-2 rounded border border-[#252A33] flex items-center justify-between text-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[15px]">cloud_off</span>
+<span class="text-[11px] text-on-surface-variant">Radmin VPN Virtual Adapter</span>
+</div>
+<span class="text-[9.5px] bg-surface-variant/40 text-on-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30">Filtro Ativo: Ignorado</span>
+</div>
+</div>
+</div>
+<!-- Rodapé do Flyout -->
+<div class="pt-2 border-t border-[#2A303C] flex items-center justify-between text-[11px]">
+<button class="text-primary hover:underline flex items-center gap-1 font-body text-[12px]">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Configurar Filtros de NIC</span>
+</button>
+<span class="font-mono text-[10px] text-outline">P/Invoke SafeHandle: 0x7FF8A</span>
+</div>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- 4. BARRA DE TAREFAS DO WINDOWS 11 NA BASE: Taskbar Dock & HUD Widget      -->
+<!-- ========================================================================= -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-space-md h-12 select-none bg-[#141619]/90 backdrop-blur-xl border-t border-outline-variant/20 shadow-2xl flex-shrink-0">
+<!-- Lado Esquerdo: Widget de Clima / Espaço Neutro do Windows 11 -->
+<div class="flex items-center gap-2 w-48 text-caption text-on-surface-variant">
+<div class="flex items-center gap-2 px-2 py-1 rounded hover:bg-surface-bright/20 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-primary text-[20px]">partly_cloudy_day</span>
+<div class="leading-tight">
+<div class="text-[12px] font-semibold text-on-surface">24°C</div>
+<div class="text-[10px] text-on-surface-variant">Ensolarado</div>
+</div>
+</div>
+</div>
+<!-- Centro da Barra de Tarefas: Ícones Centralizados do Windows 11 -->
+<div class="flex items-center space-x-1">
+<!-- Iniciar -->
+<button class="w-10 h-10 flex items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all text-primary-container" title="Iniciar">
+<span class="material-symbols-outlined text-[22px]">grid_view</span>
+</button>
+<!-- Pesquisar -->
+<button class="w-10 h-10 flex items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all text-on-surface" title="Pesquisar">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</button>
+<!-- Copilot -->
+<button class="w-10 h-10 flex items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all text-primary" title="Microsoft Copilot">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</button>
+<!-- Visão de Tarefas (Task View) -->
+<button class="w-10 h-10 flex items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all text-on-surface" title="Visão de Tarefas">
+<span class="material-symbols-outlined text-[20px]">desktop_windows</span>
+</button>
+<!-- Explorador de Arquivos -->
+<button class="w-10 h-10 flex items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all text-secondary-fixed" title="Explorador de Arquivos">
+<span class="material-symbols-outlined text-[20px]">folder</span>
+</button>
+<!-- VS Code (Instância Ativa Indicada com Pill Inferior) -->
+<button class="w-10 h-10 flex flex-col items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all relative" title="Visual Studio Code">
+<span class="material-symbols-outlined text-[20px] text-primary">code</span>
+<span class="absolute bottom-1 w-3 h-0.5 bg-primary rounded-full"></span>
+</button>
+<!-- Windows Terminal -->
+<button class="w-10 h-10 flex flex-col items-center justify-center rounded hover:bg-surface-bright/20 active:scale-95 transition-all relative" title="Windows Terminal">
+<span class="material-symbols-outlined text-[20px] text-on-surface">terminal</span>
+<span class="absolute bottom-1 w-3 h-0.5 bg-primary rounded-full"></span>
+</button>
+<!-- NetTraffic WPF Monitor (App Atual Ativo) -->
+<button class="w-10 h-10 flex flex-col items-center justify-center rounded bg-surface-bright/30 active:scale-95 transition-all relative" title="NetTraffic WPF Monitor">
+<span class="material-symbols-outlined text-[20px] text-primary-container">speed</span>
+<span class="absolute bottom-1 w-4 h-0.5 bg-primary-container rounded-full"></span>
+</button>
+</div>
+<!-- Lado Direito: ÁREA DE NOTIFICAÇÕES & TRAY COM O HUD SPEEDOMETER WIDGET -->
+<div class="flex items-center space-x-1.5">
+<!-- =================================================================== -->
+<!-- O WIDGET DE VELOCÍMETRO TÉCNICO HUD (Ancorado à esquerda do chevron) -->
+<!-- =================================================================== -->
+<div class="cursor-pointer w-[88px] h-[38px] bg-[#1F242C] hover:bg-[#252B35] rounded border border-[#2D3748] px-1.5 py-0.5 flex flex-col justify-center font-mono select-none shadow-md transition-all active:scale-[0.98] group relative" id="hud-widget-trigger" title="Clique para alternar o Flyout de Telemetria Avançada">
+<!-- Linha 1: Upload (Ciano com micro-barra de carga 3px x 12px) -->
+<div class="flex items-center justify-between gap-1 leading-none">
+<div class="flex items-center gap-0.5 text-[#4CC2FF]">
+<span class="text-[9px] font-bold">↑</span>
+<span class="font-medium text-[10.5px] tracking-tight">1,24 Mbps</span>
+</div>
+<div class="w-[3px] h-[12px] bg-[#2A313C] rounded-sm overflow-hidden flex flex-col justify-end">
+<div class="w-full bg-[#4CC2FF] h-[35%]"></div>
+</div>
+</div>
+<!-- Linha 2: Download (Coral Red com micro-barra de carga 3px x 12px) -->
+<div class="flex items-center justify-between gap-1 leading-none mt-1">
+<div class="flex items-center gap-0.5 text-[#FF6B6B]">
+<span class="text-[9px] font-bold">↓</span>
+<span class="font-medium text-[10.5px] tracking-tight">38,70 Mbps</span>
+</div>
+<div class="w-[3px] h-[12px] bg-[#2A313C] rounded-sm overflow-hidden flex flex-col justify-end">
+<div class="w-full bg-[#FF6B6B] h-[78%]"></div>
+</div>
+</div>
+<!-- Indicador de Pulso do Widget HUD -->
+<div class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary-container group-hover:animate-ping opacity-75"></div>
+</div>
+<!-- Chevron da Área de Notificação '^' -->
+<button class="w-7 h-8 flex items-center justify-center rounded hover:bg-surface-bright/20 text-on-surface-variant transition-colors" title="Mostrar ícones ocultos">
+<span class="material-symbols-outlined text-[16px]">expand_less</span>
+</button>
+<!-- Conjunto de Status Rápido (Rede, Som, Bateria agrupados) -->
+<div class="flex items-center space-x-1 px-1.5 py-1 rounded hover:bg-surface-bright/20 cursor-pointer text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px] text-tertiary">wifi</span>
+<span class="material-symbols-outlined text-[16px]">volume_up</span>
+<span class="material-symbols-outlined text-[16px]">battery_charging_full</span>
+</div>
+<!-- Relógio do Windows 11 com Segundos & Data -->
+<div class="text-right px-2 py-0.5 rounded hover:bg-surface-bright/20 cursor-pointer transition-colors leading-tight font-body">
+<div class="text-[12px] font-mono font-medium text-on-surface" id="live-clock">14:28:10</div>
+<div class="text-[10px] text-on-surface-variant">24/10/2025</div>
+</div>
+<!-- Faixa "Mostrar Área de Trabalho" no Extremo Direito -->
+<div class="w-1.5 h-6 border-l border-outline-variant/40 ml-1"></div>
+</div>
+</footer>
+<!-- ========================================================================= -->
+<!-- 5. MICRO-INTERAÇÕES & RELÓGIO NATIVO (JavaScript Leve)                    -->
+<!-- ========================================================================= -->
+<script>
+    // Alternância do Flyout ao clicar no Widget de Velocidade HUD
+    const hudTrigger = document.getElementById('hud-widget-trigger');
+    const flyout = document.getElementById('telemetry-flyout');
+    const closeFlyout = document.getElementById('close-flyout');
+
+    hudTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flyout.classList.toggle('hidden');
+    });
+
+    closeFlyout.addEventListener('click', (e) => {
+      e.stopPropagation();
+      flyout.classList.add('hidden');
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!flyout.contains(e.target) && !hudTrigger.contains(e.target)) {
+        flyout.classList.add('hidden');
+      }
+    });
+
+    // Relógio ao Vivo
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const clockElement = document.getElementById('live-clock');
+      if (clockElement) {
+        clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body></html>

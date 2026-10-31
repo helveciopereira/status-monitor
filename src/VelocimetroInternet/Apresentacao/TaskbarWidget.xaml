@@ -1,0 +1,160 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.TaskbarWidget"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="VelocimetroInternetWidget"
+        Width="104" Height="42"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        AutomationProperties.Name="VelocimetroTaskbarWidget">
+
+    <Window.Resources>
+        <!-- Paleta Escura Padrão — Modelo 3: Minimalismo Acrylic Pill (WCAG AAA/AA+) -->
+        <SolidColorBrush x:Key="UploadTextBrush" Color="#FF4CC2FF" />
+        <SolidColorBrush x:Key="DownloadTextBrush" Color="#FFFF6B6B" />
+        <SolidColorBrush x:Key="UploadPillBgBrush" Color="#2E4CC2FF" />
+        <SolidColorBrush x:Key="UploadPillBorderBrush" Color="#484CC2FF" />
+        <SolidColorBrush x:Key="DownloadPillBgBrush" Color="#2EFF6B6B" />
+        <SolidColorBrush x:Key="DownloadPillBorderBrush" Color="#48FF6B6B" />
+        <SolidColorBrush x:Key="HoverContainerBrush" Color="#12FFFFFF" />
+    </Window.Resources>
+
+    <!-- Contêiner externo estilo botão Clima/Widgets do Windows 11 (hover suave arredondado de 4px) -->
+    <Border x:Name="ContornoHover"
+            CornerRadius="5"
+            Padding="4,2"
+            Background="Transparent"
+            Cursor="Hand">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource HoverContainerBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+
+        <Grid>
+            <!-- MODO NORMAL (2 Linhas com Micro-Pílulas Translúcidas — Modelo 3 Acrylic Pill) -->
+            <Grid x:Name="PainelDuasLinhas" Visibility="Visible">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="2" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Linha 0: Pílula de Upload (Azul #4CC2FF) -->
+                <Border Grid.Row="0"
+                        CornerRadius="4"
+                        Background="{DynamicResource UploadPillBgBrush}"
+                        BorderBrush="{DynamicResource UploadPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="6,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="↑"
+                                   Foreground="{DynamicResource UploadTextBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10.5"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoUpload"
+                                   Grid.Column="1"
+                                   Text="1,24 MB/s"
+                                   Foreground="{DynamicResource UploadTextBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoUploadBarra" />
+                    </Grid>
+                </Border>
+
+                <!-- Linha 2: Pílula de Download (Vermelho #FF6B6B) -->
+                <Border Grid.Row="2"
+                        CornerRadius="4"
+                        Background="{DynamicResource DownloadPillBgBrush}"
+                        BorderBrush="{DynamicResource DownloadPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="6,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="↓"
+                                   Foreground="{DynamicResource DownloadTextBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10.5"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoDownload"
+                                   Grid.Column="1"
+                                   Text="38,7 MB/s"
+                                   Foreground="{DynamicResource DownloadTextBrush}"
+                                   FontFamily="Segoe UI Variable Text"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoDownloadBarra" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- MODO COMPACTO ANTI-COLISÃO (1 Linha quando a barra enche de aplicativos — Modelo 3 Etapa 2) -->
+            <Border x:Name="PainelCompactoUmaLinha"
+                    Visibility="Collapsed"
+                    CornerRadius="4"
+                    Background="#261E2026"
+                    BorderBrush="#33FFFFFF"
+                    BorderThickness="0.75"
+                    Padding="6,3"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="TextoCompactoUpload"
+                               Text="↑ 1,2"
+                               Foreground="{DynamicResource UploadTextBrush}"
+                               FontFamily="Segoe UI Variable Text"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Typography.NumeralAlignment="Tabular"
+                               VerticalAlignment="Center"
+                               AutomationProperties.Name="TextoCompactoUploadBarra" />
+                    <TextBlock Text="  |  "
+                               Foreground="#55FFFFFF"
+                               FontFamily="Segoe UI Variable Text"
+                               FontSize="9.5"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="TextoCompactoDownload"
+                               Text="↓ 38,7 MB/s"
+                               Foreground="{DynamicResource DownloadTextBrush}"
+                               FontFamily="Segoe UI Variable Text"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Typography.NumeralAlignment="Tabular"
+                               VerticalAlignment="Center"
+                               AutomationProperties.Name="TextoCompactoDownloadBarra" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
