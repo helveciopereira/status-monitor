@@ -118,7 +118,7 @@ public partial class App : Application
         }
 
         Configuracoes cfg = _config.Atual;
-        RegistrarLog($"=== Velocímetro de Internet v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} ===");
+        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
@@ -551,7 +551,7 @@ public partial class App : Application
         if (pausar)
         {
             _widget?.MostrarPausado();
-            _bandeja?.DefinirDica("Velocímetro de Internet — medição pausada");
+            _bandeja?.DefinirDica("Status Monitor — medição pausada");
         }
         else
         {
@@ -768,7 +768,7 @@ public partial class App : Application
                         if (semConexao)
                         {
                             w.MostrarSemConexao();
-                            _bandeja?.DefinirDica("Velocímetro de Internet — sem conexão");
+                            _bandeja?.DefinirDica("Status Monitor — sem conexão");
                         }
                         else if (vel.AmostraValida)
                         {
@@ -779,7 +779,7 @@ public partial class App : Application
                                 ? $"\nCPU {MedidorSistema.Formatar(uso.CpuPercentual)} · RAM {MedidorSistema.Formatar(uso.RamPercentual)}"
                                 : "";
                             _bandeja?.DefinirDica(
-                                $"Velocímetro de Internet\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
+                                $"Status Monitor\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
                                 $"{formatador.FormatarComSeta("↓", vel.DownloadBytesPorSegundo)}{linhaSistema}");
                         }
 

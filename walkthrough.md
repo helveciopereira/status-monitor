@@ -1,4 +1,53 @@
-# Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
+# Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
+
+## v0.6.0 — 2026-10-31 — Novo nome "Status Monitor" + pílula de internet mais estreita
+
+### O que mudou
+- **Nome:** o app passou a se chamar **Status Monitor** em tudo o que o usuário vê: cabeçalho e
+  título do painel rápido, título do estúdio, dica do ícone da bandeja, nomes lidos por leitor de
+  tela, nome mostrado pelo Windows (Gerenciador de Tarefas / aba Inicializar: `Product`,
+  `AssemblyTitle`, `Description` no `.csproj`), atalhos e "Aplicativos instalados" (`--packTitle`
+  do Velopack), cabeçalho do log, README.
+- **Repositório:** `helveciopereira/velocimetro-internet` → **`helveciopereira/status-monitor`**
+  (PATCH na API do GitHub, com descrição nova); remote local atualizado; feed do auto update e
+  script de publicação apontam para o novo endereço.
+- **Largura:** a pílula ↑/↓ passou de 96 para **78** lógicos (pedido: "entre o tamanho da CPU/RAM e o
+  atual"). Widget: 129 px só internet / 225 px com CPU/RAM a 150% (antes 156 / 252).
+
+### Por quê
+Pedido do dono: o app deixou de ser só de internet (v0.5.0 trouxe CPU/RAM) e muda de nome,
+mantendo o repositório (renomeado). A pílula de internet tinha sobra.
+
+### O que NÃO mudou de propósito (e por quê)
+- `packId` do Velopack (`VelocimetroInternetApp`) e, portanto, o nome do instalador
+  `VelocimetroInternetApp-win-Setup.exe`: um packId novo é OUTRO app para o Velopack — as cópias
+  instaladas não receberiam a atualização e cada PC precisaria reinstalar.
+- Arquivo `VelocimetroInternet.exe`, pastas de dados (`%AppData%`/`%LocalAppData%\VelocimetroInternet`),
+  valor da entrada Run, nome da trava de instância única e título técnico da janela do widget:
+  trocar perderia as configurações e o consumo do dia, desligaria o "Iniciar com o Windows" ou
+  permitiria duas cópias abertas na transição. O Windows já exibe "Status Monitor" pelo `Product`.
+- Namespace/pastas do código e a pasta local do projeto.
+- Histórico deste walkthrough (entradas antigas intocadas).
+
+### Como a cópia 0.5.0 instalada acha a 0.6.0
+Ela consulta o endereço ANTIGO; o GitHub responde 301 para `status-monitor` (conferido com curl,
+inclusive com os parâmetros `?arch=…&localVersion=…` que o Velopack anexa) e o feed abre normal.
+
+### Arquivos
+`TaskbarLayout.cs` (86 = 8 + 78), `TaskbarWidget.xaml` (largura inicial, nome acessível),
+`PainelRapido.xaml`, `EstudioCores.xaml`, `IconeBandeja.cs`, `App.xaml.cs`, `ServicoAtualizacao.cs`
+(URL), `.csproj` (0.6.0 + Product/AssemblyTitle/Description), `tools\publicar-atualizacao.ps1`
+(RepoUrl, Titulo), `Onda4Tests.cs` (URL), `Onda5Tests.cs` (limiares + teste da largura), README,
+03-PLANO, walkthrough.
+
+### Validação executada
+- Pior texto da pílula medido com a fonte do widget (WPF FormattedText): "99,9 Mbps" ≈ 50 px →
+  cabe em 78 (seta 5 + padding 12 + borda 1,5 + folga).
+- Build Release 0 avisos; suíte inteira **81/81**.
+- Fotos da barra real: com CPU/RAM 225 px, só internet 129 px, compacto 366 px encostado no '^';
+  painel com o cabeçalho "Status Monitor". Configuração do usuário restaurada (hash conferido).
+
+## v0.5.0 — 2026-10-31 — CPU e RAM (%) na barra, à esquerda da internet
 
 ## v0.5.0 — 2026-10-31 — CPU e RAM (%) na barra, à esquerda da internet
 

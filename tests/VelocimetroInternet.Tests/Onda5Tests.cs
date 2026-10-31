@@ -102,12 +102,22 @@ public sealed class Onda5Tests
     [Fact]
     public void Layout_ComCpuRam_CompactaAntesQueSem()
     {
-        // 260 px físicos livres: cabe o normal SEM CPU/RAM (156+24), mas não o normal COM (252+24)
+        // 200 px físicos livres: cabe o normal SEM CPU/RAM (129+24), mas não o normal COM (225+24)
         var barra = new NativeMethods.RECT { Left = 0, Top = 1528, Right = 2560, Bottom = 1600 };
         Assert.Equal(EstadoColisaoBarra.NormalDuasLinhas,
-            TaskbarLayout.CalcularVagaDoClima(barra, 1537, 1797, 1.5).Estado);
+            TaskbarLayout.CalcularVagaDoClima(barra, 1597, 1797, 1.5).Estado);
         Assert.Equal(EstadoColisaoBarra.CompactoUmaLinha,
-            TaskbarLayout.CalcularVagaDoClima(barra, 1537, 1797, 1.5, mostrarSistema: true).Estado);
+            TaskbarLayout.CalcularVagaDoClima(barra, 1597, 1797, 1.5, mostrarSistema: true).Estado);
+    }
+
+    [Fact]
+    public void Layout_PilulaDeRede_FicaEntreCpuRamEAAntiga()
+    {
+        // v0.6.0: rede = largura normal − 8 de padding; tem de ficar entre 61 (CPU/RAM) e 96 (antiga)
+        int rede = TaskbarLayout.LarguraLogicaNormalPx - 8;
+        Assert.InRange(rede, 62, 95);
+        // Com CPU/RAM: 8 + 61 + 3 + rede
+        Assert.Equal(8 + 61 + 3 + rede, TaskbarLayout.LarguraLogicaNormal(true));
     }
 
     // ---------------------------------------------------------------- configuração

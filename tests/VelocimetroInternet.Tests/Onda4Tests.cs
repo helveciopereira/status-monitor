@@ -51,7 +51,7 @@ public sealed class Onda4Tests
     public void Feed_EhOEnderecoDiretoDaUltimaRelease()
     {
         // Endereço direto (sem a API do GitHub e seu limite de 60 consultas/h por IP)
-        Assert.Equal("https://github.com/helveciopereira/velocimetro-internet/releases/latest/download/",
+        Assert.Equal("https://github.com/helveciopereira/status-monitor/releases/latest/download/",
             ServicoAtualizacao.EnderecoFeed);
     }
 

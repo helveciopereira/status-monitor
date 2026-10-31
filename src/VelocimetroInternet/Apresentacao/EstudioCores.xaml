@@ -1,7 +1,7 @@
 <Window x:Class="VelocimetroInternet.Apresentacao.EstudioCores"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Velocímetro de Internet — cores e configurações"
+        Title="Status Monitor — cores e configurações"
         Width="780" Height="720" MinWidth="560" MinHeight="480"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Tema.Superficie}"
@@ -10,7 +10,7 @@
         FontSize="13"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display"
-        AutomationProperties.Name="EstudioCoresVelocimetro">
+        AutomationProperties.Name="Status Monitor — cores e configurações">
 
     <!--
         Estúdio de Cores & Configurações — Onda 3, a partir do Modelo 3 (design/modelo-3-acrylic-pill):

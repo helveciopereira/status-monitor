@@ -1,5 +1,5 @@
 # publicar-atualizacao.ps1 — v0.4.0 (Onda 4)
-# Publica uma versão nova do Velocímetro de Internet nas Releases do GitHub. Todo velocímetro
+# Publica uma versão nova do Status Monitor (ex-Velocímetro de Internet) nas Releases do GitHub. Todo velocímetro
 # instalado pelo Setup encontra a versão em até ~5 minutos, baixa em segundo plano (só a
 # diferença) e se reinicia sozinho num momento tranquilo — sem aviso, sem clique
 # (ver src\VelocimetroInternet\Sistema\ServicoAtualizacao.cs e App.xaml.cs).
@@ -21,12 +21,12 @@
 
 $ErrorActionPreference = 'Stop'
 
-$RepoUrl = 'https://github.com/helveciopereira/velocimetro-internet'
+$RepoUrl = 'https://github.com/helveciopereira/status-monitor'   # v0.6.0: renomeado de velocimetro-internet
 # packId define a pasta de instalação: %LOCALAPPDATA%\VelocimetroInternetApp.
 # NÃO pode ser "VelocimetroInternet": essa é a pasta de DADOS (log, consumo do dia) e o
 # desinstalador do Velopack apaga a pasta de instalação INTEIRA.
 $PackId = 'VelocimetroInternetApp'
-$Titulo = 'Velocímetro de Internet'
+$Titulo = 'Status Monitor'   # v0.6.0: nome dos atalhos e de "Aplicativos instalados" (era Velocímetro de Internet)
 $Root = Split-Path $PSScriptRoot -Parent
 $Project = Join-Path $Root 'src\VelocimetroInternet\VelocimetroInternet.csproj'
 $Solution = Join-Path $Root 'VelocimetroInternet.sln'

@@ -102,6 +102,10 @@ primeira atualização REAL pelo GitHub acontece na próxima versão publicada (
 - [x] A vaga na barra cresce para a esquerda (borda direita fixa no '^'); com CPU/RAM o bloco
       compacta/oculta mais cedo quando a barra enche — v0.5.0
 
+- [x] Pílula de internet mais estreita (96 → 78 lógicos, entre a de CPU/RAM e a antiga) — v0.6.0
+- [x] Nome do app: **Status Monitor** (telas, dica da bandeja, atalhos, Gerenciador de Tarefas,
+      repositório `status-monitor`) — v0.6.0
+
 ---
 
 ## Validação padrão de toda onda

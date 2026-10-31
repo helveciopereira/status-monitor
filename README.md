@@ -1,4 +1,7 @@
-# Velocímetro de Internet — planejamento
+# Status Monitor (ex-Velocímetro de Internet) — planejamento
+
+> **v0.6.0:** o app passou a se chamar **Status Monitor** (repositório renomeado de
+> `velocimetro-internet` para `status-monitor`; o endereço antigo redireciona).
 
 Monitor silencioso de velocidade de rede para Windows 11: fica **na barra de tarefas**, inicia
 com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua seta e sua cor.
@@ -11,9 +14,9 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.5.0** · 2026-10-31
+> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.6.0** · 2026-10-31
 >
-> **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/velocimetro-internet/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
+> **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.
 > **Publicar versão nova:** aumente `<Version>` no `.csproj` e rode `pwsh -File tools\publicar-atualizacao.ps1`.
 >
@@ -22,7 +25,7 @@ Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esq
 > Design escolhido: **Modelo 3 — Minimalismo Acrylic Pill** ([`design/modelo-3-acrylic-pill/`](design/modelo-3-acrylic-pill/)) · Unidade padrão: **`MB/s`** (configurável para `Mbps`)
 
 **Onde fica:** num bloco próprio na barra, **como o botão do Clima** — fora dos ícones da bandeja,
-à esquerda do "^". Verificado nesta máquina: há ~628 px livres ali; o bloco usa ~150. Não existe
+à esquerda do "^". Verificado nesta máquina: há ~628 px livres ali; o bloco usa ~129 (só internet) ou ~225 (com CPU/RAM) pixels a 150%. Não existe
 API oficial para ocupar o lugar do Clima, então o app **imita** o visual e o comportamento dele
 (detalhes em [01-ANALISE.md §3.1](01-ANALISE.md)).
 

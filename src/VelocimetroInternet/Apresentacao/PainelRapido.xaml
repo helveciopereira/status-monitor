@@ -1,7 +1,7 @@
 <Window x:Class="VelocimetroInternet.Apresentacao.PainelRapido"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Velocímetro de Internet — painel rápido"
+        Title="Status Monitor — painel rápido"
         Width="360" SizeToContent="Height"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -15,7 +15,7 @@
         FontSize="13"
         Foreground="{DynamicResource Tema.Texto}"
         TextOptions.TextFormattingMode="Display"
-        AutomationProperties.Name="PainelRapidoVelocimetro">
+        AutomationProperties.Name="Status Monitor — painel rápido">
 
     <!--
         Painel rápido — "NetTraffic Quick Flyout" do Modelo 3 (design/modelo-3-acrylic-pill).
@@ -56,7 +56,7 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xEC4A;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
                                    Foreground="{DynamicResource Tema.Acento}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBlock Text="Velocímetro de Internet" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="Status Monitor" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                         <Ellipse x:Name="PontoAoVivo" Width="7" Height="7" Fill="{DynamicResource Tema.AoVivo}"

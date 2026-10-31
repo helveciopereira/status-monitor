@@ -18,7 +18,7 @@ public sealed class IconeBandeja : IDisposable
     private readonly uint _msgCallback;
     private nint _hIcone;
     private bool _visivel;
-    private string _dica = "Velocímetro de Internet";
+    private string _dica = "Status Monitor";
 
     /// <summary>Clique esquerdo (abre o painel rápido).</summary>
     public event Action? CliqueEsquerdo;

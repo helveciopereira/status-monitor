@@ -24,7 +24,9 @@ namespace VelocimetroInternet.Sistema;
 public sealed class ServicoAtualizacao
 {
     /// <summary>Repositório cujas Releases são o canal de atualização.</summary>
-    public const string UrlRepositorio = "https://github.com/helveciopereira/velocimetro-internet";
+    // v0.6.0: repositório renomeado de velocimetro-internet para status-monitor (o GitHub redireciona
+    // o endereço antigo com 301, por isso as cópias 0.5.x instaladas ainda chegam aqui).
+    public const string UrlRepositorio = "https://github.com/helveciopereira/status-monitor";
 
     /// <summary>
     /// O GitHub redireciona <c>.../releases/latest/download/&lt;arquivo&gt;</c> para o arquivo da

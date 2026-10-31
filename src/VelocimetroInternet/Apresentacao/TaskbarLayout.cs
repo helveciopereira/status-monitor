@@ -33,7 +33,13 @@ public readonly record struct PosicaoWidgetBarra(
 /// </summary>
 public static class TaskbarLayout
 {
-    public const int LarguraLogicaNormalPx = 104;
+    /// <summary>
+    /// Largura lógica do modo normal SÓ com a rede: 8 (padding do contorno) + 78 (pílula ↑/↓).
+    /// v0.6.0 (pedido do dono): pílula de rede 96 → 78, entre a de CPU/RAM (61) e a antiga. 78 cabe
+    /// o pior texto medido com a fonte do widget ("99,9 Mbps" ≈ 50 + seta 5 + padding 12 + borda 1,5
+    /// + folga dos números tabulares). Antes: 104.
+    /// </summary>
+    public const int LarguraLogicaNormalPx = 86;
     public const int LarguraLogicaCompactaPx = 132;
     public const int AlturaLogicaWidgetPx = 42;
     public const int MargemSegurancaLogicaPx = 8;
