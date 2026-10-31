@@ -8,7 +8,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
  ↓ 38,7 MB/s     ← vermelho (download)
 ```
 
-> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.4.2** · 2026-10-31
+> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.4.3** · 2026-10-31
 >
 > **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/velocimetro-internet/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

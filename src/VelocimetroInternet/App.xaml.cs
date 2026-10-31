@@ -435,12 +435,13 @@ public partial class App : Application
     {
         if (!_atualizacao.EstaInstalado)
         {
-            return $"Versão {VersaoApp} · cópia sem instalador (não atualiza sozinha)";
+            return $"Versão {VersaoApp} · cópia sem instalador (sem auto update)";
         }
 
         string estado = _atualizacao.TemPendente
             ? $"versão {_atualizacao.VersaoPendente} pronta, instala sozinha"
-            : _atualizacao.UltimaConsulta is { } u ? $"atualiza sozinho · consulta {u}" : "atualiza sozinho";
+            // v0.4.3 (pedido do dono): o rótulo "atualiza sozinho" virou "auto update", mais curto
+            : _atualizacao.UltimaConsulta is { } u ? $"auto update · consulta {u}" : "auto update";
         return $"Versão {_atualizacao.VersaoInstalada ?? VersaoApp} · {estado}";
     }
 

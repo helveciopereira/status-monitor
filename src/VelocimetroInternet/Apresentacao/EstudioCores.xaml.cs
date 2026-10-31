@@ -22,7 +22,7 @@ public partial class EstudioCores : Window
     private bool _carregando;
     private readonly Dictionary<string, RadioButton> _cartoes = [];
 
-    /// <param name="textoVersao">Rodapé (v0.4.0), ex.: "Versão 0.4.0 · atualiza sozinho".</param>
+    /// <param name="textoVersao">Rodapé (v0.4.0), ex.: "Versão 0.4.3 · auto update".</param>
     public EstudioCores(ServicoConfiguracoes servico, string textoVersao = "")
     {
         InitializeComponent();

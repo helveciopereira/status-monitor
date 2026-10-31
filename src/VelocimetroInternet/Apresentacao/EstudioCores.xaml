@@ -222,7 +222,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button Style="{StaticResource BotaoSecundario}" Content="Restaurar padrão"
                             Click="AoRestaurarPadrao" AutomationProperties.Name="Restaurar padrão" />
-                    <!-- v0.4.0: versão + estado da atualização automática ("atualiza sozinho") -->
+                    <!-- v0.4.0: versão + estado da atualização automática ("auto update") -->
                     <TextBlock x:Name="TextoVersao" Style="{StaticResource Rotulo}" VerticalAlignment="Center"
                                Margin="14,0,0,0" AutomationProperties.Name="Versão" />
                 </StackPanel>

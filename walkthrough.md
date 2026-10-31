@@ -1,5 +1,25 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.4.3 — 2026-10-31 — Rótulo "auto update" no rodapé do estúdio
+
+### O que mudou
+No rodapé do estúdio de cores, o estado da atualização passou de "atualiza sozinho" para
+**"auto update"** (ex.: `Versão 0.4.3 · auto update · consulta 31/10 12:40 — em dia`). Na cópia
+sem instalador: "(sem auto update)".
+
+### Por quê
+Pedido do dono, depois de confirmar que a atualização automática funcionou: rótulo mais curto.
+
+### Como usar
+Nada a fazer: chega sozinho em até ~5 min nos PCs instalados.
+
+### Arquivos
+`App.xaml.cs` (`TextoVersaoRodape`), comentários em `EstudioCores.xaml/.cs`, `.csproj` (0.4.3),
+README, walkthrough.
+
+### Validação executada
+Build + testes inteiros + publicação pelo `tools\publicar-atualizacao.ps1` : build e suíte inteira verdes (o script para se falhar); Release v0.4.3 publicada, delta de 5 arquivos alterados de 402.
+
 ## v0.4.2 — 2026-10-31 — Consulta de atualização a cada 5 min (era 1 h)
 
 ### O que mudou
