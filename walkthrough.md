@@ -1,5 +1,24 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.4.1 — 2026-10-31 — Teste da atualização automática REAL pelo GitHub
+
+### O que mudou
+Nenhum código. Versão publicada só para provar, de ponta a ponta e pelo GitHub, que o velocímetro
+instalado na 0.4.0 se atualiza sozinho (aceite da Onda 4, que até aqui só tinha o ensaio local).
+
+### Por quê
+O ensaio da v0.4.0 usou um feed numa pasta local. Faltava provar o caminho real: Release no GitHub →
+feed `releases/latest/download/` → pacote de diferença → aplicação silenciosa no PC do usuário.
+
+### Como usar
+Nada a fazer: quem tem a 0.4.0 instalada recebe a 0.4.1 sozinho em até ~1 h.
+
+### Arquivos
+`.csproj` (0.4.1), README, walkthrough.
+
+### Validação executada
+Ver a seção "Resultado" logo abaixo (preenchida após a publicação).
+
 ## v0.4.0 — 2026-10-31 — Onda 4: instalador e atualização automática silenciosa (Velopack + GitHub)
 
 ### O que mudou
