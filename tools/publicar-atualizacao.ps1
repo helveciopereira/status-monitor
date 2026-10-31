@@ -101,6 +101,8 @@ Assert-Ok 'vpk upload'
 $latest = Invoke-RestMethod "$apiRepo/releases/latest" -Headers $headers
 if ($latest.tag_name -ne "v$version") { throw "A última Release é $($latest.tag_name), não v$version." }
 $feed = Invoke-WebRequest "$RepoUrl/releases/latest/download/releases.win.json" -UseBasicParsing
-if ($feed.Content -notmatch [regex]::Escape("`"$version`"")) { throw 'O feed direto (latest/download/releases.win.json) ainda não mostra a versão nova.' }
+# O GitHub serve o .json como application/octet-stream → Content vem em BYTES: decodificar
+$feedTexto = if ($feed.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($feed.Content) } else { [string]$feed.Content }
+if ($feedTexto -notmatch [regex]::Escape("`"$version`"")) { throw 'O feed direto (latest/download/releases.win.json) ainda não mostra a versão nova.' }
 Write-Host "OK: v$version publicada em $($latest.html_url)" -ForegroundColor Green
 Write-Host "Instalador para quem ainda não tem: $RepoUrl/releases/latest/download/$PackId-win-Setup.exe"

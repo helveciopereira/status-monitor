@@ -59,7 +59,13 @@ Velopack 1.2.161, `StartupObject`), `tools\publicar-atualizacao.ps1` (novo), `.g
   applied successfully" → **reabriu sozinho na 1.0.1** (PID novo, 173 s no total; log do app:
   "Reaberto pelo atualizador: agora na versão 1.0.1"). Depois: desinstalado, entrada Run e
   `settings.json` conferidos iguais aos de antes (hash), pasta de dados intacta.
-- Publicação real da v0.4.0 e migração do `dist\` para a instalação: ver relato da sessão.
+- **Publicação real:** Release `v0.4.0` no GitHub (Setup 71,5 MB, pacote completo 64 MB);
+  `releases/latest` = v0.4.0 e o feed direto lista a 0.4.0. A conferência final do script falhou
+  por erro MEU (o GitHub serve o .json como octet-stream → `Content` em bytes); corrigido no script.
+- **Migração deste PC:** Setup baixado do GitHub, `--silent` → `%LOCALAPPDATA%\VelocimetroInternetApp\current`
+  na 0.4.0; ao abrir, a entrada Run foi reapontada do `dist\` para a instalação; 1ª consulta real
+  aos 46 s: "releases.win.json from …/releases/latest/download/…" → "em dia"; captura da barra com
+  o widget medindo (↑ 7,56 KB/s · ↓ 32,3 KB/s). O Setup criou atalhos no Menu Iniciar e na Área de Trabalho.
 
 ### Validação manual recomendada
 1. Abrir o estúdio e conferir o rodapé "Versão 0.4.0 · atualiza sozinho".
