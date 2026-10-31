@@ -48,18 +48,20 @@ as cores se adaptarem; jogo/vídeo em tela cheia não mostra o widget. → **ver
 > v0.2.0: tela cheia, Alt+Tab e instância única comprovados por automação; **reinício do PC,
 > comparação ±3% e troca de tema ficam como validação manual do dono** (ver walkthrough).
 
-## Onda 2 — Configurações e robustez ✅ (concluída em 2026-10-31 · v0.3.0, com 3 itens adiados)
+## Onda 2 — Configurações e robustez ✅ (concluída em 2026-10-31 · v0.3.0; itens adiados entregues na v0.8.0)
 
 - [x] `ServicoConfiguracoes` com `settings.json` (leitura tolerante, gravação atômica, .bak) — v0.2.0
 - [x] Configurações: unidade bits/bytes, suavização, interfaces excluídas, velocidade do plano — v0.2.0 (no estúdio)
-- [ ] ⏭ Adiado: intervalo de atualização (exige o histórico contar segundos, não amostras), fonte/tamanho, ordem das linhas
-- [ ] ⏭ Adiado: posição **manual por arrastar** (Ctrl + arrastar o widget)
+- [x] Intervalo de atualização (0,5/1/2/5 s; o histórico agora conta segundos), fonte/tamanho, ordem das linhas — v0.8.0 (2026-10-31)
+- [x] Posição **manual por arrastar** (Ctrl + arrastar; ímã de 16 px na vaga automática; volta sozinho
+      ao automático se os apps crescerem até ele; menu "Voltar à posição automática") — v0.8.0 (2026-10-31)
 - [x] **Painel rápido do clique** (Quick Flyout do Modelo 3): Envio/Download com pico e barra,
       gráfico 60 s, link da placa, consumo do dia persistido, unidade, iniciar com o Windows, fixar — v0.2.0
 - [x] Gráfico com **linhas de referência**: topo em valor redondo 1-2-5 (ex.: 100 KB/s, 50 Mbps) e
       metade pontilhada, ambas rotuladas, + legenda Envio/Download — v0.3.0 (pedido do dono)
 - [x] **Pausar medição** no menu (só na sessão; ao retomar, linha de base nova) — v0.3.0
-- [ ] ⏭ Adiado: vários monitores (opção "mostrar em todas as barras")
+- [x] Vários monitores (opção "Mostrar em todos os monitores": um widget por barra secundária,
+      posição manual guardada por monitor) — v0.8.0 (2026-10-31)
 - [x] Suspender/hibernar: na retomada (`PBT_APMRESUMEAUTOMATIC`) o medidor recomeça e o widget reencaixa;
       troca de rede: contador que volta é descartado — v0.3.0
 

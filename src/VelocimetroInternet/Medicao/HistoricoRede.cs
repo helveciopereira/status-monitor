@@ -16,7 +16,10 @@ public sealed record InstantaneoHistorico(
     ulong BytesEnviadosHoje,
     ulong BytesRecebidosHoje,
     ulong VelocidadeLinkBps,
-    string NomeInterface);
+    string NomeInterface,
+    // v0.8.0: quantos pontos cabem nos 60 s com o intervalo atual (o gráfico distribui a
+    // largura por ESTE número, não mais por 60 fixo). Padrão 60 = intervalo de 1 s.
+    int Capacidade = HistoricoRede.JanelaSegundos);
 
 /// <summary>
 /// Memória curta do medidor para o "NetTraffic Quick Flyout" do Modelo 3:
@@ -31,17 +34,25 @@ public sealed class HistoricoRede
 {
     public const int JanelaSegundos = 60;
 
+    /// <summary>Gravar o consumo no disco a cada 60 s de medição (no máximo 1 min perdido numa queda de energia).</summary>
+    private const double SegundosEntreGravacoes = 60;
+
     private readonly object _trava = new();
-    private readonly PontoHistorico[] _anel = new PontoHistorico[JanelaSegundos];
+
+    // v0.8.0: o anel conta AMOSTRAS, mas representa sempre 60 SEGUNDOS — a capacidade depende do
+    // intervalo (0,5 s → 120 pontos; 1 s → 60; 2 s → 30; 5 s → 12). Antes era fixo em 60, o que
+    // fazia o "intervalo de atualização" mudar o tamanho da janela do gráfico (item adiado na v0.3.0).
+    private PontoHistorico[] _anel = new PontoHistorico[JanelaSegundos];
     private int _inicio;
     private int _quantidade;
+    private double _intervaloSegundos = 1.0;
+    private double _segundosDesdeGravacao;
 
     private DateOnly _dia;
     private ulong _enviadosHoje;
     private ulong _recebidosHoje;
     private ulong _linkBps;
     private string _nomeInterface = string.Empty;
-    private int _registrosDesdeGravacao;
 
     private readonly string _caminhoConsumo;
     private readonly Func<DateOnly> _hoje;
@@ -58,6 +69,34 @@ public sealed class HistoricoRede
         _hoje = hoje ?? (() => DateOnly.FromDateTime(DateTime.Now));
         _dia = _hoje();
         CarregarConsumo();
+    }
+
+    /// <summary>Pontos que cabem em 60 s com o intervalo dado (mínimo 2, para haver uma linha).</summary>
+    public static int CapacidadePara(double intervaloSegundos) =>
+        intervaloSegundos > 0 && double.IsFinite(intervaloSegundos)
+            ? Math.Max(2, (int)Math.Round(JanelaSegundos / intervaloSegundos))
+            : JanelaSegundos;
+
+    /// <summary>
+    /// v0.8.0: avisa o intervalo de medição. Se a capacidade muda, o gráfico recomeça vazio —
+    /// misturar pontos de 1 s com pontos de 5 s desenharia uma linha do tempo errada.
+    /// O consumo do dia NÃO é afetado (ele soma bytes reais, independe do intervalo).
+    /// </summary>
+    public void DefinirIntervalo(double intervaloSegundos)
+    {
+        lock (_trava)
+        {
+            int nova = CapacidadePara(intervaloSegundos);
+            _intervaloSegundos = intervaloSegundos > 0 && double.IsFinite(intervaloSegundos) ? intervaloSegundos : 1.0;
+            if (nova == _anel.Length)
+            {
+                return;
+            }
+
+            _anel = new PontoHistorico[nova];
+            _inicio = 0;
+            _quantidade = 0;
+        }
     }
 
     /// <summary>
@@ -80,15 +119,16 @@ public sealed class HistoricoRede
                 _recebidosHoje = 0;
             }
 
-            int pos = (_inicio + _quantidade) % JanelaSegundos;
+            int capacidade = _anel.Length;
+            int pos = (_inicio + _quantidade) % capacidade;
             _anel[pos] = new PontoHistorico(Math.Max(0, uploadBps), Math.Max(0, downloadBps));
-            if (_quantidade < JanelaSegundos)
+            if (_quantidade < capacidade)
             {
                 _quantidade++;
             }
             else
             {
-                _inicio = (_inicio + 1) % JanelaSegundos;
+                _inicio = (_inicio + 1) % capacidade;
             }
 
             _enviadosHoje += bytesEnviadosNoIntervalo;
@@ -96,10 +136,12 @@ public sealed class HistoricoRede
             _linkBps = linkBps;
             _nomeInterface = nomeInterface;
 
-            // Grava no disco a cada minuto (no máximo 60 s de consumo perdidos numa queda de energia)
-            if (++_registrosDesdeGravacao >= 60)
+            // Grava no disco a cada minuto (no máximo 60 s de consumo perdidos numa queda de energia).
+            // v0.8.0: conta SEGUNDOS, não registros — com intervalo de 0,5 s seriam 2 gravações/min.
+            _segundosDesdeGravacao += _intervaloSegundos;
+            if (_segundosDesdeGravacao >= SegundosEntreGravacoes)
             {
-                _registrosDesdeGravacao = 0;
+                _segundosDesdeGravacao = 0;
                 GravarSemTrava();
             }
         }
@@ -113,7 +155,7 @@ public sealed class HistoricoRede
             double picoUp = 0, picoDown = 0;
             for (int i = 0; i < _quantidade; i++)
             {
-                PontoHistorico p = _anel[(_inicio + i) % JanelaSegundos];
+                PontoHistorico p = _anel[(_inicio + i) % _anel.Length];
                 pontos[i] = p;
                 picoUp = Math.Max(picoUp, p.UploadBps);
                 picoDown = Math.Max(picoDown, p.DownloadBps);
@@ -124,7 +166,7 @@ public sealed class HistoricoRede
             return new InstantaneoHistorico(
                 pontos, ultimo.UploadBps, ultimo.DownloadBps, picoUp, picoDown,
                 diaAtual ? _enviadosHoje : 0, diaAtual ? _recebidosHoje : 0,
-                _linkBps, _nomeInterface);
+                _linkBps, _nomeInterface, _anel.Length);
         }
     }
 

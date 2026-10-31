@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -114,6 +114,13 @@ public partial class EstudioCores : Window
             CampoExcluir.Text = string.Join(Environment.NewLine, _rascunho.InterfacesExcluir);
             ChaveBandeja.IsChecked = _rascunho.MostrarIconeBandeja || !_rascunho.FixarNaBarra;
             ChaveBandeja.IsEnabled = _rascunho.FixarNaBarra;
+
+            // v0.8.0: opções da barra (cada grupo de segmentos marca o botão cujo Tag bate)
+            MarcarSegmento(GrupoTamanho, _rascunho.TamanhoTexto);
+            MarcarSegmento(GrupoFonte, _rascunho.Fonte);
+            MarcarSegmento(GrupoOrdem, _rascunho.DownloadEmCima ? "download" : "envio");
+            MarcarSegmento(GrupoIntervalo, _rascunho.IntervaloSegundos.ToString(CultureInfo.InvariantCulture));
+            ChaveMonitores.IsChecked = _rascunho.MostrarEmTodasAsBarras;
         }
         finally
         {
@@ -124,6 +131,15 @@ public partial class EstudioCores : Window
         AtualizarTextoSuavizacao();
         AtualizarInterfacesAtivas();
         AtualizarEstadoSalvo();
+    }
+
+    /// <summary>Marca, num grupo de segmentos, o RadioButton cujo Tag é <paramref name="valor"/>.</summary>
+    private static void MarcarSegmento(Panel grupo, string valor)
+    {
+        foreach (RadioButton rb in grupo.Children.OfType<RadioButton>())
+        {
+            rb.IsChecked = string.Equals(rb.Tag as string, valor, StringComparison.Ordinal);
+        }
     }
 
     // ------------------------------------------------------------------ pré-visualização
@@ -137,35 +153,44 @@ public partial class EstudioCores : Window
         CoresResolvidas escura = Paletas.Resolver(paleta, barraClara: false);
         CoresResolvidas clara = Paletas.Resolver(paleta, barraClara: true);
 
-        AmostraEscura.Content = MiniWidget(escura);
-        AmostraClara.Content = MiniWidget(clara);
+        // v0.8.0: a amostra também mostra fonte, tamanho e ordem escolhidos
+        var aparencia = new AparenciaWidget(_rascunho.Fonte, _rascunho.TamanhoTexto, _rascunho.DownloadEmCima);
+        AmostraEscura.Content = MiniWidget(escura, aparencia);
+        AmostraClara.Content = MiniWidget(clara, aparencia);
         PreencherSelo(SeloEscuro, TextoSeloEscuro, Math.Min(escura.ContrasteUpload, escura.ContrasteDownload));
         PreencherSelo(SeloClaro, TextoSeloClaro, Math.Min(clara.ContrasteUpload, clara.ContrasteDownload));
     }
 
     /// <summary>Réplica do widget (2 pílulas) com as cores resolvidas — mesmo desenho da barra.</summary>
-    private static UIElement MiniWidget(CoresResolvidas c)
+    private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a)
     {
-        var pilha = new StackPanel { Width = 104 };
-        pilha.Children.Add(Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload));
+        // A largura acompanha o fator da fonte/tamanho, como o widget real faz na barra
+        var pilha = new StackPanel { Width = Math.Round(104 * a.FatorLargura()) };
+        FontFamily familia = AparenciaWidget.FamiliaDe(a.Fonte);
+        double tamanho = AparenciaWidget.TamanhoDe(a.Tamanho);
+        Border envio = Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho);
+        Border download = Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho);
+        pilha.Children.Add(a.DownloadEmCima ? download : envio);
         pilha.Children.Add(new Border { Height = 2 });
-        pilha.Children.Add(Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload));
+        pilha.Children.Add(a.DownloadEmCima ? envio : download);
         return pilha;
     }
 
-    private static Border Pilula(string seta, string valor, Color texto, Color fundo, Color borda)
+    private static Border Pilula(string seta, string valor, Color texto, Color fundo, Color borda,
+        FontFamily familia, double tamanho)
     {
         var grade = new Grid();
         grade.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grade.ColumnDefinitions.Add(new ColumnDefinition());
         var pincel = new SolidColorBrush(texto);
-        grade.Children.Add(new TextBlock { Text = seta, Foreground = pincel, FontWeight = FontWeights.Bold, FontSize = 10.5 });
+        grade.Children.Add(new TextBlock { Text = seta, Foreground = pincel, FontWeight = FontWeights.Bold, FontSize = tamanho, FontFamily = familia });
         var t = new TextBlock
         {
             Text = valor,
             Foreground = pincel,
             FontWeight = FontWeights.SemiBold,
-            FontSize = 10.5,
+            FontSize = tamanho,
+            FontFamily = familia,
             HorizontalAlignment = HorizontalAlignment.Right
         };
         Grid.SetColumn(t, 1);
@@ -309,6 +334,43 @@ public partial class EstudioCores : Window
         AtualizarEstadoSalvo();
     }
 
+    /// <summary>
+    /// v0.8.0: um só tratador para os grupos de segmentos (tamanho, fonte, ordem, intervalo).
+    /// O nome do grupo diz qual campo do rascunho muda; o Tag traz o valor.
+    /// </summary>
+    private void AoEscolherOpcao(object sender, RoutedEventArgs e)
+    {
+        if (_carregando || _rascunho is null || sender is not RadioButton { Tag: string valor } rb)
+        {
+            return; // também dispara durante o InitializeComponent, antes do rascunho existir
+        }
+
+        switch (rb.GroupName)
+        {
+            case "Tamanho":
+                _rascunho.TamanhoTexto = valor;
+                break;
+            case "Fonte":
+                _rascunho.Fonte = valor;
+                break;
+            case "Ordem":
+                _rascunho.DownloadEmCima = valor == "download";
+                break;
+            case "Intervalo":
+                _rascunho.IntervaloSegundos = double.Parse(valor, CultureInfo.InvariantCulture);
+                break;
+        }
+
+        AtualizarPreVisualizacao();
+        AtualizarEstadoSalvo();
+    }
+
+    private void AoAlternarMonitores(object sender, RoutedEventArgs e)
+    {
+        _rascunho.MostrarEmTodasAsBarras = ChaveMonitores.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
     private void AoRestaurarPadrao(object sender, RoutedEventArgs e)
     {
         // Mantém o que não é "aparência/medição": fixar na barra e unidade continuam como estão
@@ -318,7 +380,9 @@ public partial class EstudioCores : Window
             Unidade = _rascunho.Unidade,
             MostrarCpuRam = _rascunho.MostrarCpuRam, // v0.5.0: escolha do painel/menu, não é "aparência"
             // Sem isto, o próximo início religaria o "Iniciar com o Windows" que o usuário desligou
-            InicioAutomaticoJaConfigurado = _rascunho.InicioAutomaticoJaConfigurado
+            InicioAutomaticoJaConfigurado = _rascunho.InicioAutomaticoJaConfigurado,
+            // v0.8.0: o lugar escolhido arrastando tem botão próprio no menu ("Voltar à posição automática")
+            PosicoesManuais = new Dictionary<string, int>(_rascunho.PosicoesManuais)
         };
         _rascunho = padrao;
         CarregarNosControles();
@@ -332,6 +396,8 @@ public partial class EstudioCores : Window
         _rascunho.FixarNaBarra = atual.FixarNaBarra;
         _rascunho.MostrarCpuRam = atual.MostrarCpuRam; // v0.5.0: pode ter mudado pelo painel/menu
         _rascunho.InicioAutomaticoJaConfigurado = atual.InicioAutomaticoJaConfigurado;
+        // v0.8.0: o widget pode ter sido arrastado (Ctrl+arrastar) com o estúdio aberto
+        _rascunho.PosicoesManuais = new Dictionary<string, int>(atual.PosicoesManuais);
         _servico.Salvar(_rascunho.Clonar());
         AtualizarEstadoSalvo();
     }

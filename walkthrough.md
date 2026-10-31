@@ -1,5 +1,64 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.8.0 — 2026-10-31 — Itens adiados da Onda 2: intervalo, fonte/tamanho, ordem, Ctrl+arrastar, vários monitores
+
+### O que mudou
+- **Intervalo de atualização** 0,5 s / 1 s / 2 s / 5 s (estúdio › Medição). O laço de medição troca o
+  `PeriodicTimer.Period` sem reiniciar; o histórico passou a ter **capacidade variável**
+  (`HistoricoRede.CapacidadePara` = 60 s ÷ intervalo) e a gravar o consumo a cada **60 s somados**, não a cada
+  60 registros. O gráfico do painel distribui os pontos pela capacidade, então continua mostrando 60 s.
+- **Tamanho do texto** (Pequeno 9,5 / Normal 10,5 / Grande 11,5) e **fonte** (Segoe UI Variable, Segoe UI,
+  Cascadia Mono) — novo cartão "Na barra de tarefas" do estúdio. O widget usa recursos dinâmicos `Widget.*`;
+  a largura reservada na barra cresce pelo **fator medido** (`AparenciaWidget.FatorLargura`, que mede o pior
+  caso "↓ 88,8 Mbps" com `FormattedText`). No padrão o fator é exatamente 1 — geometria idêntica à v0.7.0.
+- **Ordem das linhas**: "↑ Envio" ou "↓ Download" em cima (também na faixa compacta de 1 linha).
+- **Ctrl + arrastar** o widget pela barra: durante o arrasto ele passa por cima de tudo, limitado à barra;
+  ao soltar, se cobriria botões é recusado e volta; perto da vaga automática (16 px lógicos) "gruda" nela
+  (= automático). A posição é gravada em px lógicos desde a borda da barra, **por monitor**
+  (`PosicoesManuais`: `principal` ou `monitor:X,Y`). Se depois os apps crescerem até ele, usa a vaga
+  automática até liberar (registrado no log uma vez). Menu do clique direito: **"Voltar à posição automática"**.
+- **Vários monitores**: opção "Mostrar em todos os monitores" cria um widget em cada `Shell_SecondaryTrayWnd`
+  (`GerenciadorBarrasSecundarias`, conferência a cada 3 s: barra nova ganha widget, barra que sumiu perde).
+  A medição da barra por UIA virou **uma só consulta** (`FindAll` com `OrCondition` + `CacheRequest`) e serve
+  às duas: na secundária, os botões fixos (Iniciar etc.) e o relógio entram como zonas ocupadas.
+
+### Por quê
+Eram os três itens adiados da Onda 2 (plano `03-PLANO-DE-ONDAS.md`), pedidos agora pelo dono ("faça as ondas de
+2 a 4"). O intervalo tinha sido adiado porque o histórico contava amostras (60 amostras = 60 s só a 1 s);
+a causa raiz foi resolvida contando segundos.
+
+### Como usar
+Clique no widget › estúdio de cores › cartão **Na barra de tarefas** (tamanho, fonte, linha de cima, todos os
+monitores) e **Medição › Atualizar a cada**. Para mudar o lugar: **segure Ctrl e arraste** o widget. Para
+desfazer: clique direito › **Voltar à posição automática**.
+
+### O que NÃO mudou de propósito
+- Quem atualiza da 0.7.0 não vê nada diferente: os padrões novos (1 s, Normal, Segoe UI Variable, envio em
+  cima, só a barra principal, sem posição manual) reproduzem o comportamento anterior.
+- O estúdio, ao "Restaurar padrão" ou "Aplicar", **preserva** as posições manuais (podem mudar arrastando com
+  o estúdio aberto; têm botão próprio no menu).
+
+### Arquivos tocados
+`Config/Configuracoes.cs`, `Apresentacao/AparenciaWidget.cs` (novo), `Apresentacao/GerenciadorBarrasSecundarias.cs` (novo),
+`Apresentacao/TaskbarLayout.cs`, `Apresentacao/TaskbarHost.cs`, `Apresentacao/TaskbarWidget.xaml(.cs)`,
+`Apresentacao/EstudioCores.xaml(.cs)`, `Apresentacao/PainelRapido.xaml.cs`, `Medicao/HistoricoRede.cs`, `App.xaml.cs`,
+`VelocimetroInternet.csproj` (0.8.0), `tests/.../Onda2ExtrasTests.cs` (novo), `03-PLANO-DE-ONDAS.md`, `README.md`.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Testes: **105/105** (24 novos em `Onda2ExtrasTests`: padrões e normalização,
+  cópia profunda, larguras com fator 1 = v0.7.0, posição manual válida/sobre botões/limitada/barra secundária,
+  limite do arrasto, capacidade do histórico, troca de intervalo sem perder consumo, fator da aparência).
+- No PC real (com `settings.json` do dono salvo e restaurado por hash, entrada Run conferida):
+  - Grande + download em cima + todos os monitores: widget na barra principal (244×63 px a 150%) e na
+    secundária (163×42 px a 100%), fotografados por `PrintWindow`; log com tick a cada 2 s.
+  - Cascadia + pequeno + posições salvas: principal em X = 923 lógicos → 1384 px físicos (exato);
+    secundária com X = 5 (em cima do Iniciar) recusada e na vaga automática, com a linha de log esperada.
+  - Estúdio desenhado fora da tela (`RenderTargetBitmap`): segmentos, interruptor e amostra refletem o arquivo.
+- **Validação manual recomendada** (a tela estava desligada e o Windows recusou mouse sintético — `SetCursorPos`
+  devolveu falso): segurar Ctrl e arrastar o widget para a esquerda, soltar sobre um espaço livre (fica),
+  soltar sobre os ícones (volta), soltar perto do lugar original (gruda); depois clique direito ›
+  "Voltar à posição automática".
+
 ## v0.7.0 — 2026-10-31 — Executável e instalador com o nome novo (`StatusMonitor.exe`)
 
 ### O que mudou

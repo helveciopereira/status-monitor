@@ -109,6 +109,80 @@ public sealed class TaskbarHost : IDisposable
 
     private bool _mostrarSistema;
 
+    // ------------------------------------------------------------------ v0.8.0
+
+    /// <summary>
+    /// Fator de largura da fonte/tamanho escolhidos (<see cref="AparenciaWidget.FatorLargura"/>).
+    /// 1 = geometria de sempre. Ao mudar, recalcula a posição na hora.
+    /// </summary>
+    public double FatorTexto
+    {
+        get => _fatorTexto;
+        set
+        {
+            if (Math.Abs(_fatorTexto - value) < 0.0001)
+            {
+                return;
+            }
+
+            _fatorTexto = value;
+            if (_hwndWidget != nint.Zero)
+            {
+                _ = AtualizarPosicaoAsync(forcarReencaixe: false);
+            }
+        }
+    }
+
+    private double _fatorTexto = 1.0;
+
+    /// <summary>
+    /// Posição escolhida com Ctrl + arrastar (px lógicos desde a borda esquerda da barra), ou null =
+    /// automática. Se ela passar a cobrir botões, o widget volta sozinho à vaga automática (a escolha
+    /// continua salva e vale de novo quando o espaço reabrir).
+    /// </summary>
+    public int? PosicaoManualLogica
+    {
+        get => _posicaoManualLogica;
+        set
+        {
+            if (_posicaoManualLogica == value)
+            {
+                return;
+            }
+
+            _posicaoManualLogica = value;
+            if (_hwndWidget != nint.Zero)
+            {
+                _ = AtualizarPosicaoAsync(forcarReencaixe: false);
+            }
+        }
+    }
+
+    private int? _posicaoManualLogica;
+    private bool _manualIndisponivelNoLog;
+
+    /// <summary>Disparado ao soltar um arrasto: (chave da barra, nova posição lógica ou null = automática).</summary>
+    public event Action<string, int?>? PosicaoManualEscolhida;
+
+    /// <summary>
+    /// v0.8.0 (vários monitores): barra secundária (Shell_SecondaryTrayWnd) que este host segue, ou
+    /// 0 = a barra principal. A secundária não tem bandeja: o limite direito é o relógio (o mesmo
+    /// AutomationId "SystemTrayIcon") ou, sem relógio, a ponta direita da barra.
+    /// </summary>
+    public nint BarraSecundaria { get; }
+
+    /// <summary>Chave da posição manual no settings.json: "principal" ou "monitor:X,Y" do monitor da barra.</summary>
+    public string ChavePosicao { get; }
+
+    // Última geometria medida — usada pelo arrasto (que não pode esperar a UI Automation)
+    private NativeMethods.RECT _ultimaBarra;
+    private int _ultimaBordaBandejaPx;
+    private double _ultimaEscala = 1.0;
+    private IReadOnlyList<(int Esquerda, int Direita)> _ultimasZonas = [];
+    private int _ultimoXAutomaticoPx;
+    private int _xInicioArrastePx;
+    private int _xArrasteAtualPx;
+
     /// <summary>Há app em tela cheia agora (widget oculto por isso). Lido pela atualização automática (v0.4.0).</summary>
     public bool EmTelaCheia => _ocultoPorTelaCheia;
 
@@ -162,15 +236,25 @@ public sealed class TaskbarHost : IDisposable
     /// NÃO É DESENHADA; e, quando o Explorer reinicia, a barra antiga é destruída levando a
     /// nossa janela junto (o processo segue vivo, sem nada na tela). Modo A só por --modo-a.
     /// </summary>
+    /// <param name="barraSecundaria">v0.8.0: hwnd de uma Shell_SecondaryTrayWnd (outro monitor); 0 = barra principal.</param>
     public TaskbarHost(
         TaskbarWidget widget,
         ModoEncaixeBarra modoPreferido = ModoEncaixeBarra.ModoB_TopmostSobreBarra,
-        Action<string>? logger = null)
+        Action<string>? logger = null,
+        nint barraSecundaria = 0)
     {
         _widget = widget;
-        _modoPreferido = modoPreferido;
-        _modoAtivo = modoPreferido;
+        // Barra secundária: sempre Modo B (o Modo A só existe para a principal, e só por --modo-a)
+        _modoPreferido = barraSecundaria != 0 ? ModoEncaixeBarra.ModoB_TopmostSobreBarra : modoPreferido;
+        _modoAtivo = _modoPreferido;
         _logger = logger;
+        BarraSecundaria = barraSecundaria;
+        ChavePosicao = barraSecundaria == 0 ? "principal" : ChaveDoMonitor(barraSecundaria);
+
+        // v0.8.0: Ctrl + arrastar (o widget só informa o movimento; quem posiciona é o host)
+        _widget.ArrasteIniciado += AoIniciarArraste;
+        _widget.ArrasteMovido += AoMoverArraste;
+        _widget.ArrasteConcluido += AoConcluirArraste;
 
         _timerVigiaLayout = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -250,7 +334,9 @@ public sealed class TaskbarHost : IDisposable
 
     public async Task AtualizarPosicaoAsync(bool forcarReencaixe)
     {
-        if (_atualizandoGeometria || _hwndWidget == nint.Zero)
+        // v0.8.0: durante o Ctrl + arrastar quem manda na posição é o usuário — o vigia de 1,5 s
+        // não pode puxar o widget de volta no meio do movimento
+        if (_atualizandoGeometria || _hwndWidget == nint.Zero || _widget.Arrastando)
         {
             return;
         }
@@ -261,10 +347,21 @@ public sealed class TaskbarHost : IDisposable
             DpiScale dpiScale = VisualTreeHelper.GetDpi(_widget);
             double escalaDpi = dpiScale.DpiScaleX > 0.1 ? dpiScale.DpiScaleX : 1.5;
 
-            nint taskbar = NativeMethods.FindWindowW("Shell_TrayWnd", null);
+            // v0.8.0: barra secundária = o hwnd recebido (se ainda existir); principal = Shell_TrayWnd
+            nint taskbar = BarraSecundaria != 0
+                ? (NativeMethods.IsWindow(BarraSecundaria) ? BarraSecundaria : nint.Zero)
+                : NativeMethods.FindWindowW("Shell_TrayWnd", null);
+            if (BarraSecundaria != 0 && taskbar == nint.Zero)
+            {
+                // A barra do outro monitor sumiu (monitor desligado, Explorer reiniciando): o
+                // gerenciador de barras descarta este host; até lá, nada a posicionar.
+                return;
+            }
+
             NativeMethods.RECT rectBarra;
             int bordaAppsPx;
             int bordaBandejaPx;
+            IReadOnlyList<(int Esquerda, int Direita)> zonasOcupadas = [];
             bool taskbarMudou = taskbar != _hwndTaskbar;
             _hwndTaskbar = taskbar;
 
@@ -280,7 +377,11 @@ public sealed class TaskbarHost : IDisposable
                 _modoAtivo = _modoPreferido;
 
                 // Lê a geometria real da barra via UI Automation numa thread de fundo (MTA)
-                (bordaAppsPx, bordaBandejaPx) = await Task.Run(() => MedirLimitesBarraPorUia(taskbar, rectBarra));
+                bool secundaria = BarraSecundaria != 0;
+                MedidasBarra medidas = await Task.Run(() => MedirLimitesBarraPorUia(taskbar, rectBarra, secundaria));
+                bordaAppsPx = medidas.BordaDireitaAppsPx;
+                bordaBandejaPx = medidas.BordaEsquerdaBandejaPx;
+                zonasOcupadas = medidas.ZonasOcupadas;
             }
             else
             {
@@ -308,9 +409,36 @@ public sealed class TaskbarHost : IDisposable
                 bordaAppsPx,
                 bordaBandejaPx,
                 escalaDpi,
-                _mostrarSistema);
+                _mostrarSistema,
+                _fatorTexto);
 
-            if (ForcarModoCompactoTeste)
+            // Guardado para o arrasto (limites e "ímã" que devolve ao automático)
+            _ultimaBarra = rectBarra;
+            _ultimaBordaBandejaPx = bordaBandejaPx;
+            _ultimaEscala = escalaDpi;
+            _ultimasZonas = zonasOcupadas;
+            _ultimoXAutomaticoPx = pos.XTelaPx;
+
+            // v0.8.0: posição escolhida pelo usuário vence a automática — enquanto não cobrir botões
+            bool usandoManual = false;
+            if (_posicaoManualLogica is int xManual)
+            {
+                PosicaoWidgetBarra? manual = TaskbarLayout.CalcularPosicaoManual(
+                    rectBarra, xManual, zonasOcupadas, bordaBandejaPx, escalaDpi, _mostrarSistema, _fatorTexto);
+                if (manual is { } m)
+                {
+                    pos = m;
+                    usandoManual = true;
+                    _manualIndisponivelNoLog = false;
+                }
+                else if (!_manualIndisponivelNoLog)
+                {
+                    _manualIndisponivelNoLog = true; // loga uma vez, não a cada 1,5 s
+                    _logger?.Invoke($"Posição manual ({xManual} lógicos) cobriria botões da barra — usando a automática até liberar.");
+                }
+            }
+
+            if (ForcarModoCompactoTeste && !usandoManual)
             {
                 // v0.5.0: mantém a borda DIREITA (encostada no '^' da bandeja) ao alargar — antes o
                 // X ficava o do modo normal e a caixa compacta, mais larga, invadia o '^'.
@@ -436,12 +564,30 @@ public sealed class TaskbarHost : IDisposable
         NativeMethods.SetWindowLongPtr(_hwndWidget, NativeMethods.GWL_EXSTYLE, exStyle);
     }
 
-    private static (int BordaDireitaAppsPx, int BordaEsquerdaBandejaPx) MedirLimitesBarraPorUia(
+    /// <summary>Resultado da leitura da barra por UI Automation (px físicos de tela).</summary>
+    private readonly record struct MedidasBarra(
+        int BordaDireitaAppsPx,
+        int BordaEsquerdaBandejaPx,
+        IReadOnlyList<(int Esquerda, int Direita)> ZonasOcupadas);
+
+    /// <summary>
+    /// Botões fora da lista de apps que também não podem ser cobertos pela posição manual
+    /// (Iniciar, Pesquisa, Visão de Tarefas e Widgets/Clima — este fica à ESQUERDA na barra centralizada).
+    /// Conferidos na barra real em 2026-10-31: "StartButton" existe nas duas barras (principal e secundária).
+    /// </summary>
+    private static readonly string[] IdsBotoesFixos = ["StartButton", "SearchButton", "TaskViewButton", "WidgetsButton"];
+
+    private static MedidasBarra MedirLimitesBarraPorUia(
         nint taskbarHwnd,
-        NativeMethods.RECT rectBarra)
+        NativeMethods.RECT rectBarra,
+        bool secundaria)
     {
-        int fallbackBandejaX = rectBarra.Right - (int)(rectBarra.Width * 0.28);
-        nint trayNotify = NativeMethods.FindWindowExW(taskbarHwnd, nint.Zero, "TrayNotifyWnd", null);
+        // Sem bandeja medida: na principal, o TrayNotifyWnd (ou 28% antes da ponta); na secundária,
+        // que não tem bandeja nem TrayNotifyWnd, a ponta direita menos meia altura da barra.
+        int fallbackBandejaX = secundaria
+            ? rectBarra.Right - (rectBarra.Height / 2)
+            : rectBarra.Right - (int)(rectBarra.Width * 0.28);
+        nint trayNotify = secundaria ? nint.Zero : NativeMethods.FindWindowExW(taskbarHwnd, nint.Zero, "TrayNotifyWnd", null);
         if (trayNotify != nint.Zero && NativeMethods.GetWindowRect(trayNotify, out NativeMethods.RECT rectTray) && rectTray.Left > rectBarra.Left)
         {
             fallbackBandejaX = rectTray.Left;
@@ -449,27 +595,62 @@ public sealed class TaskbarHost : IDisposable
 
         int bordaApps = rectBarra.Left + 400;
         int bordaBandeja = fallbackBandejaX;
+        var zonas = new List<(int Esquerda, int Direita)>();
 
         try
         {
             AutomationElement rootBarra = AutomationElement.FromHandle(taskbarHwnd);
             if (rootBarra == null)
             {
-                return (bordaApps, bordaBandeja);
+                return new MedidasBarra(bordaApps, bordaBandeja, zonas);
             }
 
-            var condicaoApps = new PropertyCondition(
-                AutomationElement.ClassNameProperty,
-                "Taskbar.TaskListButtonAutomationPeer");
-
-            AutomationElementCollection botoesApps = rootBarra.FindAll(TreeScope.Descendants, condicaoApps);
-            int maiorDireitaApp = 0;
-            foreach (AutomationElement botao in botoesApps)
+            // v0.8.0: UMA busca (antes eram duas) e com as 3 propriedades vindas de uma vez
+            // (CacheRequest) — cada ".Current.X" era uma ida e volta ao processo do Explorer, a
+            // cada 1,5 s. Agora também traz os botões fixos, para a posição manual não cobri-los.
+            // System.Windows também tem um "Condition" (de estilos): o da UI Automation vai qualificado
+            var condicoes = new List<System.Windows.Automation.Condition>
             {
-                Rect r = botao.Current.BoundingRectangle;
-                if (!r.IsEmpty && r.Width > 0 && r.Right > maiorDireitaApp)
+                new PropertyCondition(AutomationElement.ClassNameProperty, "Taskbar.TaskListButtonAutomationPeer"),
+                new PropertyCondition(AutomationElement.AutomationIdProperty, "SystemTrayIcon")
+            };
+            condicoes.AddRange(IdsBotoesFixos.Select(id => new PropertyCondition(AutomationElement.AutomationIdProperty, id)));
+
+            var cache = new CacheRequest { AutomationElementMode = AutomationElementMode.None };
+            cache.Add(AutomationElement.ClassNameProperty);
+            cache.Add(AutomationElement.AutomationIdProperty);
+            cache.Add(AutomationElement.BoundingRectangleProperty);
+
+            AutomationElementCollection encontrados;
+            using (cache.Activate())
+            {
+                encontrados = rootBarra.FindAll(TreeScope.Descendants, new OrCondition(condicoes.ToArray()));
+            }
+
+            int maiorDireitaApp = 0;
+            var esquerdasBandeja = new List<int>();
+            foreach (AutomationElement el in encontrados)
+            {
+                Rect r = el.Cached.BoundingRectangle;
+                if (r.IsEmpty || r.Width <= 0)
                 {
-                    maiorDireitaApp = (int)Math.Round(r.Right);
+                    continue; // botão oculto/recolhido
+                }
+
+                string classe = el.Cached.ClassName ?? string.Empty;
+                string id = el.Cached.AutomationId ?? string.Empty;
+                if (classe == "Taskbar.TaskListButtonAutomationPeer")
+                {
+                    maiorDireitaApp = Math.Max(maiorDireitaApp, (int)Math.Round(r.Right));
+                    zonas.Add(((int)Math.Round(r.Left), (int)Math.Round(r.Right)));
+                }
+                else if (id == "SystemTrayIcon")
+                {
+                    esquerdasBandeja.Add((int)Math.Round(r.Left));
+                }
+                else
+                {
+                    zonas.Add(((int)Math.Round(r.Left), (int)Math.Round(r.Right))); // Iniciar, Pesquisa…
                 }
             }
 
@@ -478,21 +659,8 @@ public sealed class TaskbarHost : IDisposable
                 bordaApps = maiorDireitaApp;
             }
 
-            var condicaoBandeja = new PropertyCondition(
-                AutomationElement.AutomationIdProperty,
-                "SystemTrayIcon");
-
-            AutomationElementCollection iconesBandeja = rootBarra.FindAll(TreeScope.Descendants, condicaoBandeja);
-            int menorEsquerdaBandeja = int.MaxValue;
-            foreach (AutomationElement icone in iconesBandeja)
-            {
-                Rect r = icone.Current.BoundingRectangle;
-                if (!r.IsEmpty && r.Width > 0 && r.Left > bordaApps && r.Left < menorEsquerdaBandeja)
-                {
-                    menorEsquerdaBandeja = (int)Math.Round(r.Left);
-                }
-            }
-
+            // Mesma regra de antes: o 1º ícone da bandeja À DIREITA dos apps (o '^'; na secundária, o relógio)
+            int menorEsquerdaBandeja = esquerdasBandeja.Where(x => x > bordaApps).DefaultIfEmpty(int.MaxValue).Min();
             if (menorEsquerdaBandeja < int.MaxValue)
             {
                 bordaBandeja = menorEsquerdaBandeja;
@@ -503,7 +671,81 @@ public sealed class TaskbarHost : IDisposable
             // Se o Explorer estiver no meio de uma reinicialização, usa o fallback do TrayNotifyWnd
         }
 
-        return (bordaApps, bordaBandeja);
+        return new MedidasBarra(bordaApps, bordaBandeja, zonas);
+    }
+
+    /// <summary>"monitor:X,Y" = canto superior esquerdo do monitor onde está a barra (chave estável da posição manual).</summary>
+    private static string ChaveDoMonitor(nint barra)
+    {
+        nint monitor = NativeMethods.MonitorFromWindow(barra, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var info = new NativeMethods.MONITORINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        return NativeMethods.GetMonitorInfoW(monitor, ref info)
+            ? $"monitor:{info.rcMonitor.Left},{info.rcMonitor.Top}"
+            : $"monitor:{barra}";
+    }
+
+    // ------------------------------------------------------------------ v0.8.0: Ctrl + arrastar
+
+    private void AoIniciarArraste()
+    {
+        _xInicioArrastePx = UltimaPosicao.XTelaPx;
+        _xArrasteAtualPx = _xInicioArrastePx;
+    }
+
+    /// <summary>Move o widget junto com o cursor, só na horizontal e sem sair da faixa útil da barra.</summary>
+    private void AoMoverArraste(int deslocamentoPx)
+    {
+        if (_ultimaBarra.Width <= 0)
+        {
+            return; // nenhuma barra medida ainda
+        }
+
+        _xArrasteAtualPx = TaskbarLayout.LimitarXDuranteArrasto(
+            _ultimaBarra, _xInicioArrastePx + deslocamentoPx, UltimaPosicao.LarguraFisicaPx, _ultimaBordaBandejaPx, _ultimaEscala);
+        NativeMethods.SetWindowPos(
+            _hwndWidget, NativeMethods.HWND_TOPMOST, _xArrasteAtualPx, UltimaPosicao.YTelaPx, 0, 0,
+            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    /// <summary>
+    /// Soltou: perto da vaga automática (ímã de 16 px lógicos) → volta ao automático; em cima de
+    /// botões → recusa e volta para onde estava; senão grava a posição nova (em px lógicos).
+    /// </summary>
+    private void AoConcluirArraste()
+    {
+        if (_ultimaBarra.Width <= 0 || Math.Abs(_xArrasteAtualPx - _xInicioArrastePx) < 2)
+        {
+            _ = AtualizarPosicaoAsync(forcarReencaixe: false); // Ctrl + clique sem mover: nada muda
+            return;
+        }
+
+        int? escolhida;
+        int imaPx = (int)Math.Round(TaskbarLayout.ImaPosicaoAutomaticaLogicaPx * _ultimaEscala);
+        if (Math.Abs(_xArrasteAtualPx - _ultimoXAutomaticoPx) <= imaPx)
+        {
+            escolhida = null;
+            _logger?.Invoke("Arrasto solto perto da vaga automática — volta à posição automática.");
+        }
+        else
+        {
+            int xLogico = (int)Math.Round((_xArrasteAtualPx - _ultimaBarra.Left) / _ultimaEscala);
+            bool valida = TaskbarLayout.CalcularPosicaoManual(
+                _ultimaBarra, xLogico, _ultimasZonas, _ultimaBordaBandejaPx, _ultimaEscala, _mostrarSistema, _fatorTexto) is not null;
+            if (!valida)
+            {
+                _logger?.Invoke($"Arrasto solto em cima de botões da barra (x={_xArrasteAtualPx}px) — recusado.");
+                _ = AtualizarPosicaoAsync(forcarReencaixe: false); // volta para onde estava
+                return;
+            }
+
+            escolhida = xLogico;
+            _logger?.Invoke($"Posição manual escolhida [{ChavePosicao}]: {xLogico} px lógicos da borda da barra.");
+        }
+
+        _posicaoManualLogica = escolhida;
+        _manualIndisponivelNoLog = false;
+        PosicaoManualEscolhida?.Invoke(ChavePosicao, escolhida);
+        _ = AtualizarPosicaoAsync(forcarReencaixe: false);
     }
 
     private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
@@ -555,6 +797,9 @@ public sealed class TaskbarHost : IDisposable
     public void Dispose()
     {
         _timerVigiaLayout.Stop();
+        _widget.ArrasteIniciado -= AoIniciarArraste;
+        _widget.ArrasteMovido -= AoMoverArraste;
+        _widget.ArrasteConcluido -= AoConcluirArraste;
         if (_appBarRegistrada)
         {
             RemoverAppBar();

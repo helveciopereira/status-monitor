@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace VelocimetroInternet.Apresentacao;
@@ -46,9 +47,52 @@ public partial class TaskbarWidget : Window
         TextoUpload.Text = upCompleto;
         TextoDownload.Text = downCompleto;
 
-        string upCurto = upCompleto.Split(' ')[0];
-        TextoCompactoUpload.Text = $"↑ {upCurto}";
-        TextoCompactoDownload.Text = $"↓ {downCompleto}";
+        // Linha única: o 1º valor sai só com o número e o ÚLTIMO leva a unidade (economiza
+        // largura). v0.8.0: com "download em cima" o ↓ vem primeiro, então os papéis se invertem.
+        if (_downloadEmCima)
+        {
+            TextoCompactoDownload.Text = $"↓ {downCompleto.Split(' ')[0]}";
+            TextoCompactoUpload.Text = $"↑ {upCompleto}";
+        }
+        else
+        {
+            TextoCompactoUpload.Text = $"↑ {upCompleto.Split(' ')[0]}";
+            TextoCompactoDownload.Text = $"↓ {downCompleto}";
+        }
+    }
+
+    // ------------------------------------------------------------------ v0.8.0: aparência
+
+    private bool _downloadEmCima;
+    private bool _mostrarSistema = true;
+    private double _fatorLargura = 1.0;
+
+    /// <summary>
+    /// v0.8.0: fonte, tamanho do texto e ordem das linhas (estúdio). A LARGURA da janela continua
+    /// sendo do TaskbarHost (que recebe o mesmo fator); aqui só a coluna CPU/RAM acompanha.
+    /// </summary>
+    public void AplicarAparencia(AparenciaWidget aparencia, double fatorLargura)
+    {
+        Resources["Widget.Fonte"] = aparencia.Familia;
+        Resources["Widget.TamanhoValor"] = aparencia.TamanhoValor;
+        Resources["Widget.TamanhoRotulo"] = aparencia.TamanhoRotulo;
+        Resources["Widget.TamanhoCompacto"] = aparencia.TamanhoCompacto;
+        Resources["Widget.TamanhoSeparador"] = aparencia.TamanhoSeparador;
+        _fatorLargura = fatorLargura;
+        DefinirMostrarSistema(_mostrarSistema); // recalcula a largura da coluna CPU/RAM
+
+        // Ordem das linhas: CPU/RAM ficam onde estão (CPU em cima); só ↑ e ↓ trocam
+        _downloadEmCima = aparencia.DownloadEmCima;
+        Grid.SetRow(PilulaUpload, _downloadEmCima ? 2 : 0);
+        Grid.SetRow(PilulaDownload, _downloadEmCima ? 0 : 2);
+
+        // Linha única: [CPU·RAM |] 1º | 2º — reordena só os três últimos filhos
+        LinhaCompacta.Children.Remove(TextoCompactoUpload);
+        LinhaCompacta.Children.Remove(SeparadorCompactoRede);
+        LinhaCompacta.Children.Remove(TextoCompactoDownload);
+        LinhaCompacta.Children.Add(_downloadEmCima ? TextoCompactoDownload : TextoCompactoUpload);
+        LinhaCompacta.Children.Add(SeparadorCompactoRede);
+        LinhaCompacta.Children.Add(_downloadEmCima ? TextoCompactoUpload : TextoCompactoDownload);
     }
 
     /// <summary>
@@ -57,13 +101,15 @@ public partial class TaskbarWidget : Window
     /// </summary>
     public void DefinirMostrarSistema(bool mostrar)
     {
+        _mostrarSistema = mostrar;
         Visibility v = mostrar ? Visibility.Visible : Visibility.Collapsed;
         PilulaCpu.Visibility = v;
         PilulaRam.Visibility = v;
         CompactoSistema.Visibility = v;
-        // Coluna com largura fixa: precisa ir a 0, senão sobraria um vão vazio à esquerda
-        ColunaSistema.Width = new GridLength(mostrar ? 61 : 0);
-        ColunaRespiro.Width = new GridLength(mostrar ? 3 : 0);
+        // Coluna com largura fixa: precisa ir a 0, senão sobraria um vão vazio à esquerda.
+        // v0.8.0: a largura acompanha a fonte/tamanho (61 no padrão — mesma conta do TaskbarLayout).
+        ColunaSistema.Width = new GridLength(mostrar ? TaskbarLayout.LarguraColunaSistema(_fatorLargura) : 0);
+        ColunaRespiro.Width = new GridLength(mostrar ? TaskbarLayout.RespiroSistemaLogicoPx : 0);
     }
 
     /// <summary>Atualiza CPU e RAM (%) nos dois layouts. null = leitura indisponível ("—").</summary>
@@ -151,9 +197,89 @@ public partial class TaskbarWidget : Window
     /// <summary>Clique direito no widget (menu).</summary>
     public event Action? CliqueDireito;
 
+    // ------------------------------------------------------------------ v0.8.0: Ctrl + arrastar
+
+    /// <summary>Ctrl + botão esquerdo pressionado sobre o widget: o arrasto começou.</summary>
+    public event Action? ArrasteIniciado;
+
+    /// <summary>Deslocamento horizontal do cursor desde o início do arrasto, em px FÍSICOS.</summary>
+    public event Action<int>? ArrasteMovido;
+
+    /// <summary>Botão solto (ou captura perdida): o host decide se a posição vale e a grava.</summary>
+    public event Action? ArrasteConcluido;
+
+    private bool _arrastando;
+    private int _cursorInicialXPx;
+
+    /// <summary>Há um arrasto em andamento (o host não reposiciona por baixo dele).</summary>
+    public bool Arrastando => _arrastando;
+
+    protected override void OnMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+
+        // Só com Ctrl: o clique simples continua abrindo o painel rápido, como sempre
+        if ((System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == 0
+            || !Sistema.NativeMethods.GetCursorPos(out Sistema.NativeMethods.POINT p))
+        {
+            return;
+        }
+
+        // Cursor em px físicos (o processo é PerMonitorV2): mesma unidade do SetWindowPos do host
+        _cursorInicialXPx = p.X;
+        _arrastando = true;
+        CaptureMouse(); // continua recebendo o movimento mesmo com o cursor fora do widget
+        System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeWE;
+        ArrasteIniciado?.Invoke();
+        e.Handled = true;
+    }
+
+    protected override void OnMouseMove(System.Windows.Input.MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        if (_arrastando && Sistema.NativeMethods.GetCursorPos(out Sistema.NativeMethods.POINT p))
+        {
+            ArrasteMovido?.Invoke(p.X - _cursorInicialXPx);
+        }
+    }
+
+    protected override void OnLostMouseCapture(System.Windows.Input.MouseEventArgs e)
+    {
+        base.OnLostMouseCapture(e);
+        // Captura roubada (Alt+Tab, outra janela): encerra o arrasto onde o widget está
+        EncerrarArrasto();
+    }
+
+    /// <summary>Fecha o arrasto uma única vez (o ReleaseMouseCapture também dispara LostMouseCapture).</summary>
+    private void EncerrarArrasto()
+    {
+        if (!_arrastando)
+        {
+            return;
+        }
+
+        _arrastando = false;
+        System.Windows.Input.Mouse.OverrideCursor = null;
+        if (IsMouseCaptured)
+        {
+            ReleaseMouseCapture();
+        }
+
+        ArrasteConcluido?.Invoke();
+    }
+
     protected override void OnMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonUp(e);
+
+        // Fim de um arrasto NÃO é clique (não abre o painel)
+        if (_arrastando)
+        {
+            EncerrarArrasto();
+            e.Handled = true;
+            return;
+        }
+
         CliqueEsquerdo?.Invoke();
     }
 

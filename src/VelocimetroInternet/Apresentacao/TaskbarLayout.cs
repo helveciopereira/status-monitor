@@ -52,13 +52,50 @@ public static class TaskbarLayout
     public const int LarguraLogicaSistemaNormalPx = 64;
     public const int LarguraLogicaSistemaCompactaPx = 112;
 
+    /// <summary>Contorno externo (padding 4 + 4 do ContornoHover): NÃO escala com a fonte.</summary>
+    public const int PaddingContornoLogicoPx = 8;
+
+    /// <summary>Respiro fixo entre a coluna CPU/RAM e a pílula de rede.</summary>
+    public const int RespiroSistemaLogicoPx = 3;
+
+    /// <summary>Pílula ↑/↓ no padrão (78) e coluna CPU/RAM (61) — v0.6.0.</summary>
+    public const int LarguraPilulaRedeLogicaPx = LarguraLogicaNormalPx - PaddingContornoLogicoPx;
+    public const int LarguraColunaSistemaLogicaPx = LarguraLogicaSistemaNormalPx - RespiroSistemaLogicoPx;
+
+    /// <summary>
+    /// v0.8.0: distância (px lógicos) até a posição automática abaixo da qual soltar o widget
+    /// arrastado "gruda" de volta no automático (apaga a posição manual).
+    /// </summary>
+    public const int ImaPosicaoAutomaticaLogicaPx = 16;
+
     /// <summary>Largura lógica do widget normal (2 linhas), com ou sem a coluna CPU/RAM.</summary>
-    public static int LarguraLogicaNormal(bool mostrarSistema) =>
-        LarguraLogicaNormalPx + (mostrarSistema ? LarguraLogicaSistemaNormalPx : 0);
+    public static int LarguraLogicaNormal(bool mostrarSistema) => LarguraLogicaNormal(mostrarSistema, 1.0);
+
+    /// <summary>
+    /// v0.8.0: idem, com as pílulas escaladas pelo fator da fonte/tamanho escolhidos
+    /// (<see cref="AparenciaWidget.FatorLargura"/>). Fator 1 = exatamente a largura de antes.
+    /// </summary>
+    public static int LarguraLogicaNormal(bool mostrarSistema, double fatorTexto) =>
+        PaddingContornoLogicoPx
+        + LarguraPilulaRede(fatorTexto)
+        + (mostrarSistema ? LarguraColunaSistema(fatorTexto) + RespiroSistemaLogicoPx : 0);
 
     /// <summary>Largura lógica do widget compacto (1 linha), com ou sem CPU/RAM.</summary>
-    public static int LarguraLogicaCompacta(bool mostrarSistema) =>
-        LarguraLogicaCompactaPx + (mostrarSistema ? LarguraLogicaSistemaCompactaPx : 0);
+    public static int LarguraLogicaCompacta(bool mostrarSistema) => LarguraLogicaCompacta(mostrarSistema, 1.0);
+
+    /// <summary>v0.8.0: idem, escalada pelo fator da fonte/tamanho (a linha única é quase só texto).</summary>
+    public static int LarguraLogicaCompacta(bool mostrarSistema, double fatorTexto) =>
+        Escalar(LarguraLogicaCompactaPx, fatorTexto)
+        + (mostrarSistema ? Escalar(LarguraLogicaSistemaCompactaPx, fatorTexto) : 0);
+
+    /// <summary>Pílula ↑/↓ (px lógicos) para o fator de texto — usada também pelo widget.</summary>
+    public static int LarguraPilulaRede(double fatorTexto) => Escalar(LarguraPilulaRedeLogicaPx, fatorTexto);
+
+    /// <summary>Coluna CPU/RAM (px lógicos) para o fator de texto — usada também pelo widget.</summary>
+    public static int LarguraColunaSistema(double fatorTexto) => Escalar(LarguraColunaSistemaLogicaPx, fatorTexto);
+
+    private static int Escalar(int larguraPadrao, double fator) =>
+        (int)Math.Round(larguraPadrao * (double.IsFinite(fator) && fator > 0 ? fator : 1.0));
 
     /// <summary>
     /// Calcula a posição na vaga do Clima (à esquerda do botão '^' da bandeja quando a barra está alinhada
@@ -74,12 +111,13 @@ public static class TaskbarLayout
         int bordaDireitaAppsPx,
         int bordaEsquerdaBandejaPx,
         double escalaDpi,
-        bool mostrarSistema = false)
+        bool mostrarSistema = false,
+        double fatorTexto = 1.0)
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
 
-        int larguraNormalPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema) * escala);
-        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema) * escala);
+        int larguraNormalPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema, fatorTexto) * escala);
+        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema, fatorTexto) * escala);
         int alturaWidgetPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
 
@@ -123,6 +161,85 @@ public static class TaskbarLayout
             LarguraFisicaPx: larguraEscolhidaPx,
             AlturaFisicaPx: alturaWidgetPx,
             EspacoLivreFisicoPx: espacoLivrePx);
+    }
+
+    /// <summary>
+    /// v0.8.0 (Ctrl + arrastar): posição ESCOLHIDA pelo usuário, sempre no modo normal de 2 linhas.
+    /// Devolve null quando ela não serve mais — o widget cobriria algum botão (os apps cresceram
+    /// até ele, ou a barra mudou de tamanho/monitor) — e então o chamador volta à vaga automática.
+    /// O X é limitado à faixa útil da barra (da borda esquerda até a margem antes do '^').
+    /// </summary>
+    /// <param name="xLogicoDesdeBordaBarra">Distância salva (px lógicos) da borda esquerda da barra até o widget.</param>
+    /// <param name="zonasOcupadasPx">Trechos [Esquerda, Direita) em px físicos de TELA com botões (Iniciar + apps, Widgets…).</param>
+    public static PosicaoWidgetBarra? CalcularPosicaoManual(
+        NativeMethods.RECT rectBarra,
+        int xLogicoDesdeBordaBarra,
+        IReadOnlyList<(int Esquerda, int Direita)> zonasOcupadasPx,
+        int bordaEsquerdaBandejaPx,
+        double escalaDpi,
+        bool mostrarSistema = false,
+        double fatorTexto = 1.0)
+    {
+        double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
+        int larguraPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema, fatorTexto) * escala);
+        int alturaPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
+        int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
+
+        int minimoPx = rectBarra.Left + margemPx;
+        int maximoPx = bordaEsquerdaBandejaPx - larguraPx - margemPx;
+        if (maximoPx < minimoPx)
+        {
+            return null; // barra estreita demais para o widget fora da vaga automática
+        }
+
+        int xTelaPx = Math.Clamp(rectBarra.Left + (int)Math.Round(xLogicoDesdeBordaBarra * escala), minimoPx, maximoPx);
+        if (SobrepoeAlgumaZona(xTelaPx, larguraPx, margemPx, zonasOcupadasPx))
+        {
+            return null;
+        }
+
+        int yTelaPx = rectBarra.Top + ((rectBarra.Height - alturaPx) / 2);
+        return new PosicaoWidgetBarra(
+            Estado: EstadoColisaoBarra.NormalDuasLinhas,
+            XRelativoBarraPx: xTelaPx - rectBarra.Left,
+            YRelativoBarraPx: yTelaPx - rectBarra.Top,
+            XTelaPx: xTelaPx,
+            YTelaPx: yTelaPx,
+            LarguraFisicaPx: larguraPx,
+            AlturaFisicaPx: alturaPx,
+            EspacoLivreFisicoPx: maximoPx - minimoPx);
+    }
+
+    /// <summary>
+    /// Limita o X durante o arrasto à faixa útil da barra (não sai da barra nem invade o '^').
+    /// Ao contrário de <see cref="CalcularPosicaoManual"/>, deixa passar POR CIMA dos botões —
+    /// o usuário está atravessando a barra; a validade só é julgada ao soltar.
+    /// </summary>
+    public static int LimitarXDuranteArrasto(
+        NativeMethods.RECT rectBarra, int xTelaDesejadoPx, int larguraPx, int bordaEsquerdaBandejaPx, double escalaDpi)
+    {
+        double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
+        int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
+        int minimoPx = rectBarra.Left + margemPx;
+        int maximoPx = Math.Max(minimoPx, bordaEsquerdaBandejaPx - larguraPx - margemPx);
+        return Math.Clamp(xTelaDesejadoPx, minimoPx, maximoPx);
+    }
+
+    /// <summary>[x - margem, x + largura + margem) encosta em algum trecho com botões?</summary>
+    public static bool SobrepoeAlgumaZona(
+        int xTelaPx, int larguraPx, int margemPx, IReadOnlyList<(int Esquerda, int Direita)> zonasOcupadasPx)
+    {
+        int esquerda = xTelaPx - margemPx;
+        int direita = xTelaPx + larguraPx + margemPx;
+        foreach ((int e, int d) in zonasOcupadasPx)
+        {
+            if (d > e && esquerda < d && direita > e)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

@@ -118,7 +118,7 @@ public partial class App : Application
         }
 
         Configuracoes cfg = _config.Atual;
-        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} ===");
+        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
@@ -129,9 +129,7 @@ public partial class App : Application
 
         ServicoTema.Aplicar(TemaWindows.AppsClaros());
 
-        _widget = new TaskbarWidget(UnidadeDe(cfg));
-        _widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
-        AplicarPaleta();
+        _widget = CriarWidgetConfigurado();
         if (textoFixoPoC)
         {
             _widget.DefinirTextosFixosPoC();
@@ -146,10 +144,19 @@ public partial class App : Application
         {
             ForcarModoCompactoTeste = usarCompacto,
             // v0.5.0: antes do InicializarAsync, para a 1ª posição já sair com a largura certa
-            MostrarSistema = cfg.MostrarCpuRam
+            MostrarSistema = cfg.MostrarCpuRam,
+            // v0.8.0: idem para a fonte/tamanho e a posição escolhida com Ctrl + arrastar
+            FatorTexto = _fatorTexto,
+            PosicaoManualLogica = PosicaoManualDe(cfg, "principal")
         };
+        _host.PosicaoManualEscolhida += GravarPosicaoManual;
         await _host.InicializarAsync();
         _host.FixadoNaBarra = cfg.FixarNaBarra;
+
+        // v0.8.0: widgets nas barras dos outros monitores (opção do estúdio, padrão desligada)
+        _secundarias = new GerenciadorBarrasSecundarias(CriarWidgetConfigurado, ConfigurarHostSecundario, RegistrarLog);
+        _secundarias.Ativo = cfg.MostrarEmTodasAsBarras;
+        _historico.DefinirIntervalo(cfg.IntervaloSegundos);
 
         // Mensagens do Windows que chegam pela janela do widget: tema, bandeja e "2ª instância"
         _host.AdicionarGanchoMensagens(GanchoMensagens);
@@ -167,7 +174,8 @@ public partial class App : Application
         _bandeja.CliqueDireito += AbrirMenu;
         AtualizarVisibilidadeBandeja();
 
-        _widget.CliqueEsquerdo += () => AlternarPainel(veioDaBandeja: false);
+        TaskbarHost hostPrincipal = _host;
+        _widget.CliqueEsquerdo += () => AlternarPainel(veioDaBandeja: false, hostPrincipal);
         _widget.CliqueDireito += AbrirMenu;
 
         _config.Alteradas += AoAlterarConfiguracoes;
@@ -258,6 +266,95 @@ public partial class App : Application
     private static ModoUnidadeVelocidade UnidadeDe(Configuracoes cfg) =>
         cfg.Unidade == "bits" ? ModoUnidadeVelocidade.BitsPorSegundo : ModoUnidadeVelocidade.BytesPorSegundo;
 
+    // ------------------------------------------------------------------ v0.8.0: aparência, posição, monitores
+
+    /// <summary>Widgets das barras dos outros monitores (null antes do OnStartup terminar).</summary>
+    private GerenciadorBarrasSecundarias? _secundarias;
+
+    /// <summary>Fator de largura da fonte/tamanho atuais (medido uma vez por mudança, não a cada tick).</summary>
+    private double _fatorTexto = 1.0;
+
+    private static AparenciaWidget AparenciaDe(Configuracoes cfg) => new(cfg.Fonte, cfg.TamanhoTexto, cfg.DownloadEmCima);
+
+    private static int? PosicaoManualDe(Configuracoes cfg, string chave) =>
+        cfg.PosicoesManuais.TryGetValue(chave, out int x) ? x : null;
+
+    /// <summary>Widget principal e os das barras secundárias — tudo que mostra números na tela.</summary>
+    private IEnumerable<TaskbarWidget> TodosWidgets()
+    {
+        if (_widget is not null)
+        {
+            yield return _widget;
+        }
+
+        if (_secundarias is not null)
+        {
+            foreach ((TaskbarWidget w, _) in _secundarias.Pares)
+            {
+                yield return w;
+            }
+        }
+    }
+
+    /// <summary>Hosts de todas as barras (principal primeiro).</summary>
+    private IEnumerable<TaskbarHost> TodosHosts()
+    {
+        if (_host is not null)
+        {
+            yield return _host;
+        }
+
+        if (_secundarias is not null)
+        {
+            foreach ((_, TaskbarHost h) in _secundarias.Pares)
+            {
+                yield return h;
+            }
+        }
+    }
+
+    /// <summary>Widget novo já com unidade, CPU/RAM, cores e aparência da configuração atual.</summary>
+    private TaskbarWidget CriarWidgetConfigurado()
+    {
+        Configuracoes cfg = _config.Atual;
+        var widget = new TaskbarWidget(UnidadeDe(cfg));
+        AparenciaWidget aparencia = AparenciaDe(cfg);
+        _fatorTexto = aparencia.FatorLargura();
+        widget.AplicarAparencia(aparencia, _fatorTexto);
+        widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
+        widget.AplicarCores(Paletas.Resolver(
+            Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada),
+            TemaWindows.BarraClara()));
+        return widget;
+    }
+
+    /// <summary>Host de barra secundária: mesmas opções do principal; clique abre o painel ancorado NELE.</summary>
+    private void ConfigurarHostSecundario(TaskbarWidget widget, TaskbarHost host)
+    {
+        Configuracoes cfg = _config.Atual;
+        host.MostrarSistema = cfg.MostrarCpuRam;
+        host.FatorTexto = _fatorTexto;
+        host.PosicaoManualLogica = PosicaoManualDe(cfg, host.ChavePosicao);
+        host.FixadoNaBarra = cfg.FixarNaBarra;
+        host.PosicaoManualEscolhida += GravarPosicaoManual;
+        widget.CliqueEsquerdo += () => AlternarPainel(veioDaBandeja: false, host);
+        widget.CliqueDireito += AbrirMenu;
+    }
+
+    /// <summary>Ctrl + arrastar terminou: grava (ou apaga, se voltou ao automático) a posição daquela barra.</summary>
+    private void GravarPosicaoManual(string chave, int? xLogico) =>
+        _config.Alterar(c =>
+        {
+            if (xLogico is int x)
+            {
+                c.PosicoesManuais[chave] = x;
+            }
+            else
+            {
+                c.PosicoesManuais.Remove(chave);
+            }
+        });
+
     /// <summary>Aplica tudo o que mudou. Chamado após cada Salvar (menu, painel ou estúdio).</summary>
     private void AoAlterarConfiguracoes(Configuracoes cfg)
     {
@@ -266,10 +363,31 @@ public partial class App : Application
             return;
         }
 
-        _widget.DefinirUnidade(UnidadeDe(cfg));
-        _widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
-        _host.MostrarSistema = cfg.MostrarCpuRam; // recalcula a largura na barra se mudou
-        _host.FixadoNaBarra = cfg.FixarNaBarra;
+        // v0.8.0: a fonte/tamanho só são medidos de novo quando mudam
+        AparenciaWidget aparencia = AparenciaDe(cfg);
+        _fatorTexto = aparencia.FatorLargura();
+
+        foreach (TaskbarWidget w in TodosWidgets())
+        {
+            w.DefinirUnidade(UnidadeDe(cfg));
+            w.AplicarAparencia(aparencia, _fatorTexto);
+            w.DefinirMostrarSistema(cfg.MostrarCpuRam);
+        }
+
+        foreach (TaskbarHost h in TodosHosts())
+        {
+            h.MostrarSistema = cfg.MostrarCpuRam; // recalcula a largura na barra se mudou
+            h.FatorTexto = _fatorTexto;
+            h.PosicaoManualLogica = PosicaoManualDe(cfg, h.ChavePosicao);
+            h.FixadoNaBarra = cfg.FixarNaBarra;
+        }
+
+        if (_secundarias is not null)
+        {
+            _secundarias.Ativo = cfg.MostrarEmTodasAsBarras;
+        }
+
+        _historico.DefinirIntervalo(cfg.IntervaloSegundos);
         AtualizarVisibilidadeBandeja();
         AplicarPaleta();
         RecriarMedidor(cfg);
@@ -302,7 +420,11 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         PaletaCores paleta = Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada);
         CoresResolvidas cores = Paletas.Resolver(paleta, TemaWindows.BarraClara());
-        _widget.AplicarCores(cores);
+        foreach (TaskbarWidget w in TodosWidgets()) // v0.8.0: inclui as barras dos outros monitores
+        {
+            w.AplicarCores(cores);
+        }
+
         _painel?.AplicarPaleta(paleta);
     }
 
@@ -370,7 +492,8 @@ public partial class App : Application
 
     // ------------------------------------------------------------------ painel rápido
 
-    private void AlternarPainel(bool veioDaBandeja)
+    /// <param name="origem">v0.8.0: host do widget clicado (outro monitor) — o painel abre junto DELE. null = principal.</param>
+    private void AlternarPainel(bool veioDaBandeja, TaskbarHost? origem = null)
     {
         // Clique no widget/bandeja com o painel aberto: o painel já fechou ao perder o foco
         // seguido deste clique → não reabrir (o clique era para FECHAR)
@@ -380,12 +503,13 @@ public partial class App : Application
             return;
         }
 
-        AbrirPainel(veioDaBandeja);
+        AbrirPainel(veioDaBandeja, origem);
     }
 
-    private void AbrirPainel(bool veioDaBandeja)
+    private void AbrirPainel(bool veioDaBandeja, TaskbarHost? origem = null)
     {
-        if (_host is null)
+        TaskbarHost? ancora = origem ?? _host;
+        if (ancora is null)
         {
             return;
         }
@@ -410,7 +534,7 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         _painel.SincronizarComConfiguracoes(cfg, _inicio.EstaLigado());
         _painel.AplicarPaleta(Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada));
-        _painel.AbrirAncorado(_host.UltimaPosicao, _host.HwndWidget, veioDaBandeja);
+        _painel.AbrirAncorado(ancora.UltimaPosicao, ancora.HwndWidget, veioDaBandeja);
     }
 
     // ------------------------------------------------------------------ estúdio de cores
@@ -491,6 +615,16 @@ public partial class App : Application
         itemSistema.Click += (_, _) => _config.Alterar(c => c.MostrarCpuRam = !c.MostrarCpuRam);
         menu.Items.Add(itemSistema);
 
+        // v0.8.0: desfaz o Ctrl + arrastar (todas as barras voltam à vaga ao lado do '^')
+        var itemAutomatica = new MenuItem
+        {
+            Header = "Voltar à posição automática",
+            IsEnabled = cfg.PosicoesManuais.Count > 0,
+            ToolTip = "Para mudar o widget de lugar: segure Ctrl e arraste-o pela barra."
+        };
+        itemAutomatica.Click += (_, _) => _config.Alterar(c => c.PosicoesManuais.Clear());
+        menu.Items.Add(itemAutomatica);
+
         var itemPausar = new MenuItem { Header = "Pausar medição", IsChecked = _pausado };
         itemPausar.Click += (_, _) => DefinirPausa(!_pausado);
         menu.Items.Add(itemPausar);
@@ -550,7 +684,11 @@ public partial class App : Application
         _pausado = pausar;
         if (pausar)
         {
-            _widget?.MostrarPausado();
+            foreach (TaskbarWidget w in TodosWidgets())
+            {
+                w.MostrarPausado();
+            }
+
             _bandeja?.DefinirDica("Status Monitor — medição pausada");
         }
         else
@@ -672,7 +810,7 @@ public partial class App : Application
             // abertas por processo em segundo plano (o próprio reinício) elas ficam presas e enganam.
             nint sob = NativeMethods.WindowFromPoint(p);
             nint raiz = sob == nint.Zero ? nint.Zero : NativeMethods.GetAncestor(sob, NativeMethods.GA_ROOT);
-            mouseSobre = raiz == _host.HwndWidget;
+            mouseSobre = raiz != nint.Zero && TodosHosts().Any(h => h.HwndWidget == raiz); // v0.8.0: qualquer monitor
         }
 
         return RegraMomentoTranquilo.Avaliar(
@@ -703,11 +841,22 @@ public partial class App : Application
         // alocação) — assim, ao ligar a opção, a base da CPU já é a do segundo anterior.
         var medidorSistema = new MedidorSistema();
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        // v0.8.0: intervalo configurável (0,5 / 1 / 2 / 5 s). PeriodicTimer.Period aceita troca em
+        // pleno funcionamento — a mudança no estúdio vale a partir do próximo tick, sem recriar o loop.
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_config.Atual.IntervaloSegundos));
+        // Log "longo" a cada 10 min por RELÓGIO (antes: a cada 600 ticks, que só era 10 min com 1 s)
+        TimeSpan proximoLogLongo = TimeSpan.FromMinutes(10);
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
+                TimeSpan periodoDesejado = TimeSpan.FromSeconds(_config.Atual.IntervaloSegundos);
+                if (timer.Period != periodoDesejado)
+                {
+                    timer.Period = periodoDesejado;
+                    RegistrarLog($"Intervalo de atualização: {periodoDesejado.TotalSeconds:0.#} s.");
+                }
+
                 tick++;
                 TimeSpan agora = cronometro.Elapsed;
                 TimeSpan decurso = agora - ultimoInstante;
@@ -761,18 +910,19 @@ public partial class App : Application
 
                 if (!manterTextoFixoNaTela && _widget is not null)
                 {
-                    TaskbarWidget w = _widget;
-                    _ = w.Dispatcher.InvokeAsync(() =>
+                    _ = _widget.Dispatcher.InvokeAsync(() =>
                     {
+                        // v0.8.0: lista tirada NA thread da UI (o gerenciador de monitores só mexe nela lá)
+                        List<TaskbarWidget> widgets = TodosWidgets().ToList();
                         bool mostrarSistema = _config.Atual.MostrarCpuRam;
                         if (semConexao)
                         {
-                            w.MostrarSemConexao();
+                            widgets.ForEach(w => w.MostrarSemConexao());
                             _bandeja?.DefinirDica("Status Monitor — sem conexão");
                         }
                         else if (vel.AmostraValida)
                         {
-                            w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo);
+                            widgets.ForEach(w => w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo));
                             formatador.ModoUnidade = UnidadeDe(_config.Atual);
                             // v0.5.0: com CPU/RAM ligados, a dica da bandeja ganha uma 3ª linha
                             string linhaSistema = mostrarSistema
@@ -786,7 +936,7 @@ public partial class App : Application
                         // v0.5.0: CPU/RAM independem da rede — atualizam mesmo "sem conexão"
                         if (mostrarSistema)
                         {
-                            w.AtualizarSistema(uso.CpuPercentual, uso.RamPercentual);
+                            widgets.ForEach(w => w.AtualizarSistema(uso.CpuPercentual, uso.RamPercentual));
                         }
 
                         _painel?.AtualizarAoVivo(semConexao);
@@ -794,7 +944,13 @@ public partial class App : Application
                 }
 
                 // Log enxuto: 1ª dezena de ticks e depois a cada 10 min (RAM para acompanhar a meta)
-                if (tick <= 10 || tick % 600 == 0)
+                bool logLongo = agora >= proximoLogLongo;
+                if (logLongo)
+                {
+                    proximoLogLongo = agora + TimeSpan.FromMinutes(10);
+                }
+
+                if (tick <= 10 || logLongo)
                 {
                     using var proc = Process.GetCurrentProcess();
                     RegistrarLog(
@@ -852,6 +1008,7 @@ public partial class App : Application
         _ctsMedicao?.Cancel();
         _historico.SalvarConsumo();
         _bandeja?.Dispose();
+        _secundarias?.Dispose();
         _host?.Dispose();
         _mutexInstanciaUnica?.Dispose();
         base.OnExit(e);

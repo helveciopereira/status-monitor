@@ -290,7 +290,8 @@ public partial class PainelRapido : Window
         PosicionarGuia(GuiaMeio, RotuloMeio, rotuloMeio, yMeio, largura);
         MostrarGuias(true);
 
-        double passo = largura / (HistoricoRede.JanelaSegundos - 1);
+        // v0.8.0: a largura é dividida pela capacidade REAL (60 s ÷ intervalo), não por 60 fixo
+        double passo = largura / (Math.Max(2, h.Capacidade) - 1);
         double x0 = largura - passo * (h.Pontos.Count - 1);
 
         (Geometry areaD, Geometry linhaD) = MontarSerie(h.Pontos, p => p.DownloadBps, x0, passo, altura, yTopo, topo);

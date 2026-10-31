@@ -160,10 +160,90 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 3. Medição e exibição -->
+                <!-- 3. v0.8.0: aparência e lugar na barra (itens adiados da Onda 2) -->
+                <TextBlock Text="Na barra de tarefas" Style="{StaticResource Titulo}" />
+                <Border Style="{StaticResource Cartao}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Tamanho do texto" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                                <StackPanel x:Name="GrupoTamanho" Orientation="Horizontal">
+                                    <RadioButton GroupName="Tamanho" Tag="pequeno" Content="Pequeno" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Texto pequeno" />
+                                    <RadioButton GroupName="Tamanho" Tag="normal" Content="Normal" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Texto normal" />
+                                    <RadioButton GroupName="Tamanho" Tag="grande" Content="Grande" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Texto grande" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Fonte" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                                <!-- Cada opção escrita na própria fonte: dá para escolher vendo -->
+                                <StackPanel x:Name="GrupoFonte" Orientation="Horizontal">
+                                    <RadioButton GroupName="Fonte" Tag="segoe" Content="Segoe UI Variable" Style="{StaticResource Segmento}"
+                                                 FontFamily="Segoe UI Variable Text" Checked="AoEscolherOpcao" AutomationProperties.Name="Fonte Segoe UI Variable" />
+                                    <RadioButton GroupName="Fonte" Tag="segoe-classica" Content="Segoe UI" Style="{StaticResource Segmento}"
+                                                 FontFamily="Segoe UI" Checked="AoEscolherOpcao" AutomationProperties.Name="Fonte Segoe UI" />
+                                    <RadioButton GroupName="Fonte" Tag="cascadia" Content="Cascadia Mono" Style="{StaticResource Segmento}"
+                                                 FontFamily="Cascadia Mono, Consolas" Checked="AoEscolherOpcao" AutomationProperties.Name="Fonte Cascadia Mono" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Linha de cima" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                                <StackPanel x:Name="GrupoOrdem" Orientation="Horizontal">
+                                    <RadioButton GroupName="Ordem" Tag="envio" Content="↑ Envio" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Envio em cima" />
+                                    <RadioButton GroupName="Ordem" Tag="download" Content="↓ Download" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Download em cima" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Grid Margin="0,4,0,12">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="Mostrar em todos os monitores" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Põe o widget também na barra dos outros monitores. Requer a barra ligada neles (Configurações do Windows › Personalização › Barra de tarefas › Comportamentos)." />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveMonitores" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarMonitores"
+                                          AutomationProperties.Name="Mostrar em todos os monitores" />
+                        </Grid>
+
+                        <TextBlock Style="{StaticResource Rotulo}"
+                                   Text="Mudar de lugar: segure Ctrl e arraste o widget pela barra. Para voltar ao lugar de sempre, clique com o botão direito nele › Voltar à posição automática." />
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Medição e exibição -->
                 <TextBlock Text="Medição" Style="{StaticResource Titulo}" />
                 <Border Style="{StaticResource Cartao}">
                     <StackPanel>
+                        <!-- v0.8.0: intervalo de atualização (item adiado da Onda 2) -->
+                        <Grid Margin="0,0,0,4">
+                            <TextBlock Text="Atualizar a cada" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                                <StackPanel x:Name="GrupoIntervalo" Orientation="Horizontal">
+                                    <RadioButton GroupName="Intervalo" Tag="0.5" Content="0,5 s" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Atualizar a cada 0,5 segundo" />
+                                    <RadioButton GroupName="Intervalo" Tag="1" Content="1 s" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Atualizar a cada 1 segundo" />
+                                    <RadioButton GroupName="Intervalo" Tag="2" Content="2 s" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Atualizar a cada 2 segundos" />
+                                    <RadioButton GroupName="Intervalo" Tag="5" Content="5 s" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Atualizar a cada 5 segundos" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Rotulo}" Margin="0,0,0,16"
+                                   Text="Mais rápido = números mais vivos; mais lento = menos movimento na barra. O gráfico do painel continua mostrando os últimos 60 segundos." />
+
                         <TextBlock Text="Suavização" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource Rotulo}" Text="Mais suave = números mais estáveis, reação mais lenta a picos." Margin="0,2,0,6" />
                         <Grid>
@@ -198,7 +278,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 4. Bandeja -->
+                <!-- 5. Bandeja -->
                 <TextBlock Text="Área de notificação" Style="{StaticResource Titulo}" />
                 <Border Style="{StaticResource Cartao}">
                     <Grid>

@@ -54,6 +54,37 @@ public sealed class Configuracoes
     /// </summary>
     public bool InicioAutomaticoJaConfigurado { get; set; }
 
+    // ---------------------------------------------------------------- v0.8.0 (Onda 2, itens adiados)
+
+    /// <summary>Intervalos de atualização oferecidos (segundos). Fora desta lista, a leitura volta a 1 s.</summary>
+    public static readonly double[] IntervalosPermitidos = [0.5, 1, 2, 5];
+
+    /// <summary>
+    /// De quanto em quanto tempo o widget mede e redesenha (segundos). Padrão 1 s (o de sempre).
+    /// O gráfico do painel continua cobrindo 60 SEGUNDOS: com 0,5 s ele guarda 120 pontos, com 5 s, 12.
+    /// </summary>
+    public double IntervaloSegundos { get; set; } = 1.0;
+
+    /// <summary>Tamanho do texto no widget: "pequeno", "normal" (padrão, o de sempre) ou "grande".</summary>
+    public string TamanhoTexto { get; set; } = "normal";
+
+    /// <summary>Fonte do widget: "segoe" (Segoe UI Variable, padrão), "segoe-classica" (Segoe UI) ou "cascadia" (Cascadia Mono).</summary>
+    public string Fonte { get; set; } = "segoe";
+
+    /// <summary>Ordem das linhas: false = envio (↑) em cima, como sempre foi; true = download (↓) em cima.</summary>
+    public bool DownloadEmCima { get; set; }
+
+    /// <summary>
+    /// Posição escolhida com Ctrl + arrastar, por barra de tarefas. Chave "principal" ou
+    /// "monitor:X,Y" (canto do monitor da barra secundária); valor = distância, em px LÓGICOS,
+    /// da borda esquerda da barra até a borda esquerda do widget. Sem chave = posição automática
+    /// (encostado à esquerda do '^' da bandeja).
+    /// </summary>
+    public Dictionary<string, int> PosicoesManuais { get; set; } = [];
+
+    /// <summary>Mostrar o widget também nas barras dos outros monitores (padrão: só na principal).</summary>
+    public bool MostrarEmTodasAsBarras { get; set; }
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -66,6 +97,7 @@ public sealed class Configuracoes
         var copia = (Configuracoes)MemberwiseClone();
         copia.InterfacesIncluir = [.. InterfacesIncluir];
         copia.InterfacesExcluir = [.. InterfacesExcluir];
+        copia.PosicoesManuais = new Dictionary<string, int>(PosicoesManuais);
         return copia;
     }
 
@@ -80,5 +112,16 @@ public sealed class Configuracoes
         InterfacesExcluir ??= [];
         CorUploadPersonalizada ??= "#4CC2FF";
         CorDownloadPersonalizada ??= "#FF6B6B";
+
+        // v0.8.0: só valores conhecidos — um arquivo editado à mão não pode quebrar o widget
+        IntervaloSegundos = IntervalosPermitidos.Contains(IntervaloSegundos) ? IntervaloSegundos : 1.0;
+        TamanhoTexto = TamanhoTexto is "pequeno" or "normal" or "grande" ? TamanhoTexto : "normal";
+        Fonte = Fonte is "segoe" or "segoe-classica" or "cascadia" ? Fonte : "segoe";
+        PosicoesManuais ??= [];
+        // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
+        foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
+        {
+            PosicoesManuais.Remove(chave);
+        }
     }
 }
