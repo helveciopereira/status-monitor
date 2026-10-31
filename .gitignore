@@ -2,6 +2,8 @@
 [Bb]in/
 [Oo]bj/
 [Pp]ub/
+# Executável autocontido gerado por "dotnet publish ... -o dist" (~62 MB, regenerável)
+dist/
 .vs/
 *.user
 *.suo
@@ -19,3 +21,4 @@ backup/
 
 # Artefatos de captura temporários
 capturas/
+

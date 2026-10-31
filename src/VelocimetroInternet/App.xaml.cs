@@ -41,21 +41,23 @@ public partial class App : Application
         }
 
         // Interpreta argumentos de linha de comando para permitir testar Modo A vs Modo B e texto fixo da PoC 1
-        bool usarModoB = e.Args.Any(a => a.Equals("--modo-b", StringComparison.OrdinalIgnoreCase));
+        // v0.1.1: Modo B é o padrão (Modo A invisível na barra XAML do Win 11 — ver TaskbarHost).
+        // --modo-a fica só para experimentos; --modo-b é aceito por compatibilidade (já é o padrão).
+        bool usarModoA = e.Args.Any(a => a.Equals("--modo-a", StringComparison.OrdinalIgnoreCase));
         bool textoFixoPoC = e.Args.Any(a => a.Equals("--poc-fixo", StringComparison.OrdinalIgnoreCase));
         bool usarBits = e.Args.Any(a => a.Equals("--bits", StringComparison.OrdinalIgnoreCase));
         bool usarTemaClaro = e.Args.Any(a => a.Equals("--tema-claro", StringComparison.OrdinalIgnoreCase));
         bool usarCompacto = e.Args.Any(a => a.Equals("--compacto", StringComparison.OrdinalIgnoreCase));
 
-        ModoEncaixeBarra modoPreferido = usarModoB
-            ? ModoEncaixeBarra.ModoB_TopmostSobreBarra
-            : ModoEncaixeBarra.ModoA_FilhaDaBarra;
+        ModoEncaixeBarra modoPreferido = usarModoA
+            ? ModoEncaixeBarra.ModoA_FilhaDaBarra
+            : ModoEncaixeBarra.ModoB_TopmostSobreBarra;
 
         ModoUnidadeVelocidade unidade = usarBits
             ? ModoUnidadeVelocidade.BitsPorSegundo
             : ModoUnidadeVelocidade.BytesPorSegundo;
 
-        RegistrarLog($"=== Iniciando Velocímetro de Internet v0.1.0 (Onda 0) | Modo={modoPreferido} | Unidade={unidade} | FixoPoC={textoFixoPoC} ===");
+        RegistrarLog($"=== Iniciando Velocímetro de Internet v0.1.1 (Onda 0) | Modo={modoPreferido} | Unidade={unidade} | FixoPoC={textoFixoPoC} ===");
 
         _widget = new TaskbarWidget(unidade);
         if (usarTemaClaro)
@@ -68,7 +70,8 @@ public partial class App : Application
         _widget.DefinirTextosFixosPoC(
             usarBits ? "1,24 Mbps" : "1,24 MB/s",
             usarBits ? "38,7 Mbps" : "38,7 MB/s");
-        _widget.Show();
+        // v0.1.1: NÃO chamar _widget.Show() aqui. O TaskbarHost calcula a posição primeiro e só
+        // então torna a janela visível — evita o "piscar no topo da tela" ao abrir.
 
         _host = new TaskbarHost(_widget, modoPreferido, RegistrarLog)
         {

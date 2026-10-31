@@ -7,7 +7,13 @@ Versionamento: `MAIOR.MENOR.PATCH`, odômetro (pequena +0.0.1, importante +0.1).
 
 ---
 
-## Onda 0 — Ambiente e prova de conceito ✅ (concluída em 2026-10-31 · v0.1.0)
+## Onda 0 — Ambiente e prova de conceito ✅ (concluída em 2026-10-31 · v0.1.0, corrigida na v0.1.1)
+
+> **Correção v0.1.1 (teste do dono na sessão real):** o **modo A falhou na prática**. A janela WPF
+> transparente vira filha da barra XAML e não é desenhada, e morre junto quando o Explorer reinicia.
+> **Modo B virou o padrão** (modo A só com `--modo-a`). O .exe dependia do .NET 10 instalado só na
+> pasta do usuário ("You must install .NET"), e agora é publicado **autocontido** em `dist\`.
+> Detalhes no `walkthrough.md`.
 
 Objetivo: **provar as duas coisas arriscadas antes de construir o resto** — o encaixe na barra
 do Win 11 e o consumo de memória.

@@ -1,5 +1,55 @@
 # Walkthrough — Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.1.1 — 2026-10-31 — Correção: o widget não aparecia na barra
+
+### Sintoma relatado pelo dono
+Ao abrir o `.exe`, uma janela "piscou no topo da tela e apagou" e nada ficou na barra. Depois de
+reiniciar o Explorer, também não apareceu nada.
+
+### Causa raiz (verificada na sessão interativa real, não no desktop isolado da v0.1.0)
+1. **O modo A (`SetParent` na `Shell_TrayWnd`) fica invisível no Windows 11.** A janela WPF
+   transparente (layered) vira filha da barra XAML e não é desenhada (log de 09:57:30: "Encaixe
+   aplicado [ModoA]", mas nada na tela).
+2. **A janela filha morre com o Explorer.** Ao reiniciar o Explorer, a barra antiga é destruída e
+   leva a nossa janela junto. O processo continuou vivo, sem nada visível, e o `SetParent` seguinte
+   devolveu 0 sobre um HWND morto (log de 09:58:59). Enumeração das janelas do processo: só
+   restaram janelas internas ocultas do WPF.
+3. **O "piscar"** vinha de `_widget.Show()` ser chamado antes do posicionamento: a janela nascia na
+   posição padrão e só depois ia para a barra.
+4. **O .exe dependia do .NET 10**, que só existe em `%LocalAppData%\Microsoft\dotnet`. Aberto sem
+   `DOTNET_ROOT` no ambiente, mostrava "You must install or update .NET to run this application".
+5. A validação da v0.1.0 rodou num desktop Win32 isolado, sem `Shell_TrayWnd`, onde o app sempre
+   caía no modo B. Por isso o defeito do modo A não apareceu.
+
+### O que mudou
+- `TaskbarHost.cs`: **modo B é o padrão**. O topo é reafirmado pelo gancho `EVENT_SYSTEM_FOREGROUND`
+  e pelo vigia de 1,5 s, já que a barra também é topmost e passaria por cima ao ser clicada. A janela
+  **some em tela cheia** (`SHQueryUserNotificationState` 2/3/4) e ganha posição (Left/Top) antes de
+  ficar visível.
+- `App.xaml.cs`: removido o `Show()` antecipado. `--modo-a` passa a ser opt-in experimental
+  (`--modo-b` continua aceito).
+- `NativeMethods.cs`: `SetWinEventHook`, `UnhookWinEvent`, `SHQueryUserNotificationState`,
+  `SWP_NOMOVE` e `SWP_NOSIZE`.
+- **Distribuição autocontida:** `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true
+  -p:EnableCompressionInSingleFile=true -o dist` gera um .exe único de ~62 MB que não depende de .NET
+  instalado. `dist/` entra no `.gitignore`.
+- Versão 0.1.0 → 0.1.1 (`VelocimetroInternet.csproj`, log de inicialização).
+
+### Como usar
+```powershell
+C:\Projetos\Windows\Velocímetro internet\dist\VelocimetroInternet.exe      # abrir (pode ser por duplo clique)
+Stop-Process -Name VelocimetroInternet                                     # fechar (o menu chega na Onda 1)
+```
+
+### Validação executada
+- `dotnet build -c Release`: 0 avisos, 0 erros. `dotnet test`: **8/8 aprovados**.
+- **Sessão real:** o `dist\VelocimetroInternet.exe` foi aberto sem `DOTNET_ROOT`. Janela visível em
+  (1725,1532)-(1881,1595), na vaga do Clima à esquerda do "^", à frente da barra na ordem Z
+  (8 contra 13). Captura de tela conferida, com valores reais em KB/s.
+- **Explorer reiniciado de verdade** (`Stop-Process explorer`): processo vivo, `TaskbarCreated`
+  recebido, widget reencaixado e visível (ordem Z 8 contra 15). Captura conferida.
+- Não testado automaticamente: tela cheia (jogo/vídeo) → validação manual recomendada.
+
 ## v0.1.0 — 2026-10-31 — Onda 0: Ambiente, Design Stitch (Modelo 3 Acrylic Pill) e Prova de Conceito
 
 ### O que mudou
@@ -57,3 +107,4 @@ O log detalhado de amostragem e memória é gravado em `%LocalAppData%\Velocimet
 - **Inspeção Visual (`PrintWindow` a 150% DPI):** 4 estados fotografados e conferidos (`poc-estado1-escuro.png`, `poc-estado2-claro.png`, `poc-estado3-compacto.png`, `poc-estado4-tempo-real.png`).
 - **Orçamento de Desempenho:** WorkingSet medido entre **15,1 MB e 38,3 MB** após `EmptyWorkingSet` (meta: `< 60 MB`); CPU média `< 0,9%` durante o boot e `< 0,2%` em regime.
 - **Recuperação do Explorer (`TaskbarCreated`):** testado envio da mensagem `TaskbarCreated` ao HWND do widget, confirmando detecção e reencaixe automático no log.
+

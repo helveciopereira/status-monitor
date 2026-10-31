@@ -51,9 +51,21 @@ public sealed class TaskbarHost : IDisposable
     public ModoEncaixeBarra ModoAtivo => _modoAtivo;
     public PosicaoWidgetBarra UltimaPosicao { get; private set; }
 
+    // Gancho de "janela em primeiro plano mudou" (reafirma o topo na hora, sem esperar o timer).
+    // O delegate fica num campo para o GC não coletá-lo enquanto o Windows ainda o chama.
+    private NativeMethods.WinEventDelegate? _callbackForeground;
+    private nint _hookForeground;
+    private bool _ocultoPorTelaCheia;
+
+    /// <summary>
+    /// Padrão = Modo B. Motivo (v0.1.1, verificado na sessão real do usuário em 2026-10-31):
+    /// no Modo A a janela WPF transparente (layered) vira filha da barra XAML do Win 11 e
+    /// NÃO É DESENHADA; e, quando o Explorer reinicia, a barra antiga é destruída levando a
+    /// nossa janela junto (o processo segue vivo, sem nada na tela). Modo A só por --modo-a.
+    /// </summary>
     public TaskbarHost(
         TaskbarWidget widget,
-        ModoEncaixeBarra modoPreferido = ModoEncaixeBarra.ModoA_FilhaDaBarra,
+        ModoEncaixeBarra modoPreferido = ModoEncaixeBarra.ModoB_TopmostSobreBarra,
         Action<string>? logger = null)
     {
         _widget = widget;
@@ -82,6 +94,51 @@ public sealed class TaskbarHost : IDisposable
         AplicarEstilosExJanela();
         await AtualizarPosicaoAsync(forcarReencaixe: true);
         _timerVigiaLayout.Start();
+
+        // Reafirma o topo sempre que outra janela vem para a frente (ex.: clique na barra ou no
+        // Iniciar). WINEVENT_OUTOFCONTEXT entrega o evento na fila de mensagens desta thread (UI).
+        _callbackForeground = (_, _, _, _, _, _, _) => ReafirmarTopoOuOcultar();
+        _hookForeground = NativeMethods.SetWinEventHook(
+            NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
+            nint.Zero, _callbackForeground, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+    }
+
+    /// <summary>
+    /// Só no Modo B: (1) se houver app em tela cheia, esconde o widget para não cobrir jogo/vídeo;
+    /// (2) caso contrário, coloca o widget de volta acima da barra (que também é topmost).
+    /// Custo: uma chamada ao shell + um SetWindowPos sem mover/redimensionar.
+    /// </summary>
+    private void ReafirmarTopoOuOcultar()
+    {
+        if (_modoAtivo != ModoEncaixeBarra.ModoB_TopmostSobreBarra || _hwndWidget == nint.Zero)
+        {
+            return;
+        }
+
+        bool telaCheia = NativeMethods.SHQueryUserNotificationState(out int estado) == 0
+                         && estado is 2 or 3 or 4;
+
+        if (telaCheia)
+        {
+            if (!_ocultoPorTelaCheia)
+            {
+                _ocultoPorTelaCheia = true;
+                _widget.Visibility = Visibility.Hidden;
+                _logger?.Invoke($"Tela cheia detectada (QUNS={estado}) — widget oculto.");
+            }
+            return;
+        }
+
+        if (_ocultoPorTelaCheia)
+        {
+            _ocultoPorTelaCheia = false;
+            _widget.Visibility = Visibility.Visible;
+            _logger?.Invoke("Saiu da tela cheia — widget visível de novo.");
+        }
+
+        NativeMethods.SetWindowPos(
+            _hwndWidget, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
     /// <summary>
@@ -175,14 +232,24 @@ public sealed class TaskbarHost : IDisposable
             }
 
             _widget.AplicarEstadoColisao(pos.Estado);
-            if (_widget.Visibility != Visibility.Visible)
-            {
-                _widget.Visibility = Visibility.Visible;
-            }
 
             // Ajusta largura/altura lógica do WPF para casar exatamente com os pixels físicos calculados
             _widget.Width = pos.LarguraFisicaPx / escalaDpi;
             _widget.Height = pos.AlturaFisicaPx / escalaDpi;
+
+            // Posição final ANTES de tornar visível: antes a janela aparecia no canto da tela
+            // por um instante e só depois ia para a barra (o "piscar no topo" relatado na v0.1.0).
+            bool ehFilha = (NativeMethods.GetWindowLongPtr(_hwndWidget, NativeMethods.GWL_STYLE) & NativeMethods.WS_CHILD) != 0;
+            if (!ehFilha)
+            {
+                _widget.Left = pos.XTelaPx / escalaDpi;
+                _widget.Top = pos.YTelaPx / escalaDpi;
+            }
+
+            if (_widget.Visibility != Visibility.Visible && !_ocultoPorTelaCheia)
+            {
+                _widget.Visibility = Visibility.Visible;
+            }
 
             if (forcarReencaixe || taskbarMudou)
             {
@@ -239,6 +306,8 @@ public sealed class TaskbarHost : IDisposable
         int x = ehWsChild ? pos.XRelativoBarraPx : pos.XTelaPx;
         int y = ehWsChild ? pos.YRelativoBarraPx : pos.YTelaPx;
 
+        // Em tela cheia não força SWP_SHOWWINDOW (senão o vigia de 1,5 s reexibiria o widget por cima do jogo)
+        uint flags = NativeMethods.SWP_NOACTIVATE | (_ocultoPorTelaCheia ? 0u : NativeMethods.SWP_SHOWWINDOW);
         NativeMethods.SetWindowPos(
             _hwndWidget,
             NativeMethods.HWND_TOPMOST,
@@ -246,7 +315,10 @@ public sealed class TaskbarHost : IDisposable
             y,
             pos.LarguraFisicaPx,
             pos.AlturaFisicaPx,
-            NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW);
+            flags);
+
+        // O vigia periódico também cobre tela cheia e topo (rede de segurança se o gancho perder evento)
+        ReafirmarTopoOuOcultar();
     }
 
     private void AplicarEstilosExJanela()
@@ -354,5 +426,10 @@ public sealed class TaskbarHost : IDisposable
     public void Dispose()
     {
         _timerVigiaLayout.Stop();
+        if (_hookForeground != nint.Zero)
+        {
+            NativeMethods.UnhookWinEvent(_hookForeground);
+            _hookForeground = nint.Zero;
+        }
     }
 }

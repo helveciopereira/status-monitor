@@ -79,7 +79,13 @@ enviados. Velocidade = (contador agora − contador anterior) ÷ (tempo decorrid
    **Vigia de colisão:** a cada mudança na lista de apps (evento UIA `StructureChanged`, com
    checagem leve a cada 2 s de reserva), se `bordaApps + margem > xBloco` → modo compacto de
    1 linha; se ainda não couber → oculta até liberar.
-3. **Modo A:** `SetParent(nossaJanela, Shell_TrayWnd)` + estilo `WS_CHILD`, coordenadas relativas.
+3. ⚠️ **Atualizado na v0.1.1: o padrão agora é o Modo B.** O modo A foi testado na sessão real e
+   falhou: a janela WPF transparente fica invisível dentro da barra XAML e é destruída junto com a
+   barra quando o Explorer reinicia. No modo B, o topo é reafirmado pelo gancho
+   `EVENT_SYSTEM_FOREGROUND` e pelo vigia de 1,5 s, e a janela some em tela cheia via
+   `SHQueryUserNotificationState` (estados 2, 3 e 4). A descrição original do modo A fica abaixo,
+   como registro:
+   **Modo A:** `SetParent(nossaJanela, Shell_TrayWnd)` + estilo `WS_CHILD`, coordenadas relativas.
    **Modo B (fallback):** janela `Topmost`, `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE`, coordenadas de
    tela; esconde em tela cheia (`SHQueryUserNotificationState`) e acompanha auto-ocultar.
 4. `RegisterWindowMessage("TaskbarCreated")` → ao reiniciar o Explorer, refaz o encaixe.
