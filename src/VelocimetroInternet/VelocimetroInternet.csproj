@@ -9,15 +9,19 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Ícone do .exe (recurso 32512): Explorer, Alt+Tab do estúdio e a bandeja (IconeBandeja) -->
     <ApplicationIcon>Recursos/app.ico</ApplicationIcon>
-    <Version>0.6.0</Version>
-    <AssemblyVersion>0.6.0.0</AssemblyVersion>
-    <FileVersion>0.6.0.0</FileVersion>
+    <Version>0.7.0</Version>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
+    <FileVersion>0.7.0.0</FileVersion>
     <!-- v0.4.0 (Onda 4): ponto de entrada próprio (Program.cs) — o Velopack precisa rodar ANTES
          do WPF. StartupObject desempata com o Main que o WPF gera para o App.xaml. -->
     <StartupObject>VelocimetroInternet.Program</StartupObject>
     <!-- v0.6.0: nome que o Windows MOSTRA (Gerenciador de Tarefas, aba Inicializar, Propriedades
-         do .exe). O nome do arquivo (VelocimetroInternet.exe), o namespace e o packId do Velopack
-         continuam: trocar quebraria a atualização automática e a entrada "Iniciar com o Windows". -->
+         do .exe). v0.7.0 (pedido do dono): o ARQUIVO também passa a ser StatusMonitor.exe (era
+         VelocimetroInternet.exe). Seguro numa atualização: o Velopack troca a pasta current\ inteira
+         e reabre o novo -e; ao abrir, a cópia instalada reaponta a entrada "Iniciar com o Windows"
+         (InicioComWindows.DeveReapontar). O namespace e o packId do Velopack continuam: packId novo
+         seria OUTRO app (sem atualização, reinstalar em cada PC). -->
+    <AssemblyName>StatusMonitor</AssemblyName>
     <Product>Status Monitor</Product>
     <AssemblyTitle>Status Monitor</AssemblyTitle>
     <Description>Status Monitor — CPU, RAM e velocidade de internet na barra de tarefas</Description>

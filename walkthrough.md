@@ -1,5 +1,44 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v0.7.0 — 2026-10-31 — Executável e instalador com o nome novo (`StatusMonitor.exe`)
+
+### O que mudou
+- **Executável:** `VelocimetroInternet.exe` → **`StatusMonitor.exe`** (`<AssemblyName>StatusMonitor</AssemblyName>`
+  no `.csproj`; o pacote Velopack usa `-e StatusMonitor.exe`).
+- **Instalador e portátil na Release:** `VelocimetroInternetApp-win-Setup.exe` → **`StatusMonitor-Setup.exe`** e
+  `…-Portable.zip` → **`StatusMonitor-Portable.zip`** (o `tools\publicar-atualizacao.ps1` renomeia depois do
+  `vpk pack` e reescreve `assets.win.json`, que é a lista que o `vpk upload` envia).
+- `tools\publicar.ps1` (cópia avulsa em `dist\`), testes e comentários com o nome novo; README com o link novo.
+
+### Por quê
+Pedido do dono: depois da troca de nome (v0.6.0), o arquivo também deve se chamar Status Monitor.
+Na v0.6.0 o nome do .exe tinha sido mantido por cautela; o ensaio abaixo provou que a troca é segura.
+
+### Como a migração acontece sozinha
+O packId continua `VelocimetroInternetApp`, então a cópia 0.6.0 instalada recebe a 0.7.0 como atualização
+normal: o Velopack troca a pasta `current\`, reabre pelo novo `StatusMonitor.exe` e regrava os atalhos
+apontando para ele; ao abrir, o `InicioComWindows` reaponta a entrada Run (já existente) para o novo caminho.
+
+### O que NÃO mudou de propósito
+- packId (`VelocimetroInternetApp`): os pacotes `.nupkg`, a pasta de instalação `%LOCALAPPDATA%\VelocimetroInternetApp`
+  e o `releases.win.json` mantêm o nome antigo — trocar seria outro app e as cópias instaladas parariam de atualizar.
+- Pastas de dados, nome do valor Run, trava de instância única, namespace (mesmos motivos da v0.6.0).
+- ⚠️ O link antigo `…/latest/download/VelocimetroInternetApp-win-Setup.exe` deixa de funcionar (404); use `StatusMonitor-Setup.exe`.
+
+### Arquivos tocados
+`src/VelocimetroInternet/VelocimetroInternet.csproj`, `src/VelocimetroInternet/Sistema/InicioComWindows.cs` (comentário),
+`tools/publicar-atualizacao.ps1`, `tools/publicar.ps1`, `tests/VelocimetroInternet.Tests/Onda4Tests.cs`,
+`README.md`, `03-PLANO-DE-ONDAS.md`, `walkthrough.md`.
+
+### Validação
+- Build 0 avisos / 0 erros; testes 81/81.
+- **Ensaio local de ponta a ponta** (packId de teste `VelocimetroTeste`): 1.0.0 publicada com o nome antigo
+  (`-p:AssemblyName=VelocimetroInternet`, `-e VelocimetroInternet.exe`) aberta em segundo plano; 1.0.1 com o nome novo
+  aplicada sozinha em 117 s ("Package version 1.0.1 applied successfully"); processo reaberto =
+  `current\StatusMonitor.exe`; `current\` só com `StatusMonitor.exe`; entrada Run reapontada para
+  `…\current\StatusMonitor.exe --autostart`; atalho do menu Iniciar apontando para `StatusMonitor.exe`.
+  Depois: cópia de teste desinstalada, entrada Run e `settings.json` do usuário restaurados (hash conferido).
+
 ## v0.6.0 — 2026-10-31 — Novo nome "Status Monitor" + pílula de internet mais estreita
 
 ### O que mudou

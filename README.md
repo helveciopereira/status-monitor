@@ -2,6 +2,8 @@
 
 > **v0.6.0:** o app passou a se chamar **Status Monitor** (repositório renomeado de
 > `velocimetro-internet` para `status-monitor`; o endereço antigo redireciona).
+> **v0.7.0:** o executável passou a se chamar **`StatusMonitor.exe`** e o instalador
+> **`StatusMonitor-Setup.exe`**.
 
 Monitor silencioso de velocidade de rede para Windows 11: fica **na barra de tarefas**, inicia
 com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua seta e sua cor.
@@ -14,9 +16,9 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.6.0** · 2026-10-31
+> Status: **Ondas 0, 1, 2 e 4 concluídas; estúdio de cores (Onda 3) entregue em boa parte** · versão **0.7.0** · 2026-10-31
 >
-> **Instalar:** baixe e execute [`VelocimetroInternetApp-win-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/VelocimetroInternetApp-win-Setup.exe)
+> **Instalar:** baixe e execute [`StatusMonitor-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/StatusMonitor-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.
 > **Publicar versão nova:** aumente `<Version>` no `.csproj` e rode `pwsh -File tools\publicar-atualizacao.ps1`.
 >

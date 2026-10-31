@@ -75,26 +75,26 @@ public sealed class Onda4Tests
     public void Inicio_CaminhoRegistradoTiraAspasEArgumentos() => ComRegistroDeTeste(inicio =>
     {
         Assert.Null(inicio.CaminhoRegistrado());
-        inicio.Definir(true, @"C:\Pasta Com Espaço\VelocimetroInternet.exe");
-        Assert.Equal(@"C:\Pasta Com Espaço\VelocimetroInternet.exe", inicio.CaminhoRegistrado());
+        inicio.Definir(true, @"C:\Pasta Com Espaço\StatusMonitor.exe");
+        Assert.Equal(@"C:\Pasta Com Espaço\StatusMonitor.exe", inicio.CaminhoRegistrado());
     });
 
     [Fact]
     public void Inicio_CopiaInstaladaSempreAssumeAEntrada() => ComRegistroDeTeste(inicio =>
     {
-        inicio.Definir(true, @"C:\Projetos\dist\VelocimetroInternet.exe");
-        Assert.True(inicio.DeveReapontar(@"C:\Users\x\AppData\Local\VelocimetroInternetApp\current\VelocimetroInternet.exe",
+        inicio.Definir(true, @"C:\Projetos\dist\StatusMonitor.exe");
+        Assert.True(inicio.DeveReapontar(@"C:\Users\x\AppData\Local\VelocimetroInternetApp\current\StatusMonitor.exe",
             estaInstalado: true, existe: _ => true));
     });
 
     [Fact]
     public void Inicio_CopiaSoltaNaoRoubaEntradaDeExeQueExiste() => ComRegistroDeTeste(inicio =>
     {
-        inicio.Definir(true, @"C:\Instalado\current\VelocimetroInternet.exe");
+        inicio.Definir(true, @"C:\Instalado\current\StatusMonitor.exe");
         // Teste rodando de bin\: o .exe registrado existe → não mexe
-        Assert.False(inicio.DeveReapontar(@"C:\Projetos\bin\VelocimetroInternet.exe", false, _ => true));
+        Assert.False(inicio.DeveReapontar(@"C:\Projetos\bin\StatusMonitor.exe", false, _ => true));
         // O .exe registrado sumiu (pasta movida) → corrige para o atual
-        Assert.True(inicio.DeveReapontar(@"C:\Projetos\bin\VelocimetroInternet.exe", false, _ => false));
+        Assert.True(inicio.DeveReapontar(@"C:\Projetos\bin\StatusMonitor.exe", false, _ => false));
     });
 
     [Fact]

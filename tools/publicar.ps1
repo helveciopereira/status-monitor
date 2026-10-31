@@ -1,4 +1,4 @@
-# Gera o executável AUTOCONTIDO (não depende de .NET instalado) em dist\VelocimetroInternet.exe.
+# Gera o executável AUTOCONTIDO (não depende de .NET instalado) em dist\StatusMonitor.exe.
 # Fecha antes qualquer instância aberta — o .exe em uso fica travado e o publish falha com
 # "Access to the path ... is denied".
 #   pwsh -File tools\publicar.ps1 [-Abrir]
@@ -19,7 +19,7 @@ dotnet publish "$raiz\src\VelocimetroInternet\VelocimetroInternet.csproj" -c Rel
     -p:EnableCompressionInSingleFile=true -o "$raiz\dist" --nologo -v q
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish falhou (código $LASTEXITCODE)" }
 
-$exe = Get-Item "$raiz\dist\VelocimetroInternet.exe"
+$exe = Get-Item "$raiz\dist\StatusMonitor.exe"
 "Publicado: $($exe.FullName) ({0:N1} MB) versão {1}" -f ($exe.Length / 1MB), $exe.VersionInfo.FileVersion
 
 if ($Abrir) {

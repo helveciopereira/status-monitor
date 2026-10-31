@@ -88,7 +88,7 @@ public sealed class InicioComWindows
     /// Decide se a entrada Run deve ser reapontada para o .exe que está rodando (v0.4.0).
     /// - Cópia INSTALADA (Velopack): sempre — ela é a "oficial", e a pasta <c>current\</c> é
     ///   estável entre atualizações. É assim que a instalação nova assume o lugar do antigo
-    ///   <c>dist\VelocimetroInternet.exe</c>.
+    ///   <c>dist\StatusMonitor.exe</c>.
     /// - Cópia solta (bin\, dist\): só se o .exe registrado NÃO existe mais (foi movido).
     ///   Antes da v0.4.0 qualquer execução de teste a partir de bin\ roubava a entrada do
     ///   app instalado.

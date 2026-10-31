@@ -88,9 +88,26 @@ if ($LASTEXITCODE -ne 0) { Write-Host 'Sem versão anterior para baixar (primeir
 # ----- Empacota: instalador (Setup.exe), pacote completo e de diferença -----
 # Sem --runtime o vpk avisa "defaulting to x86": é só a marcação do pacote; o app é x64
 # autocontido e o ciclo foi provado ASSIM. Não trocar entre versões já publicadas sem ensaio.
-vpk pack -u $PackId -v $version -p $PublishDir -e VelocimetroInternet.exe `
+vpk pack -u $PackId -v $version -p $PublishDir -e StatusMonitor.exe `
     --packTitle $Titulo --packAuthors 'Helvécio' -i $Icone -o $ReleasesDir
 Assert-Ok 'vpk pack'
+
+# ----- v0.7.0: nomes de arquivo "StatusMonitor" no instalador e no portátil -----
+# O vpk dá a eles o nome do packId (VelocimetroInternetApp-win-Setup.exe), e o packId NÃO pode mudar
+# (seria outro app: as cópias instaladas parariam de atualizar). Eles não são citados no feed
+# (releases.win.json só lista os .nupkg), então renomeamos aqui e corrigimos o assets.win.json,
+# que é a lista que o "vpk upload" envia.
+$nomesNovos = @{ 'Installer' = 'StatusMonitor-Setup.exe'; 'Portable' = 'StatusMonitor-Portable.zip' }
+$assetsJson = Join-Path $ReleasesDir 'assets.win.json'
+$assets = Get-Content $assetsJson -Raw | ConvertFrom-Json
+foreach ($a in $assets) {
+    if ($nomesNovos.ContainsKey($a.Type)) {
+        Move-Item (Join-Path $ReleasesDir $a.RelativeFileName) (Join-Path $ReleasesDir $nomesNovos[$a.Type]) -Force
+        $a.RelativeFileName = $nomesNovos[$a.Type]
+    }
+}
+# Sem BOM e numa linha, como o vpk grava (o leitor dele é JSON estrito)
+[IO.File]::WriteAllText($assetsJson, (ConvertTo-Json @($assets) -Compress), (New-Object Text.UTF8Encoding($false)))
 
 # ----- Envia e publica a Release (sem rascunho: os velocímetros já enxergam) -----
 vpk upload github --repoUrl $RepoUrl --token $token -o $ReleasesDir `
@@ -105,4 +122,4 @@ $feed = Invoke-WebRequest "$RepoUrl/releases/latest/download/releases.win.json" 
 $feedTexto = if ($feed.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($feed.Content) } else { [string]$feed.Content }
 if ($feedTexto -notmatch [regex]::Escape("`"$version`"")) { throw 'O feed direto (latest/download/releases.win.json) ainda não mostra a versão nova.' }
 Write-Host "OK: v$version publicada em $($latest.html_url)" -ForegroundColor Green
-Write-Host "Instalador para quem ainda não tem: $RepoUrl/releases/latest/download/$PackId-win-Setup.exe"
+Write-Host "Instalador para quem ainda não tem: $RepoUrl/releases/latest/download/StatusMonitor-Setup.exe"

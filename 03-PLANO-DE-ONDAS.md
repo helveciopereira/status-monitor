@@ -105,6 +105,8 @@ primeira atualização REAL pelo GitHub acontece na próxima versão publicada (
 - [x] Pílula de internet mais estreita (96 → 78 lógicos, entre a de CPU/RAM e a antiga) — v0.6.0
 - [x] Nome do app: **Status Monitor** (telas, dica da bandeja, atalhos, Gerenciador de Tarefas,
       repositório `status-monitor`) — v0.6.0
+- [x] Executável `StatusMonitor.exe` e instalador `StatusMonitor-Setup.exe` (packId mantido,
+      as cópias instaladas migram sozinhas e a entrada Run é reapontada) — v0.7.0
 
 ---
 
