@@ -39,7 +39,7 @@ do Win 11 e o consumo de memória.
 - [x] Tema: widget segue a barra (`SystemUsesLightTheme`), janelas seguem os apps; troca ao vivo — v0.2.0
 - [x] Instância única (2ª execução abre o painel na 1ª), sem Alt+Tab, sem foco, log com rodízio — v0.2.0
 - [x] Ícone na bandeja + menu: painel · estúdio · Unidade · Fixar na barra · Iniciar com o Windows ·
-      Mostrar ícone · Sair — v0.2.0 (⬜ "Pausar" ficou para depois)
+      Mostrar ícone · Sair — v0.2.0 ("Pausar" entrou na v0.3.0, Onda 2)
 - [x] Início com o Windows (Run + StartupApproved), **ligado no 1º uso** e corrigido se o .exe mudar de pasta — v0.2.0
 
 **Aceite:** baixar um arquivo grande e o valor bater ±3% com o Gerenciador de Tarefas;
@@ -176,6 +176,46 @@ servidor externo), consumo por aplicativo (exige administrador/ETW) e relatório
 - [x] Janela "Relatório para a operadora…" (menu): mês a mês, média × plano, testes abaixo de 40 %,
       quedas, disponibilidade e conclusão; **PDF A4** sem biblioteca (páginas desenhadas pelo WPF, imagem
       sem perda), com tabela de testes e de quedas, referência às metas da Anatel e "como reclamar"
+
+## Varredura de 2026-11-01 — novas ondas candidatas (⬜, aguardam escolha do dono)
+
+Achado que motivou a Onda 10, medido agora (`netsh wlan show interfaces`): este PC testa por
+**Wi-Fi 5 GHz, sinal 66 % (−67 dBm), link de recepção 432 Mbps**, com plano de **700 Mbps**. Nenhum
+teste por este Wi-Fi passa de ~62 % do plano, por melhor que esteja a operadora. Hoje o relatório
+diz só "foi por Wi-Fi"; a operadora usa isso para descartar a reclamação.
+
+## Onda 10 — Wi-Fi explicado no teste e no relatório ⬜ (candidata a v1.5.0 · valor alto, esforço baixo)
+
+- [ ] Guardar em cada teste a **velocidade do link** do adaptador (já lida no `NetworkSampler`, sem
+      permissão) e, no Wi-Fi, banda e sinal (WLAN API do Windows, sem administrador; `netsh` já lê
+      nesta máquina, mas conferir se o app precisa da permissão de localização do Windows 11 24H2)
+- [ ] Janela do teste e relatório: "link do Wi-Fi 432 Mbps: este teste não podia passar disso"; a média
+      contra o plano separa **cabo** de **Wi-Fi**; a conclusão recomenda testar por cabo
+- [ ] Testes antigos (sem o campo) continuam lidos normalmente (JSON versão 1)
+
+## Onda 11 — Anexos e aviso de queda ⬜ (candidata a v1.5.1 · valor médio, esforço baixo)
+
+- [ ] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
+      CSV de consumo da v1.0.0)
+- [ ] **Aviso opcional** "A internet voltou após 12 min" quando uma queda ≥ 1 min termina —
+      **desligado por padrão** (04-IDEIAS: notificação só como opção), sai pelo ícone da bandeja
+
+## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.6.0 · valor médio, esforço médio)
+
+- [ ] O ping do app (a cada 5 s, quando ligado) passa a ser resumido por hora: mediana, pior 5 % e
+      % de respostas perdidas para a internet e para o roteador. Separa "internet lenta" de "Wi-Fi ruim"
+- [ ] Relatório ganha a seção de latência (só com o ping ligado). Metas da Anatel para latência e
+      perda **só entram se conferidas no regulamento vigente**; sem fonte, mostra só os números
+
+## Onda 13 — Mini gráfico nos números do widget ⬜ (backlog antigo · valor médio, esforço médio)
+
+- [ ] Sparkline dos últimos 60 s atrás dos números (04-IDEIAS, "Alto valor, esforço médio"),
+      opcional, sem custo de CPU perceptível; passar pelo Impeccable (legível em barra clara e escura)
+
+## Dívida técnica anotada (sem onda própria)
+
+- `App.xaml.cs` tem 1.259 linhas (menu, franquia, relatório, atualização, loop): dividir em
+  arquivos `partial` por assunto quando uma onda já for mexer nele, copiando a lógica literalmente.
 
 ---
 
