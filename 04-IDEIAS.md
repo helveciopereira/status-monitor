@@ -30,7 +30,7 @@ principal é "dois números certos, bonitos e leves na barra".
 
 | Ideia | Observação |
 |---|---|
-| **Consumo por aplicativo** ("quem está usando minha banda?") | Exige ETW (rastreamento de eventos do kernel) → normalmente **administrador**. Pode ser um modo opcional |
+| ✅ v1.3.0 — **Consumo por aplicativo** ("quem está usando minha banda?") | Feito SEM administrador, pela contabilidade de uso de dados do Windows (~1 min de atraso) em vez de ETW |
 | **Relatório para reclamar com a operadora**: registra quedas e velocidades abaixo do contratado, gera PDF | Muito útil no Brasil (Anatel exige 40% instantâneo / 80% média mensal) |
 | ✅ v1.2.0 (modos) — **Temas completos**: fonte, tamanho, só setas, só números, uma linha `↑1,2 ↓38` | Personalização além de cores |
 

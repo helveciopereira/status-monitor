@@ -236,6 +236,13 @@
                         <TextBlock x:Name="TextoFranquia" Margin="0,5,0,0" FontSize="11" Style="{StaticResource Rotulo}"
                                    AutomationProperties.Name="Franquia" />
                     </StackPanel>
+                    <!-- v1.3.0: "quem usou?" — abre a janela do consumo por aplicativo -->
+                    <Button Style="{StaticResource BotaoDiscreto}" Padding="4,3" Margin="17,6,0,0" HorizontalAlignment="Left"
+                            Click="AoClicarConsumoApps" AutomationProperties.Name="Ver consumo por aplicativo">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource Tema.Acento}">
+                            <Run Text="Ver por aplicativo" /> <Run Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9" />
+                        </TextBlock>
+                    </Button>
                 </StackPanel>
             </Border>
 

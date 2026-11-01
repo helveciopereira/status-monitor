@@ -35,6 +35,7 @@ public partial class PainelRapido : Window
     public event Action<bool>? IniciarComWindowsAlterado;
     public event Action? AbrirEstudioPedido;
     public event Action? TesteVelocidadePedido;            // v1.2.0
+    public event Action? ConsumoAppsPedido;                // v1.3.0
     public event Action<JanelaGrafico>? JanelaEscolhida;   // v1.1.0: lembrada nas configurações
 
     // v1.1.0: janela do gráfico escolhida e a latência (null = medição desligada → linha some)
@@ -474,6 +475,8 @@ public partial class PainelRapido : Window
     private void AoClicarEstudio(object sender, RoutedEventArgs e) => AbrirEstudioPedido?.Invoke();
 
     private void AoClicarTeste(object sender, RoutedEventArgs e) => TesteVelocidadePedido?.Invoke();
+
+    private void AoClicarConsumoApps(object sender, RoutedEventArgs e) => ConsumoAppsPedido?.Invoke();
 
     private static SolidColorBrush Pincel(Color c)
     {

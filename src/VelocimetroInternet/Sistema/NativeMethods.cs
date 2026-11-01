@@ -454,4 +454,35 @@ public static class NativeMethods
         public readonly bool IsOperStatusUp => OperStatus == 1;
         public readonly bool IsMediaConnected => MediaConnectState == 1;
     }
+
+    // =========================================================================
+    // v1.3.0 (Onda 8): consumo por aplicativo — nome e ícone do .exe
+    // =========================================================================
+
+    /// <summary>
+    /// QueryDosDevice("C:") → "\Device\HarddiskVolume4". O Windows identifica cada app pelo
+    /// caminho de DISPOSITIVO; com o mapa unidade→dispositivo vira um caminho normal.
+    /// </summary>
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern uint QueryDosDevice(string lpDeviceName, char[] lpTargetPath, uint ucchMax);
+
+    public const uint SHGFI_ICON = 0x100;
+    public const uint SHGFI_SMALLICON = 0x1;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct SHFILEINFO
+    {
+        public nint hIcon;
+        public int iIcon;
+        public uint dwAttributes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string szDisplayName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+        public string szTypeName;
+    }
+
+    /// <summary>Ícone pequeno do arquivo (o mesmo do Explorer). O HICON devolvido DEVE ir para DestroyIcon.</summary>
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern nint SHGetFileInfo(string pszPath, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
+    // (DestroyIcon já é declarado acima, na seção do ícone da bandeja)
 }

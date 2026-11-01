@@ -1,5 +1,41 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.3.0 — 2026-11-01 — Onda 8: consumo por aplicativo
+
+### O que mudou
+- Nova janela **"Consumo por aplicativo"**: os programas que mais baixaram/enviaram em **5 min, 1 h, hoje
+  ou este mês**, com ícone do .exe, barra proporcional ao maior, ↓ baixado e ↑ enviado, total do período e
+  linha "Outros (N apps)" a partir do 10º. Refaz a leitura a cada 30 s enquanto aberta.
+- Abre pelo link **"Ver por aplicativo"** no cartão de consumo do painel rápido e pelo item
+  **"Consumo por aplicativo…"** do menu do clique direito.
+
+### Por quê / decisões
+- Pedido do dono (Onda 8 escolhida em 2026-11-01). O plano previa ETW (rastreio do kernel), que exige
+  **administrador/UAC** — descartado. O Windows já contabiliza bytes por app em cada perfil de rede
+  (`ConnectionProfile.GetAttributedNetworkUsageAsync`, os mesmos números de Configurações › Rede › Uso de
+  dados): funciona em app não empacotado e sem elevação. Custo: **~1 min de atraso** (dito na janela).
+- O Windows guarda um perfil **por rede Wi-Fi já usada** (30 nesta máquina) e cada consulta, mesmo vazia,
+  custa 90–180 ms e é serializada pelo sistema (ler em paralelo deu os mesmos ~4,8 s). Por isso a leitura
+  tem duas fases: a 1ª consulta só a rede atual (~0,2 s); em segundo plano descobre (uma vez, ~3 s) quais
+  redes têm dados no mês, e as leituras seguintes consultam só essas, somando o mesmo app entre redes.
+- Perfis de VPN devolvem 0 e são ignorados (mesmo filtro de placas do medidor, `InterfaceFilter`).
+- O Windows identifica o app por caminho de dispositivo (`\device\harddiskvolume4\...`); vira `C:\...`
+  por `QueryDosDevice` para achar o ícone e a descrição do arquivo (nome amigável, ex.: "Microsoft Edge").
+- Exige o TFM `net10.0-windows10.0.19041.0` (projeção WinRT): a instalação cresce ~25 MB uma vez.
+- Sem rolagem (a barra de rolagem padrão do WPF é clara e destoa do tema): no máximo 10 linhas.
+
+### Arquivos
+- Novos: `Medicao/ConsumoPorApp.cs` (contas puras + `LeitorConsumoPorApp`), `Apresentacao/IconesApps.cs`,
+  `Apresentacao/JanelaConsumoApps.xaml(.cs)`, `tests/.../V130ConsumoPorAppTests.cs` (+17 testes).
+- Alterados: `Sistema/NativeMethods.cs` (`QueryDosDevice`, `SHGetFileInfo`), `App.xaml.cs` (abrir a janela,
+  menu, momento tranquilo da atualização), `Apresentacao/PainelRapido.xaml(.cs)` (link), os dois `.csproj` (TFM).
+
+### Validação
+- Build Release 0 avisos; **208/208 testes**.
+- Render fora da tela com dados REAIS desta máquina: 1ª leitura 46 apps em 197 ms; descoberta 3,1 s;
+  leituras seguintes 157–185 ms; janela com 10 linhas + "Outros (37 apps)", ícones corretos, 611 px de
+  altura (cabe numa tela 1080p a 150 %).
+
 ## v1.2.2 — 2026-11-01 — Teste de velocidade: download maior (+50 %)
 
 ### O que mudou

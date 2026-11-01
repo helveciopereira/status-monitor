@@ -609,6 +609,7 @@ public partial class App : Application
             _painel.IniciarComWindowsAlterado += DefinirInicioComWindows;
             _painel.AbrirEstudioPedido += AbrirEstudio;
             _painel.TesteVelocidadePedido += AbrirTesteVelocidade; // v1.2.0
+            _painel.ConsumoAppsPedido += AbrirConsumoApps;         // v1.3.0
             _painel.IsVisibleChanged += (_, ev) =>
             {
                 if (ev.NewValue is false)
@@ -671,6 +672,44 @@ public partial class App : Application
         _teste.Activate();
     }
 
+    // ------------------------------------------------------------------ v1.3.0: consumo por aplicativo
+
+    private JanelaConsumoApps? _consumoApps;
+
+    /// <summary>
+    /// Abre (ou traz para frente) a janela do consumo por app. O leitor (e a parte WinRT do
+    /// Windows que ele carrega) nasce com a janela e morre com ela — o widget não paga essa
+    /// memória enquanto ninguém abre a lista.
+    /// </summary>
+    private void AbrirConsumoApps()
+    {
+        _painel?.Fechar();
+        if (_consumoApps is { IsLoaded: true })
+        {
+            _consumoApps.Activate();
+            return;
+        }
+
+        var leitor = new LeitorConsumoPorApp();
+        var janela = new JanelaConsumoApps(leitor.LerAsync);
+        _consumoApps = janela;
+        // A 1ª leitura usa só a rede atual (rápida); achados os perfis com tráfego no mês, refaz
+        leitor.PerfisDescobertos += () => janela.Dispatcher.InvokeAsync(async () =>
+        {
+            if (janela.IsLoaded)
+            {
+                await janela.RecarregarAsync(mostrarLendo: false);
+            }
+        });
+        _consumoApps.Closed += (_, _) =>
+        {
+            _consumoApps = null;
+            AparaMemoriaEmBreve();
+        };
+        _consumoApps.Show();
+        _consumoApps.Activate();
+    }
+
     /// <summary>Rodapé do estúdio: versão e se/como a atualização automática está agindo.</summary>
     private string TextoVersaoRodape()
     {
@@ -710,6 +749,11 @@ public partial class App : Application
         var itemTeste = new MenuItem { Header = "Testar velocidade da internet…" };
         itemTeste.Click += (_, _) => AbrirTesteVelocidade();
         menu.Items.Add(itemTeste);
+
+        // v1.3.0: quem está usando a internet (dados do Windows, sem administrador)
+        var itemApps = new MenuItem { Header = "Consumo por aplicativo…" };
+        itemApps.Click += (_, _) => AbrirConsumoApps();
+        menu.Items.Add(itemApps);
 
         menu.Items.Add(new Separator());
 
@@ -937,7 +981,8 @@ public partial class App : Application
         return RegraMomentoTranquilo.Avaliar(
             painelAberto: _painel is { IsVisible: true },
             // v1.2.0: janela do teste aberta conta como "em uso" (não reinicia no meio de um teste)
-            estudioAberto: _estudio is not null || _teste is not null,
+            // v1.3.0: idem para a janela do consumo por app (o usuário está olhando a lista)
+            estudioAberto: _estudio is not null || _teste is not null || _consumoApps is not null,
             menuAberto: _menuAberto,
             mouseSobreOApp: mouseSobre,
             telaCheia: _host?.EmTelaCheia == true,

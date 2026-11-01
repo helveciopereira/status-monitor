@@ -1,0 +1,107 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.JanelaConsumoApps"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Status Monitor — consumo por aplicativo"
+        Width="480" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Tema.Superficie}"
+        Foreground="{DynamicResource Tema.Texto}"
+        FontFamily="{DynamicResource Tema.Fonte}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="Status Monitor — consumo por aplicativo">
+
+    <!--
+        v1.3.0 (Onda 8): "quem está usando a minha internet?". Os números vêm da contabilidade de
+        uso de dados do próprio Windows (sem administrador), com ~1 min de atraso — a nota diz isso
+        para ninguém esperar tempo real. Nada sai do PC.
+    -->
+    <Window.Resources>
+        <Style x:Key="Rotulo" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="20,18,20,20">
+        <TextBlock Text="Consumo por aplicativo" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Style="{StaticResource Rotulo}" Margin="0,4,0,14"
+                   Text="Quanto cada programa baixou e enviou. Os números são do próprio Windows (os mesmos de Configurações › Rede › Uso de dados) e chegam com cerca de 1 minuto de atraso." />
+
+        <!-- Período + total do período -->
+        <Grid Margin="0,0,0,10">
+            <Border HorizontalAlignment="Left" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="Opcao5Min" GroupName="Periodo" Style="{StaticResource Segmento}" Content="5 min"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Últimos 5 minutos" />
+                    <RadioButton x:Name="Opcao1h" GroupName="Periodo" Style="{StaticResource Segmento}" Content="1 h"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Última hora" />
+                    <RadioButton x:Name="OpcaoHoje" GroupName="Periodo" Style="{StaticResource Segmento}" Content="Hoje"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Hoje" />
+                    <RadioButton x:Name="OpcaoMes" GroupName="Periodo" Style="{StaticResource Segmento}" Content="Este mês"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Este mês" />
+                </StackPanel>
+            </Border>
+            <TextBlock x:Name="TextoTotal" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                       Style="{StaticResource Rotulo}" TextWrapping="NoWrap" Typography.NumeralAlignment="Tabular"
+                       AutomationProperties.Name="TotalPeriodo" />
+        </Grid>
+
+        <!-- Lista: ícone · nome + barra proporcional ao maior · baixado / enviado -->
+        <Border Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="4,4" MinHeight="120">
+            <Grid>
+                <!-- Sem rolagem: no máximo 10 linhas (ConsumoPorApp.MaximoLinhas), o resto em "Outros" -->
+                    <ItemsControl x:Name="Lista" AutomationProperties.Name="ListaApps">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="8,6" ToolTip="{Binding Dica}" Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- Ícone do .exe; sem ícone (Loja, sistema, "Outros"), um glifo neutro -->
+                                    <Image Source="{Binding Icone}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0"
+                                           Visibility="{Binding VisivelIcone}" />
+                                    <TextBlock Text="{Binding Glifo}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                                               Foreground="{DynamicResource Tema.TextoSecundario}" VerticalAlignment="Top" Margin="0,1,0,0"
+                                               Visibility="{Binding VisivelGlifo}" />
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" FontSize="12" />
+                                        <Grid Height="3" Margin="0,5,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="{Binding ColunaUsada}" />
+                                                <ColumnDefinition Width="{Binding ColunaResto}" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.ColumnSpan="2" Background="{DynamicResource Tema.Superficie}" CornerRadius="1.5" />
+                                            <Border Background="{DynamicResource Tema.Acento}" CornerRadius="1.5" />
+                                        </Grid>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TextoBaixado}" HorizontalAlignment="Right" FontSize="12"
+                                                   Typography.NumeralAlignment="Tabular" />
+                                        <TextBlock Text="{Binding TextoEnviado}" HorizontalAlignment="Right" FontSize="11"
+                                                   Foreground="{DynamicResource Tema.TextoSecundario}" Typography.NumeralAlignment="Tabular" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                <!-- Lendo / vazio / erro -->
+                <TextBlock x:Name="TextoEstado" Style="{StaticResource Rotulo}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextAlignment="Center" Margin="24,0" AutomationProperties.Name="EstadoLista" Text="Lendo…" />
+            </Grid>
+        </Border>
+
+        <Grid Margin="0,14,0,0">
+            <TextBlock x:Name="TextoAtualizado" Style="{StaticResource Rotulo}" FontSize="11" VerticalAlignment="Center"
+                       TextWrapping="NoWrap" AutomationProperties.Name="Atualizado" />
+            <Button Content="Fechar" Style="{StaticResource BotaoSecundario}" HorizontalAlignment="Right"
+                    Click="AoClicarFechar" IsCancel="True" AutomationProperties.Name="Fechar consumo por aplicativo" />
+        </Grid>
+    </StackPanel>
+</Window>

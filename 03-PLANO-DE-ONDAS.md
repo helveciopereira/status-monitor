@@ -157,10 +157,13 @@ O relatório para a operadora continua em aberto.
       nova tentativa com metade do tamanho e erro visível em vez de "0 Mbps"
 - [x] v1.2.2: download do teste 100 → 150 MB (+50 %) e pedidos de 25 MB (cai para 8 MB se o servidor limitar)
 
-## Onda 8 — Consumo por aplicativo ⬜ (v1.3.0)
+## Onda 8 — Consumo por aplicativo ✅ (v1.3.0, 2026-11-01)
 
-- [ ] "Quem está usando minha banda?" — bytes por processo via ETW (exige administrador): modo opcional,
-      desligado por padrão, que explica a elevação antes de pedir
+- [x] "Quem está usando minha banda?" — janela com os 10 apps que mais trafegaram (5 min, 1 h, hoje, este
+      mês), ícone, barra proporcional, ↓/↑ e "Outros". Abre pelo painel ("Ver por aplicativo") e pelo menu
+- [x] **Sem administrador**: em vez de ETW, usa a contabilidade de uso de dados do próprio Windows
+      (`ConnectionProfile.GetAttributedNetworkUsageAsync`, a mesma de Configurações › Rede › Uso de dados).
+      Custo: ~1 min de atraso nos números e +~25 MB no disco (projeção WinRT do SDK do Windows)
 
 ---
 
