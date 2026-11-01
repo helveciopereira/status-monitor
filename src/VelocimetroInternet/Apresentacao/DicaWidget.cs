@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using VelocimetroInternet.Medicao;
 
 namespace VelocimetroInternet.Apresentacao;
@@ -17,7 +17,7 @@ public static class DicaWidget
     /// </summary>
     /// <param name="fracaoFranquia">0 = sem franquia definida.</param>
     public static string Montar(InstantaneoHistorico h, string? ip, ModoUnidadeVelocidade unidade,
-        double fracaoFranquia, bool semConexao)
+        double fracaoFranquia, bool semConexao, LatenciaAtual? latencia = null)
     {
         var linhas = new List<string>(6);
 
@@ -43,6 +43,12 @@ public static class DicaWidget
 
         // Formatadores novos: o pico é valor estático, não precisa da histerese do widget
         var f = new SpeedFormatter(unidade);
+        // v1.1.0: latência só com a medição ligada (e já com ao menos uma rodada concluída)
+        if (latencia is { Medido: true })
+        {
+            linhas.Add($"Latência: {latencia.Texto()}");
+        }
+
         linhas.Add($"Pico em 60 s: ↑ {f.FormatarValorEUnidade(h.PicoUpload)} · ↓ {new SpeedFormatter(unidade).FormatarValorEUnidade(h.PicoDownload)}");
         // "Clique abre o painel" é óbvio; a dica ensina só os atalhos escondidos (cabe numa linha)
         linhas.Add("Duplo clique: Gerenciador de Tarefas · Ctrl + arrastar: mover");

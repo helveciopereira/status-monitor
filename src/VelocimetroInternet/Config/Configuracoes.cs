@@ -100,6 +100,17 @@ public sealed class Configuracoes
     /// </summary>
     public bool CorPorIntensidade { get; set; }
 
+    // ---------------------------------------------------------------- v1.1.0 (Onda 6)
+
+    /// <summary>
+    /// Medir a latência (ping ao roteador e a 1.1.1.1 a cada 5 s). Padrão DESLIGADO: é o único
+    /// recurso que manda pacotes para fora do PC, então só com o consentimento do usuário.
+    /// </summary>
+    public bool MedirLatencia { get; set; }
+
+    /// <summary>Janela do gráfico do painel lembrada entre aberturas: "1min" (padrão), "5min" ou "1h".</summary>
+    public string JanelaGrafico { get; set; } = "1min";
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -135,6 +146,8 @@ public sealed class Configuracoes
         PosicoesManuais ??= [];
         // v1.0.0: franquia entre 0 (desligada) e 100 TB; NaN/negativo de arquivo editado à mão → 0
         FranquiaMensalGb = double.IsFinite(FranquiaMensalGb) ? Math.Clamp(FranquiaMensalGb, 0, 100_000) : 0;
+        // v1.1.0: janela desconhecida (arquivo editado à mão) volta ao padrão de 1 minuto
+        JanelaGrafico = JanelaGrafico is "1min" or "5min" or "1h" ? JanelaGrafico : "1min";
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {

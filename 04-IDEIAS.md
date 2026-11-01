@@ -21,8 +21,8 @@ principal é "dois números certos, bonitos e leves na barra".
 | Ideia | Observação |
 |---|---|
 | **Mini gráfico (sparkline)** dos últimos 60 s atrás dos números ou num popup | Mostra tendência, não só o instante |
-| **Painel ao clicar — versão ampliada**: gráfico de 5 min/1 h, máximos, médias | O flyout básico (60 s) **subiu para a Onda 2** por causa do estilo "Clima"; aqui fica a versão completa |
-| **Latência (ping)** para o gateway e para 1.1.1.1, a cada 5 s, como terceira informação opcional | Internet "lenta" muitas vezes é latência, não banda. Custo de rede desprezível |
+| ✅ v1.1.0 — **Painel ao clicar — versão ampliada**: gráfico de 5 min/1 h, máximos, médias | O flyout básico (60 s) **subiu para a Onda 2** por causa do estilo "Clima"; aqui fica a versão completa |
+| ✅ v1.1.0 — **Latência (ping)** para o gateway e para 1.1.1.1, a cada 5 s, como terceira informação opcional | Internet "lenta" muitas vezes é latência, não banda. Custo de rede desprezível |
 | **Teste de velocidade sob demanda** (botão no menu) | Só quando o usuário pedir, nunca em segundo plano |
 | **Histórico em SQLite** (por hora/dia) com exportação CSV | Base para relatórios e franquia |
 

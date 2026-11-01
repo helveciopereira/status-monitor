@@ -62,6 +62,11 @@ public sealed class HistoricoRede
     private ulong _linkBps;
     private string _nomeInterface = string.Empty;
 
+    // v1.1.0 (Onda 6): janelas longas do gráfico do painel, alimentadas pelos BYTES reais de cada
+    // intervalo (não pela velocidade suavizada). Só memória: reabrir o app recomeça vazio.
+    private readonly JanelaAgregada _cincoMinutos = new(5);
+    private readonly JanelaAgregada _umaHora = new(60);
+
     private readonly string _caminhoConsumo;
     private readonly string _caminhoDiario;
     private readonly Func<DateOnly> _hoje;
@@ -146,6 +151,9 @@ public sealed class HistoricoRede
             }
 
             _registro.Somar(_dia, bytesEnviadosNoIntervalo, bytesRecebidosNoIntervalo);
+            // v1.1.0: as janelas de 5 min e 1 h contam o tempo do intervalo configurado
+            _cincoMinutos.Somar(_intervaloSegundos, bytesEnviadosNoIntervalo, bytesRecebidosNoIntervalo);
+            _umaHora.Somar(_intervaloSegundos, bytesEnviadosNoIntervalo, bytesRecebidosNoIntervalo);
             _linkBps = linkBps;
             _nomeInterface = nomeInterface;
 
@@ -185,6 +193,44 @@ public sealed class HistoricoRede
                 _linkBps, _nomeInterface, _anel.Length,
                 mes.Enviados, mes.Recebidos);
         }
+    }
+
+    // ------------------------------------------------------------------ v1.1.0: janelas do gráfico
+
+    /// <summary>
+    /// Pontos da janela pedida + média e pico DELA. A média da janela de 60 s é a média dos
+    /// pontos; nas longas, cada ponto já é bytes÷segundos do balde, então a média dos pontos é a
+    /// média real do período (os baldes têm todos o mesmo tempo).
+    /// </summary>
+    public SerieGrafico CapturarJanela(JanelaGrafico janela)
+    {
+        PontoHistorico[] pontos;
+        int capacidade;
+        lock (_trava)
+        {
+            switch (janela)
+            {
+                case JanelaGrafico.CincoMinutos:
+                    pontos = _cincoMinutos.Pontos();
+                    capacidade = JanelaAgregada.Capacidade;
+                    break;
+                case JanelaGrafico.Hora:
+                    pontos = _umaHora.Pontos();
+                    capacidade = JanelaAgregada.Capacidade;
+                    break;
+                default:
+                    pontos = new PontoHistorico[_quantidade];
+                    for (int i = 0; i < _quantidade; i++)
+                    {
+                        pontos[i] = _anel[(_inicio + i) % _anel.Length];
+                    }
+
+                    capacidade = _anel.Length;
+                    break;
+            }
+        }
+
+        return SerieGrafico.De(pontos, capacidade);
     }
 
     // ------------------------------------------------------------------ v1.0.0: franquia e CSV

@@ -23,4 +23,12 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- v1.1.0: mesma blindagem do projeto do app. O hook de backup automático cria "backup\"
+       DENTRO desta pasta quando a sessão está posicionada aqui; sem isto, as cópias dos testes
+       entram na compilação e dão CS0111 (classe com membros duplicados). -->
+  <ItemGroup>
+    <Compile Remove="**\backup\**" />
+    <None Remove="**\backup\**" />
+  </ItemGroup>
+
 </Project>

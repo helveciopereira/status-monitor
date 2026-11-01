@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -43,6 +43,9 @@ public partial class App : Application
     private readonly ServicoConfiguracoes _config = new();
     private readonly InicioComWindows _inicio = new();
     private readonly HistoricoRede _historico = new();
+
+    // v1.1.0 (Onda 6): ping opcional ao roteador e a 1.1.1.1 (desligado por padrão)
+    private MedidorLatencia? _latencia;
 
     /// <summary>Medidor recriado quando muda filtro de interfaces ou suavização (lido pelo loop).</summary>
     private volatile MedidorAtual? _medidor;
@@ -157,6 +160,9 @@ public partial class App : Application
         _secundarias = new GerenciadorBarrasSecundarias(CriarWidgetConfigurado, ConfigurarHostSecundario, RegistrarLog);
         _secundarias.Ativo = cfg.MostrarEmTodasAsBarras;
         _historico.DefinirIntervalo(cfg.IntervaloSegundos);
+        // v1.1.0: a interface do gateway é a mesma que o medidor está contando agora
+        _latencia = new MedidorLatencia(() => _historico.Capturar().NomeInterface);
+        _latencia.Definir(cfg.MedirLatencia);
 
         // Mensagens do Windows que chegam pela janela do widget: tema, bandeja e "2ª instância"
         _host.AdicionarGanchoMensagens(GanchoMensagens);
@@ -347,7 +353,8 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         InstantaneoHistorico h = _historico.Capturar();
         return DicaWidget.Montar(h, _semConexao ? null : InfoRede.IpLocal(h.NomeInterface), UnidadeDe(cfg),
-            _historico.FracaoFranquia(cfg.FranquiaMensalGb), _semConexao);
+            _historico.FracaoFranquia(cfg.FranquiaMensalGb), _semConexao,
+            _latencia is { Ligado: true } l ? l.Atual : null);
     }
 
     /// <summary>
@@ -459,6 +466,7 @@ public partial class App : Application
         }
 
         _historico.DefinirIntervalo(cfg.IntervaloSegundos);
+        _latencia?.Definir(cfg.MedirLatencia); // v1.1.0
         AtualizarVisibilidadeBandeja();
         AplicarPaleta();
         RecriarMedidor(cfg);
@@ -587,7 +595,9 @@ public partial class App : Application
 
         if (_painel is null)
         {
-            _painel = new PainelRapido(_historico);
+            // v1.1.0: o painel lê a latência só quando a medição está ligada (null = linha some)
+            _painel = new PainelRapido(_historico, () => _latencia is { Ligado: true } l ? l.Atual : null);
+            _painel.JanelaEscolhida += j => _config.Alterar(c => c.JanelaGrafico = JanelasGrafico.Codigo(j));
             _painel.UnidadeEscolhida += bits => _config.Alterar(c => c.Unidade = bits ? "bits" : "bytes");
             _painel.FixarAlterado += fixar => _config.Alterar(c => c.FixarNaBarra = fixar);
             _painel.MostrarSistemaAlterado += mostrar => _config.Alterar(c => c.MostrarCpuRam = mostrar);
@@ -1098,6 +1108,7 @@ public partial class App : Application
     {
         _timerAtualizacao?.Stop();
         _ctsMedicao?.Cancel();
+        _latencia?.Dispose(); // v1.1.0: para o ping (se ligado)
         _historico.SalvarConsumo();
         _bandeja?.Dispose();
         _secundarias?.Dispose();

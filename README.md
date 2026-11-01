@@ -8,6 +8,8 @@
 > para mudar o widget de lugar e opção **"Mostrar em todos os monitores"** (no estúdio, cartão "Na barra de tarefas").
 > **v1.0.0:** dica ao passar o mouse (IP, consumo de hoje/mês), **consumo do mês**, **alerta de franquia**,
 > exportação do histórico por dia em **CSV**, cor por intensidade (opcional) e **duplo clique → Gerenciador de Tarefas**.
+> **v1.1.0:** gráfico do painel com **1 min / 5 min / 1 h** e a média de cada janela; **latência** opcional
+> (ping ao roteador e a 1.1.1.1, desligada por padrão — estúdio › Medição).
 >
 > **v0.9.0:** **seletor visual de cor** (quadrado + barra de matiz) na paleta Personalizada.
 
@@ -22,7 +24,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0 a 5 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.0.0** · 2026-10-31
+> Status: **Ondas 0 a 6 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.1.0** · 2026-10-31
 >
 > **Instalar:** baixe e execute [`StatusMonitor-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/StatusMonitor-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

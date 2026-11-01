@@ -133,11 +133,15 @@ Itens "alto valor, baixo esforço" do `04-IDEIAS.md`:
 - [x] **Duplo clique abre o Gerenciador de Tarefas** (também no menu do clique direito) — v1.0.0
 - [x] Indicador de sem conexão — já existia desde a v0.2.0 ("—" no widget, "Sem conexão" no painel)
 
-## Onda 6 — Painel ampliado e latência ⬜
+## Onda 6 — Painel ampliado e latência ✅ (v1.1.0, 2026-10-31)
 
-- [ ] Gráfico do painel com **1 min / 5 min / 1 h** e média de cada janela
-- [ ] **Latência (ping)** opcional — roteador e internet, desligada por padrão (o app continua sem
+- [x] Gráfico do painel com **1 min / 5 min / 1 h** e média de cada janela (5 min = 1 ponto a cada 5 s;
+      1 h = 1 ponto por minuto; pontos calculados pelos bytes reais; janela lembrada nas configurações)
+- [x] **Latência (ping)** opcional — roteador e internet, desligada por padrão (o app continua sem
       acessar a internet a menos que o usuário ligue)
+
+Fica para decisão do dono (não entra sem conversa): teste de velocidade sob demanda (precisa de
+servidor externo), consumo por aplicativo (exige administrador/ETW) e relatório para a operadora.
 
 ---
 

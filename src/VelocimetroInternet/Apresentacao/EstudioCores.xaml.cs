@@ -131,6 +131,7 @@ public partial class EstudioCores : Window
 
             // v1.0.0 (Onda 5)
             ChaveIntensidade.IsChecked = _rascunho.CorPorIntensidade;
+            ChaveLatencia.IsChecked = _rascunho.MedirLatencia; // v1.1.0
             CampoFranquia.Text = _rascunho.FranquiaMensalGb > 0
                 ? _rascunho.FranquiaMensalGb.ToString("0.##", PtBr)
                 : string.Empty;
@@ -193,6 +194,13 @@ public partial class EstudioCores : Window
     private void AoAlternarIntensidade(object sender, RoutedEventArgs e)
     {
         _rascunho.CorPorIntensidade = ChaveIntensidade.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.1.0: liga/desliga o ping (vale ao salvar, como as demais opções).</summary>
+    private void AoAlternarLatencia(object sender, RoutedEventArgs e)
+    {
+        _rascunho.MedirLatencia = ChaveLatencia.IsChecked == true;
         AtualizarEstadoSalvo();
     }
 

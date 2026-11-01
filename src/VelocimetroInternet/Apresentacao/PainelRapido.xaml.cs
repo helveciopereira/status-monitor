@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -34,11 +34,17 @@ public partial class PainelRapido : Window
     public event Action<bool>? MostrarSistemaAlterado;   // v0.5.0: CPU/RAM na barra
     public event Action<bool>? IniciarComWindowsAlterado;
     public event Action? AbrirEstudioPedido;
+    public event Action<JanelaGrafico>? JanelaEscolhida;   // v1.1.0: lembrada nas configurações
 
-    public PainelRapido(HistoricoRede historico)
+    // v1.1.0: janela do gráfico escolhida e a latência (null = medição desligada → linha some)
+    private JanelaGrafico _janela = JanelaGrafico.Minuto;
+    private readonly Func<LatenciaAtual?> _latencia;
+
+    public PainelRapido(HistoricoRede historico, Func<LatenciaAtual?>? latencia = null)
     {
         InitializeComponent();
         _historico = historico;
+        _latencia = latencia ?? (() => null);
         Deactivated += (_, _) => Fechar();
     }
 
@@ -64,6 +70,10 @@ public partial class PainelRapido : Window
             ChaveSistema.IsChecked = cfg.MostrarCpuRam;
             _velocidadeContratadaMbps = cfg.VelocidadeContratadaMbps;
             _franquiaGb = cfg.FranquiaMensalGb; // v1.0.0
+            _janela = JanelasGrafico.DeCodigo(cfg.JanelaGrafico); // v1.1.0
+            OpcaoJanela1Min.IsChecked = _janela == JanelaGrafico.Minuto;
+            OpcaoJanela5Min.IsChecked = _janela == JanelaGrafico.CincoMinutos;
+            OpcaoJanela1h.IsChecked = _janela == JanelaGrafico.Hora;
 
             ModoUnidadeVelocidade modo = bits ? ModoUnidadeVelocidade.BitsPorSegundo : ModoUnidadeVelocidade.BytesPorSegundo;
             _formatadorUp.ModoUnidade = modo;
@@ -218,10 +228,13 @@ public partial class PainelRapido : Window
         NumeroDownload.Text = nDown;
         UnidadeDownload.Text = uDown;
 
+        // v1.1.0: o pico dos cartões é o da janela escolhida no gráfico ("Pico em 1 h: …")
+        SerieGrafico serie = _historico.CapturarJanela(_janela);
+        string sufixo = _janela switch { JanelaGrafico.CincoMinutos => "5 min", JanelaGrafico.Hora => "1 h", _ => "60 s" };
         // Pico sem histerese (formatador novo): é um valor estático, não pisca
         var fPico = new SpeedFormatter(_formatadorUp.ModoUnidade);
-        TextoPicoUpload.Text = $"Pico: {fPico.FormatarValorEUnidade(h.PicoUpload)}";
-        TextoPicoDownload.Text = $"Pico: {new SpeedFormatter(fPico.ModoUnidade).FormatarValorEUnidade(h.PicoDownload)}";
+        TextoPicoUpload.Text = $"Pico em {sufixo}: {fPico.FormatarValorEUnidade(serie.PicoUpload)}";
+        TextoPicoDownload.Text = $"Pico em {sufixo}: {new SpeedFormatter(fPico.ModoUnidade).FormatarValorEUnidade(serie.PicoDownload)}";
 
         // Barras: fração da velocidade contratada; sem ela, da velocidade de link da placa
         double referenciaBps = _velocidadeContratadaMbps > 0
@@ -239,8 +252,20 @@ public partial class PainelRapido : Window
         ConsumoMesUpload.Text = $"↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosMes)}";
         ConsumoMesDownload.Text = $"↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosMes)}";
         PreencherFranquia(h);
+        PreencherLatencia();
 
-        DesenharGrafico(h);
+        DesenharGrafico(serie);
+    }
+
+    /// <summary>v1.1.0: "Roteador 3 ms · Internet 18 ms"; sem a opção ligada, a linha some.</summary>
+    private void PreencherLatencia()
+    {
+        LatenciaAtual? l = _latencia();
+        BlocoLatencia.Visibility = l is null ? Visibility.Collapsed : Visibility.Visible;
+        if (l is not null)
+        {
+            TextoLatencia.Text = l.Texto();
+        }
     }
 
     /// <summary>
@@ -275,13 +300,31 @@ public partial class PainelRapido : Window
         barra.Width = atualBps > 1024 ? Math.Max(3, largura) : largura;
     }
 
-    private InstantaneoHistorico? _ultimoDesenho;
+    private SerieGrafico? _ultimoDesenho;
 
     private void AoMudarTamanhoGrafico(object sender, SizeChangedEventArgs e)
     {
         if (_ultimoDesenho is not null)
         {
             DesenharGrafico(_ultimoDesenho);
+        }
+    }
+
+    /// <summary>v1.1.0: troca da janela do gráfico (1 min / 5 min / 1 h) — redesenha na hora.</summary>
+    private void AoEscolherJanela(object sender, RoutedEventArgs e)
+    {
+        if (_sincronizando)
+        {
+            return;
+        }
+
+        _janela = ReferenceEquals(sender, OpcaoJanela5Min) ? JanelaGrafico.CincoMinutos
+            : ReferenceEquals(sender, OpcaoJanela1h) ? JanelaGrafico.Hora
+            : JanelaGrafico.Minuto;
+        JanelaEscolhida?.Invoke(_janela);
+        if (IsVisible)
+        {
+            Preencher();
         }
     }
 
@@ -292,10 +335,11 @@ public partial class PainelRapido : Window
     /// Áreas sobrepostas (download atrás, upload na frente) numa escala comum. O topo é um valor
     /// REDONDO (<see cref="SpeedFormatter.EscalaRedonda"/>) marcado por uma linha tracejada com
     /// rótulo, e a metade por uma linha pontilhada — referência visual de "quanto é isso".
-    /// As 60 posições ocupam a largura toda; com menos amostras, encostam à direita
-    /// (o "agora" fica sempre na borda direita).
+    /// As posições da janela ocupam a largura toda; com menos pontos, encostam à direita
+    /// (o "agora" fica sempre na borda direita). v1.1.0: a série vem da janela escolhida e o
+    /// canto direito da legenda mostra a média dela.
     /// </summary>
-    private void DesenharGrafico(InstantaneoHistorico h)
+    private void DesenharGrafico(SerieGrafico h)
     {
         _ultimoDesenho = h;
         double largura = Grafico.ActualWidth;
@@ -304,7 +348,7 @@ public partial class PainelRapido : Window
         {
             AreaDownload.Data = LinhaDownload.Data = AreaUpload.Data = LinhaUpload.Data = null;
             MostrarGuias(false);
-            TextoEscala.Text = "Aguardando amostras…";
+            TextoEscala.Text = JanelasGrafico.TextoAguardando(_janela);
             return;
         }
 
@@ -318,7 +362,7 @@ public partial class PainelRapido : Window
         PosicionarGuia(GuiaMeio, RotuloMeio, rotuloMeio, yMeio, largura);
         MostrarGuias(true);
 
-        // v0.8.0: a largura é dividida pela capacidade REAL (60 s ÷ intervalo), não por 60 fixo
+        // v0.8.0: a largura é dividida pela capacidade REAL da janela, não por 60 fixo
         double passo = largura / (Math.Max(2, h.Capacidade) - 1);
         double x0 = largura - passo * (h.Pontos.Count - 1);
 
@@ -329,7 +373,9 @@ public partial class PainelRapido : Window
         AreaUpload.Data = areaU;
         LinhaUpload.Data = linhaU;
 
-        TextoEscala.Text = string.Empty;
+        // Formatadores novos (sem histerese): a média é um valor estático
+        TextoEscala.Text = $"Média ↑ {new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaUpload)}" +
+                           $" · ↓ {new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaDownload)}";
     }
 
     /// <summary>Linha horizontal de ponta a ponta + rótulo encostado à esquerda, logo ACIMA dela.</summary>

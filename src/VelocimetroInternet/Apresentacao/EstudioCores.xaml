@@ -270,7 +270,7 @@
                             </Border>
                         </Grid>
                         <TextBlock Style="{StaticResource Rotulo}" Margin="0,0,0,16"
-                                   Text="Mais rápido = números mais vivos; mais lento = menos movimento na barra. O gráfico do painel continua mostrando os últimos 60 segundos." />
+                                   Text="Mais rápido = números mais vivos; mais lento = menos movimento na barra. O gráfico do painel não muda: as janelas de 1 min, 5 min e 1 h valem com qualquer intervalo." />
 
                         <TextBlock Text="Suavização" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource Rotulo}" Text="Mais suave = números mais estáveis, reação mais lenta a picos." Margin="0,2,0,6" />
@@ -314,6 +314,19 @@
                             <ToggleButton x:Name="ChaveIntensidade" HorizontalAlignment="Right" VerticalAlignment="Center"
                                           Style="{StaticResource Interruptor}" Click="AoAlternarIntensidade"
                                           AutomationProperties.Name="Cor por intensidade" />
+                        </Grid>
+
+                        <!-- v1.1.0 (Onda 6): latência opcional — desligada por padrão porque é o
+                             único recurso que manda pacotes para fora do PC -->
+                        <Grid Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="Medir latência" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Um ping a cada 5 s para o roteador e para 1.1.1.1. Aparece no painel e na dica. Roteador baixo com internet alta indica problema na operadora; roteador alto, no Wi-Fi." />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveLatencia" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarLatencia"
+                                          AutomationProperties.Name="Medir latência" />
                         </Grid>
                     </StackPanel>
                 </Border>

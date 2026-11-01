@@ -132,9 +132,24 @@
             <!-- Telemetria dos últimos 60 s -->
             <Border Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
                 <StackPanel>
+                    <!-- v1.1.0: seletor da janela do gráfico (1 min = um ponto por medição;
+                         5 min = um ponto a cada 5 s; 1 h = um ponto por minuto) -->
                     <Grid Margin="0,0,0,8">
-                        <TextBlock Text="Últimos 60 segundos" FontSize="12" />
-                        <TextBlock x:Name="TextoLink" HorizontalAlignment="Right" FontSize="11"
+                        <Border HorizontalAlignment="Left" Background="{DynamicResource Tema.Superficie}"
+                                CornerRadius="6" Padding="2">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="OpcaoJanela1Min" GroupName="JanelaGrafico" Style="{StaticResource Segmento}"
+                                             Content="1 min" Checked="AoEscolherJanela"
+                                             AutomationProperties.Name="Gráfico do último minuto" />
+                                <RadioButton x:Name="OpcaoJanela5Min" GroupName="JanelaGrafico" Style="{StaticResource Segmento}"
+                                             Content="5 min" Checked="AoEscolherJanela"
+                                             AutomationProperties.Name="Gráfico dos últimos 5 minutos" />
+                                <RadioButton x:Name="OpcaoJanela1h" GroupName="JanelaGrafico" Style="{StaticResource Segmento}"
+                                             Content="1 h" Checked="AoEscolherJanela"
+                                             AutomationProperties.Name="Gráfico da última hora" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock x:Name="TextoLink" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"
                                    Foreground="{DynamicResource Tema.Acento}" Text="" />
                     </Grid>
                     <!--
@@ -165,8 +180,16 @@
                             <Run Text="   " />
                             <Run Text="━" Foreground="{DynamicResource Painel.Download}" /> <Run Text="Download" />
                         </TextBlock>
+                        <!-- Média da janela escolhida (ou "aguardando…" enquanto não há 2 pontos) -->
                         <TextBlock x:Name="TextoEscala" FontSize="10" HorizontalAlignment="Right" Style="{StaticResource Rotulo}"
+                                   Typography.NumeralAlignment="Tabular" AutomationProperties.Name="MediaGrafico"
                                    Text="Aguardando amostras…" />
+                    </Grid>
+                    <!-- v1.1.0: latência (só com "Medir latência" ligado no estúdio) -->
+                    <Grid x:Name="BlocoLatencia" Margin="0,8,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Latência" FontSize="11" Style="{StaticResource Rotulo}" />
+                        <TextBlock x:Name="TextoLatencia" HorizontalAlignment="Right" FontSize="11"
+                                   Typography.NumeralAlignment="Tabular" AutomationProperties.Name="Latencia" />
                     </Grid>
                 </StackPanel>
             </Border>

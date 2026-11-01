@@ -1,5 +1,43 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.1.0 — 2026-10-31 — Onda 6: painel ampliado e latência
+
+### O que mudou
+- **Gráfico do painel com três janelas**: seletor **1 min · 5 min · 1 h** acima do gráfico. 1 min é o
+  gráfico de sempre; 5 min tem um ponto a cada 5 s; 1 h, um ponto por minuto. O canto da legenda mostra a
+  **média da janela** e os cartões passam a dizer "Pico em 5 min / 1 h". A escolha fica gravada
+  (`JanelaGrafico` no settings.json).
+- **Latência opcional** (estúdio › Medição › "Medir latência", **desligada por padrão**): ping ICMP a cada
+  5 s ao roteador (gateway da interface medida) e a 1.1.1.1, limite de 1 s. Linha "Latência" no painel e
+  na dica do widget ("Roteador 3 ms · Internet 18 ms"; sem resposta = "—").
+
+### Por quê
+- 60 s mostram o instante, não a tendência ("o download ficou lento na última meia hora?"). Os pontos das
+  janelas longas são **bytes do período ÷ segundos** — não a média das velocidades suavizadas, que
+  esconderia rajadas e mudaria com a suavização escolhida. Tempo sem medição (pausa, sem rede) não vira
+  zero falso: o gráfico só junta os períodos medidos.
+- Internet "lenta" muitas vezes é latência, não banda; roteador baixo + internet alta aponta a operadora.
+  Fica desligada porque é o único recurso que manda pacotes para fora do PC.
+
+### Como usar
+- Clique no widget → seletor acima do gráfico. As janelas longas enchem com o tempo (só memória: reabrir o
+  app recomeça; "Juntando dados…" até haver 2 pontos).
+- Latência: "Cores e mais configurações" › Medição › "Medir latência" › Salvar.
+
+### Arquivos
+- Novos: `Medicao/JanelaAgregada.cs` (anel de 60 baldes, `SerieGrafico`, `JanelasGrafico`),
+  `Medicao/MedidorLatencia.cs`, `tests/.../V110JanelasELatenciaTests.cs` (23 testes).
+- Alterados: `HistoricoRede.cs` (`CapturarJanela`), `PainelRapido.xaml(.cs)`, `DicaWidget.cs`,
+  `EstudioCores.xaml(.cs)`, `Configuracoes.cs` (`MedirLatencia`, `JanelaGrafico`), `App.xaml.cs`,
+  csproj de testes (exclui `backup\**`: o hook de backup criou cópias dos testes dentro da pasta e
+  quebrou a compilação com CS0111).
+
+### Validação
+- Build Release 0 avisos; **160/160 testes**.
+- Render fora da tela do painel nas três janelas, da dica e do estúdio (2 h sintéticas de tráfego).
+- Ping real pela classe do app nesta máquina: "Roteador 12 ms · Internet 72 ms", 2ª rodada 5 s depois;
+  desligar zera o estado.
+
 ## v1.0.0 — 2026-10-31 — Onda 5: informação extra sem ocupar espaço
 
 ### O que mudou
