@@ -44,6 +44,10 @@ public partial class App : Application
     private readonly InicioComWindows _inicio = new();
     private readonly HistoricoRede _historico = new();
 
+    // v1.4.0 (Onda 9): quedas de internet (lidas do Windows, sem tráfego) + testes guardados → relatório
+    private readonly ServicoQualidade _qualidade = new();
+    private readonly ConectividadeWindows _conectividade = new();
+
     // v1.1.0 (Onda 6): ping opcional ao roteador e a 1.1.1.1 (desligado por padrão)
     private MedidorLatencia? _latencia;
 
@@ -662,7 +666,14 @@ public partial class App : Application
             return;
         }
 
-        _teste = new JanelaTesteVelocidade(() => _config.Atual.VelocidadeContratadaMbps, RegistrarLog);
+        // v1.4.0: todo teste concluído entra no relatório do mês (com o tipo de conexão: cabo/Wi-Fi)
+        _teste = new JanelaTesteVelocidade(() => _config.Atual.VelocidadeContratadaMbps, RegistrarLog, r =>
+        {
+            _qualidade.AdicionarTeste(new TesteGuardado(
+                DateTime.Now, r.DownloadBps, r.UploadBps, r.LatenciaMs,
+                InfoRede.TipoConexao(_historico.Capturar().NomeInterface), r.Servidor));
+            _relatorio?.Atualizar();
+        });
         _teste.Closed += (_, _) =>
         {
             _teste = null;
@@ -710,6 +721,32 @@ public partial class App : Application
         _consumoApps.Activate();
     }
 
+    // ------------------------------------------------------------------ v1.4.0: relatório para a operadora
+
+    private JanelaRelatorio? _relatorio;
+
+    /// <summary>Abre (ou traz para frente) o relatório do mês. Usa o plano ATUAL das configurações.</summary>
+    private void AbrirRelatorio()
+    {
+        _painel?.Fechar();
+        if (_relatorio is { IsLoaded: true })
+        {
+            _relatorio.Activate();
+            return;
+        }
+
+        _relatorio = new JanelaRelatorio(
+            (ano, mes) => _qualidade.Resumir(ano, mes, _config.Atual.VelocidadeContratadaMbps),
+            _qualidade.MesesComDados(), VersaoApp, RegistrarLog);
+        _relatorio.Closed += (_, _) =>
+        {
+            _relatorio = null;
+            AparaMemoriaEmBreve();
+        };
+        _relatorio.Show();
+        _relatorio.Activate();
+    }
+
     /// <summary>Rodapé do estúdio: versão e se/como a atualização automática está agindo.</summary>
     private string TextoVersaoRodape()
     {
@@ -754,6 +791,11 @@ public partial class App : Application
         var itemApps = new MenuItem { Header = "Consumo por aplicativo…" };
         itemApps.Click += (_, _) => AbrirConsumoApps();
         menu.Items.Add(itemApps);
+
+        // v1.4.0: testes guardados + quedas do mês → PDF para a reclamação
+        var itemRelatorio = new MenuItem { Header = "Relatório para a operadora…" };
+        itemRelatorio.Click += (_, _) => AbrirRelatorio();
+        menu.Items.Add(itemRelatorio);
 
         menu.Items.Add(new Separator());
 
@@ -946,6 +988,7 @@ public partial class App : Application
         // O processo termina dentro do Apply (não passa pelo OnExit): salva o consumo do dia e
         // tira o ícone da bandeja agora, senão sobraria um ícone "fantasma" até passar o mouse.
         _historico.SalvarConsumo();
+        _qualidade.Encerrar(); // v1.4.0: fecha e grava a queda em andamento (se houver)
         if (_bandeja is not null)
         {
             _bandeja.Visivel = false;
@@ -982,7 +1025,7 @@ public partial class App : Application
             painelAberto: _painel is { IsVisible: true },
             // v1.2.0: janela do teste aberta conta como "em uso" (não reinicia no meio de um teste)
             // v1.3.0: idem para a janela do consumo por app (o usuário está olhando a lista)
-            estudioAberto: _estudio is not null || _teste is not null || _consumoApps is not null,
+            estudioAberto: _estudio is not null || _teste is not null || _consumoApps is not null || _relatorio is not null,
             menuAberto: _menuAberto,
             mouseSobreOApp: mouseSobre,
             telaCheia: _host?.EmTelaCheia == true,
@@ -1015,6 +1058,8 @@ public partial class App : Application
         TimeSpan proximoLogLongo = TimeSpan.FromMinutes(10);
         // v1.0.0: 1ª conferência da franquia logo no 1º tick (aviso de quem abriu o PC já acima de 80 %)
         TimeSpan proximaConferenciaFranquia = TimeSpan.Zero;
+        // v1.4.0: estado da internet observado a cada 5 s (independe do intervalo de medição)
+        TimeSpan proximaObservacaoQualidade = TimeSpan.Zero;
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
@@ -1076,6 +1121,19 @@ public partial class App : Application
                         vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo,
                         deltaEnviados, deltaRecebidos,
                         leitura.NomeInterfacePrincipal, leitura.VelocidadeLinkBitsPorSegundo);
+                }
+
+                // v1.4.0: quedas para o relatório. Sem placa conectada = problema local (SemRede);
+                // placa conectada e o Windows dizendo "sem internet" = queda da operadora. Na dúvida
+                // (NLM indisponível) conta como online — nunca inventa queda. Pausado não chega aqui:
+                // o buraco vira "tempo não observado".
+                if (agora >= proximaObservacaoQualidade)
+                {
+                    proximaObservacaoQualidade = agora + TimeSpan.FromSeconds(5);
+                    EstadoInternet estadoInternet = semConexao ? EstadoInternet.SemRede
+                        : _conectividade.TemInternet() == false ? EstadoInternet.SemInternet
+                        : EstadoInternet.Online;
+                    _qualidade.Observar(estadoInternet);
                 }
 
                 // v1.0.0: franquia conferida a cada 30 s (soma o mês inteiro — não precisa ser por tick)
@@ -1191,6 +1249,7 @@ public partial class App : Application
         _ctsMedicao?.Cancel();
         _latencia?.Dispose(); // v1.1.0: para o ping (se ligado)
         _historico.SalvarConsumo();
+        _qualidade.Encerrar(); // v1.4.0
         _bandeja?.Dispose();
         _secundarias?.Dispose();
         _host?.Dispose();

@@ -1,5 +1,52 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.4.0 — 2026-11-01 — Onda 9: relatório para a operadora
+
+### O que mudou
+- **Quedas de internet registradas sozinhas**: a cada 5 s o app lê do Windows se há internet (o mesmo
+  "Sem internet" do ícone de rede). Placa conectada + Windows sem internet por **1 min ou mais** = queda
+  (conta para a operadora); nenhuma placa conectada = "sem rede local" (fora da conta).
+- **Cada teste de velocidade concluído é guardado** (data, ↓, ↑, latência, cabo ou Wi-Fi). A janela do
+  teste avisa: "guardado no relatório do mês".
+- Novo item de menu **"Relatório para a operadora…"**: escolhe o mês, mostra média × plano, testes
+  abaixo de 40 %, quedas, internet disponível e a conclusão; **"Gerar PDF…"** salva (Documentos, por
+  padrão) e abre o PDF A4 com as tabelas de testes e de quedas, a referência às metas da Anatel e como
+  reclamar (operadora → protocolo → Anatel 1331).
+
+### Por quê / decisões
+- Último item em aberto do plano; o dono escolheu "relatório sem teste sozinho" — testar em segundo
+  plano gastaria a banda e a franquia (ideia já descartada no 04-IDEIAS).
+- Fonte das quedas: Network List Manager por COM (`GetConnectivity`), não a API WinRT — o WinRT
+  carregaria a projeção do SDK (~25 MB) no widget que fica aberto o dia todo. Medido: ~0,5 ms por
+  leitura, funciona na thread do loop (MTA). Na dúvida (COM indisponível) conta como online: nunca
+  inventa queda.
+- Tempo observado só conta com o app medindo (passos ≤ 30 s). PC suspenso/pausado = buraco: a queda
+  aberta fecha no último instante visto, para o relatório não acusar horas que ninguém mediu. A
+  disponibilidade usa só o tempo com o roteador conectado.
+- PDF sem biblioteca: páginas desenhadas pelo WPF (mesma fonte e acentos), gravadas como imagem sem
+  perda (Flate) — texto nítido, ~400 KB por relatório. Folha branca fixa (é papel; não segue o tema
+  escuro) e situação de cada teste escrita por extenso (impressão em P&B não perde a informação).
+- Percentuais arredondados para BAIXO (79,9 % nunca vira "80 %") e com espaço inseparável antes do %.
+- Dados em `%LOCALAPPDATA%\VelocimetroInternet\qualidade.json` (~13 meses), fora da pasta do instalador.
+
+### Arquivos
+- Novos: `Medicao/RegistroQualidade.cs` (registro puro + `ServicoQualidade` com disco),
+  `Medicao/CalculoRelatorio.cs` (resumo do mês, metas da Anatel, textos), `Sistema/ConectividadeWindows.cs`
+  (NLM), `Apresentacao/PdfDeImagens.cs`, `Apresentacao/RelatorioPaginas.cs`, `Apresentacao/JanelaRelatorio.xaml(.cs)`,
+  `tests/.../V140RelatorioTests.cs` (+26 testes).
+- Alterados: `App.xaml.cs` (observação a cada 5 s no loop, guardar teste, menu, momento tranquilo,
+  encerramento), `Apresentacao/JanelaTesteVelocidade.xaml.cs` (callback ao concluir), `Sistema/InfoRede.cs`
+  (`TipoConexao`: cabo/Wi-Fi).
+
+### Validação
+- Build Release 0 avisos; **234/234 testes** (inclui a estrutura do PDF: cada entrada da xref aponta
+  para o objeto certo).
+- NLM real nesta máquina: "tem internet" = verdadeiro, na thread principal e em threads do pool.
+- Render com dados sintéticos (14 e 25 testes, 3 quedas, 1 período sem rede): janela e PDF conferidos
+  por imagem; PDF aberto por leitor independente (MuPDF): A4, 2 folhas, título com acento, cabeçalho
+  da tabela repetido na folha 2. Geração: ~100 ms, 380–500 KB.
+- ⚠️ Não automatizado: queda REAL (exige tirar a internet do roteador por > 1 min).
+
 ## v1.3.0 — 2026-11-01 — Onda 8: consumo por aplicativo
 
 ### O que mudou

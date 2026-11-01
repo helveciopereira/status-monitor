@@ -26,7 +26,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0 a 8 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.3.0** · 2026-11-01
+> Status: **Ondas 0 a 9 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.4.0** · 2026-11-01
 >
 > **Instalar:** baixe e execute [`StatusMonitor-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/StatusMonitor-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

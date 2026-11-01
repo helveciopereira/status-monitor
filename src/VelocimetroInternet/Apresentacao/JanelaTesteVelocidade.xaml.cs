@@ -15,14 +15,17 @@ public partial class JanelaTesteVelocidade : Window
 
     private readonly Func<double> _planoMbps;
     private readonly Action<string>? _log;
+    private readonly Action<ResultadoTeste>? _aoConcluir;
     private CancellationTokenSource? _cts;
 
     /// <param name="planoMbps">Velocidade contratada atual (0 = não informada), lida a cada teste.</param>
-    public JanelaTesteVelocidade(Func<double> planoMbps, Action<string>? log = null)
+    /// <param name="aoConcluir">v1.4.0: guarda o resultado para o relatório do mês (só testes concluídos).</param>
+    public JanelaTesteVelocidade(Func<double> planoMbps, Action<string>? log = null, Action<ResultadoTeste>? aoConcluir = null)
     {
         InitializeComponent();
         _planoMbps = planoMbps;
         _log = log;
+        _aoConcluir = aoConcluir;
         Closing += (_, _) => _cts?.Cancel();
     }
 
@@ -49,6 +52,7 @@ public partial class JanelaTesteVelocidade : Window
         {
             ResultadoTeste r = await new TesteVelocidade().ExecutarAsync(progresso, _cts.Token);
             MostrarResultado(r);
+            _aoConcluir?.Invoke(r);
             _log?.Invoke($"Teste de velocidade: ↓ {Mbps(r.DownloadBps)} · ↑ {Mbps(r.UploadBps)} · {r.LatenciaMs:0} ms · {SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)} gastos.");
         }
         catch (OperationCanceledException)
@@ -105,7 +109,8 @@ public partial class JanelaTesteVelocidade : Window
         string? comparacao = CalculoTeste.ComparacaoComPlano(r.DownloadBps, _planoMbps());
         TextoComparacao.Text = comparacao ?? "Informe a velocidade do seu plano no estúdio (Medição) para comparar com o contratado.";
         TextoComparacao.Visibility = Visibility.Visible;
-        TextoDetalhe.Text = $"Servidor {r.Servidor} · dados usados: {SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)}";
+        TextoDetalhe.Text = $"Servidor {r.Servidor} · dados usados: {SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)}" +
+            (_aoConcluir is null ? "" : " · guardado no relatório do mês");
         TextoDetalhe.Visibility = Visibility.Visible;
     }
 

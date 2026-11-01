@@ -1,0 +1,137 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.JanelaRelatorio"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Status Monitor — relatório para a operadora"
+        Width="540" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Tema.Superficie}"
+        Foreground="{DynamicResource Tema.Texto}"
+        FontFamily="{DynamicResource Tema.Fonte}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="Status Monitor — relatório para a operadora">
+
+    <!--
+        v1.4.0 (Onda 9): resumo do mês na tela + PDF para anexar à reclamação. Decisão do dono: o app
+        NUNCA testa sozinho — o relatório junta os testes que a pessoa fez e as quedas que o Windows
+        detectou (sem tráfego extra). A nota diz isso logo de cara.
+    -->
+    <Window.Resources>
+        <Style x:Key="Rotulo" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="Cartao" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Tema.SuperficieElevada}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Tema.Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="10,9" />
+        </Style>
+        <Style x:Key="Numero" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,3,0,1" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="20,18,20,20">
+        <TextBlock Text="Relatório para a operadora" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Style="{StaticResource Rotulo}" Margin="0,4,0,14"
+                   Text="Junta os testes de velocidade que você fez e as quedas de internet que o Windows detectou, e compara com as metas da Anatel: 40&#160;% do plano em cada medição e 80&#160;% na média do mês. O app nunca testa sozinho." />
+
+        <!-- Mês: setas + nome (só meses com dados) -->
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BotaoAnterior" Style="{StaticResource BotaoDiscreto}" Click="AoClicarAnterior"
+                    AutomationProperties.Name="Mês anterior" ToolTip="Mês anterior">
+                <TextBlock Text="&#xE76B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" />
+            </Button>
+            <TextBlock x:Name="TextoMes" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="15" FontWeight="SemiBold" AutomationProperties.Name="MesRelatorio" />
+            <Button x:Name="BotaoProximo" Grid.Column="2" Style="{StaticResource BotaoDiscreto}" Click="AoClicarProximo"
+                    AutomationProperties.Name="Próximo mês" ToolTip="Próximo mês">
+                <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" />
+            </Button>
+        </Grid>
+
+        <!-- Quatro números do mês -->
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Cartao}">
+                <StackPanel>
+                    <TextBlock Text="Média ↓" Style="{StaticResource Rotulo}" />
+                    <TextBlock Style="{StaticResource Numero}" AutomationProperties.Name="MediaDownload">
+                        <Run x:Name="NumeroMedia" Text="—" /><Run x:Name="UnidadeMedia" Text="" FontSize="12" FontWeight="Normal" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                    </TextBlock>
+                    <TextBlock x:Name="SubMedia" Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Cartao}">
+                <StackPanel>
+                    <TextBlock Text="Testes" Style="{StaticResource Rotulo}" />
+                    <TextBlock x:Name="NumeroTestes" Style="{StaticResource Numero}" Text="0" AutomationProperties.Name="QtdTestes" />
+                    <TextBlock x:Name="SubTestes" Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Style="{StaticResource Cartao}">
+                <StackPanel>
+                    <TextBlock Text="Quedas" Style="{StaticResource Rotulo}" />
+                    <TextBlock x:Name="NumeroQuedas" Style="{StaticResource Numero}" Text="0" AutomationProperties.Name="QtdQuedas" />
+                    <TextBlock x:Name="SubQuedas" Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="6" Style="{StaticResource Cartao}">
+                <StackPanel>
+                    <TextBlock Text="Disponível" Style="{StaticResource Rotulo}" />
+                    <TextBlock x:Name="NumeroDisponivel" Style="{StaticResource Numero}" Text="—" AutomationProperties.Name="Disponibilidade" />
+                    <TextBlock x:Name="SubDisponivel" Style="{StaticResource Rotulo}" FontSize="11" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Conclusão do mês (as mesmas frases do PDF) -->
+        <Border Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="12,10" Margin="0,0,0,14">
+            <ItemsControl x:Name="ListaConclusoes" AutomationProperties.Name="Conclusoes">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12" Margin="0,2" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <TextBlock x:Name="TextoEstado" Style="{StaticResource Rotulo}" Margin="0,0,0,14" Visibility="Collapsed"
+                   AutomationProperties.Name="EstadoRelatorio" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TextoPlano" Style="{StaticResource Rotulo}" FontSize="11" VerticalAlignment="Center"
+                       Margin="0,0,12,0" AutomationProperties.Name="PlanoRelatorio" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Fechar" Style="{StaticResource BotaoSecundario}" Margin="0,0,8,0" IsCancel="True"
+                        Click="AoClicarFechar" AutomationProperties.Name="Fechar relatório" />
+                <Button x:Name="BotaoGerar" Content="Gerar PDF…" Style="{StaticResource BotaoPrincipal}" IsDefault="True"
+                        Click="AoClicarGerar" AutomationProperties.Name="Gerar PDF" />
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</Window>

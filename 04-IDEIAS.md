@@ -31,7 +31,7 @@ principal é "dois números certos, bonitos e leves na barra".
 | Ideia | Observação |
 |---|---|
 | ✅ v1.3.0 — **Consumo por aplicativo** ("quem está usando minha banda?") | Feito SEM administrador, pela contabilidade de uso de dados do Windows (~1 min de atraso) em vez de ETW |
-| **Relatório para reclamar com a operadora**: registra quedas e velocidades abaixo do contratado, gera PDF | Muito útil no Brasil (Anatel exige 40% instantâneo / 80% média mensal) |
+| ✅ v1.4.0 — **Relatório para reclamar com a operadora**: registra quedas e velocidades abaixo do contratado, gera PDF | Feito sem teste automático: testes do usuário + quedas lidas do Windows; PDF A4 por mês |
 | ✅ v1.2.0 (modos) — **Temas completos**: fonte, tamanho, só setas, só números, uma linha `↑1,2 ↓38` | Personalização além de cores |
 
 ## Ideias descartadas (e por quê)
@@ -53,4 +53,4 @@ principal é "dois números certos, bonitos e leves na barra".
    *(Com o estilo Clima, o clique-direito no bloco já dá acesso a tudo — o ícone da bandeja vira opcional.)*
 5. ~~Onde exatamente na barra?~~ ✅ Respondido em 2026-10-31: **como o Clima** (01 §3.1).
 3. Vai distribuir para outras pessoas (precisa de instalador/atualização, Onda 4) ou é só para este PC?
-4. Qual a velocidade contratada? (Serve para a "cor por intensidade" e o relatório para a operadora.)
+4. ~~Qual a velocidade contratada?~~ ✅ Respondido em 2026-11-01: **700 Mbps** (configurado no app).

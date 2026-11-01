@@ -34,4 +34,33 @@ public static class InfoRede
             return null; // pilha de rede reiniciando: a dica sai sem o IP
         }
     }
+
+    /// <summary>
+    /// v1.4.0: "Cabo", "Wi-Fi" ou o próprio apelido da placa — vai em cada teste guardado, porque
+    /// a operadora (e a Anatel) dão mais peso a medição por cabo.
+    /// </summary>
+    public static string TipoConexao(string? alias)
+    {
+        if (string.IsNullOrEmpty(alias))
+        {
+            return "—";
+        }
+
+        try
+        {
+            NetworkInterface? nic = NetworkInterface.GetAllNetworkInterfaces()
+                .FirstOrDefault(n => string.Equals(n.Name, alias, StringComparison.OrdinalIgnoreCase));
+            return nic?.NetworkInterfaceType switch
+            {
+                NetworkInterfaceType.Wireless80211 => "Wi-Fi",
+                NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet or NetworkInterfaceType.FastEthernetT
+                    or NetworkInterfaceType.FastEthernetFx or NetworkInterfaceType.Ethernet3Megabit => "Cabo",
+                _ => alias,
+            };
+        }
+        catch (NetworkInformationException)
+        {
+            return alias;
+        }
+    }
 }

@@ -143,7 +143,7 @@ Itens "alto valor, baixo esforço" do `04-IDEIAS.md`:
 Fica para decisão do dono (não entra sem conversa): teste de velocidade sob demanda (precisa de
 servidor externo), consumo por aplicativo (exige administrador/ETW) e relatório para a operadora.
 → Decidido em 2026-11-01: teste de velocidade, modos de exibição e consumo por app (Ondas 7 e 8).
-O relatório para a operadora continua em aberto.
+→ Decidido em 2026-11-01: relatório para a operadora SEM teste automático (Onda 9); plano do dono: 700 Mbps.
 
 ## Onda 7 — Modos de exibição e teste de velocidade ✅ (v1.2.0, 2026-11-01)
 
@@ -164,6 +164,18 @@ O relatório para a operadora continua em aberto.
 - [x] **Sem administrador**: em vez de ETW, usa a contabilidade de uso de dados do próprio Windows
       (`ConnectionProfile.GetAttributedNetworkUsageAsync`, a mesma de Configurações › Rede › Uso de dados).
       Custo: ~1 min de atraso nos números e +~25 MB no disco (projeção WinRT do SDK do Windows)
+
+## Onda 9 — Relatório para a operadora ✅ (v1.4.0, 2026-11-01)
+
+- [x] Decisão do dono: **nunca testar sozinho**. O relatório junta os testes que o usuário fez (cada teste
+      concluído é guardado, com cabo/Wi-Fi) e as quedas de internet lidas do Windows (Network List Manager:
+      o mesmo "Sem internet" do ícone de rede — zero tráfego extra, ~0,5 ms por leitura a cada 5 s)
+- [x] Quedas separadas por causa: **sem internet com o roteador conectado** (conta para a operadora) e
+      **sem rede local** (Wi-Fi desligado/cabo solto — fora da conta). Só ≥ 1 min; PC suspenso/pausado não
+      conta como tempo observado (a queda aberta fecha no último instante visto)
+- [x] Janela "Relatório para a operadora…" (menu): mês a mês, média × plano, testes abaixo de 40 %,
+      quedas, disponibilidade e conclusão; **PDF A4** sem biblioteca (páginas desenhadas pelo WPF, imagem
+      sem perda), com tabela de testes e de quedas, referência às metas da Anatel e "como reclamar"
 
 ---
 
