@@ -1,3 +1,5 @@
+using System.IO;
+using System.Net.Http;
 using VelocimetroInternet.Apresentacao;
 using VelocimetroInternet.Config;
 using VelocimetroInternet.Medicao;
@@ -173,6 +175,92 @@ public sealed class V120ModosETesteTests
         var (n, u) = CalculoTeste.FormatarMbps(bps);
         Assert.Equal(numero, n);
         Assert.Equal(unidade, u);
+    }
+
+    // ---------------------------------------------------------------- v1.2.1: download dava 0
+
+    [Fact]
+    public void Pedido_NuncaPassaDe8MB_ERecusaDivideAteDesistir()
+    {
+        // Padrão (100 MB, 4 conexões) era 12,5 MB por pedido — tamanho que o servidor recusava
+        Assert.Equal(TesteVelocidade.TamanhoMaximoPedido, CalculoTeste.TamanhoDoPedido(100_000_000, 4));
+        Assert.Equal(64 * 1024, CalculoTeste.TamanhoDoPedido(10_000, 4));
+        Assert.Equal(4_000_000, CalculoTeste.PedidoAposRecusa(8_000_000));
+        Assert.Equal(TesteVelocidade.TamanhoMinimoPedido, CalculoTeste.PedidoAposRecusa(1_500_000));
+        Assert.Equal(0, CalculoTeste.PedidoAposRecusa(TesteVelocidade.TamanhoMinimoPedido));
+    }
+
+    [Fact]
+    public async Task Teste_ServidorQueRecusaPedidosGrandes_AindaMedeODownload()
+    {
+        // Imita o speed.cloudflare.com de 2026-11-01: 403 acima de 10 MB
+        using var http = new HttpClient(new ServidorFalso(recusarAcimaDe: 10_000_000));
+        var t = new TesteVelocidade(http, "https://falso.test",
+            new TesteVelocidade.Limites(Conexoes: 4, SegundosPorEtapa: 1, TetoDownloadBytes: 100_000_000,
+                TetoUploadBytes: 2_000_000, AmostrasLatencia: 3, SegundosAquecimento: 0.2));
+
+        ResultadoTeste r = await t.ExecutarAsync(null, CancellationToken.None);
+
+        Assert.True(r.BytesBaixados > 0, "o download não pode zerar");
+        Assert.True(r.DownloadBps > 0);
+        Assert.True(r.UploadBps > 0);
+    }
+
+    [Fact]
+    public async Task Teste_ServidorQueRecusaTudo_ViraErroENaoZero()
+    {
+        using var http = new HttpClient(new ServidorFalso(recusarAcimaDe: -1));
+        var t = new TesteVelocidade(http, "https://falso.test",
+            new TesteVelocidade.Limites(Conexoes: 2, SegundosPorEtapa: 1, AmostrasLatencia: 2));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => t.ExecutarAsync(null, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Servidor de teste em memória: /__down devolve N zeros (403 se N passar do limite, exceto
+    /// N = 0, a "latência"); /__up lê o corpo e responde 200. -1 = recusa todo download com dados.
+    /// </summary>
+    private sealed class ServidorFalso(long recusarAcimaDe) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage pedido, CancellationToken ct)
+        {
+            if (pedido.Method == HttpMethod.Post)
+            {
+                await pedido.Content!.CopyToAsync(Stream.Null, ct);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            }
+
+            long n = long.Parse(pedido.RequestUri!.Query.Split('=')[1]);
+            if (n > 0 && (recusarAcimaDe < 0 || n > recusarAcimaDe))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.Forbidden);
+            }
+
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StreamContent(new Zeros(n)) };
+        }
+    }
+
+    /// <summary>Fluxo de N zeros sem alocar N bytes.</summary>
+    private sealed class Zeros(long tamanho) : Stream
+    {
+        private long _lidos;
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => tamanho;
+        public override long Position { get => _lidos; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int n = (int)Math.Min(count, tamanho - _lidos);
+            Array.Clear(buffer, offset, n);
+            _lidos += n;
+            return n;
+        }
     }
 
     [Fact]

@@ -153,6 +153,8 @@ O relatório para a operadora continua em aberto.
 - [x] **Teste de velocidade sob demanda** (Cloudflare `speed.cloudflare.com`): latência (mediana), download
       e upload com 4 conexões, 10 s por etapa, tetos de 100 MB / 30 MB, aquecimento descartado; resultado em
       Mbps comparado com o plano (faixas da Anatel). Botão no painel e no menu; nunca roda sozinho
+- [x] v1.2.1: correção — o download dava 0 (servidor recusava pedidos de 12,5 MB); pedidos de até 8 MB,
+      nova tentativa com metade do tamanho e erro visível em vez de "0 Mbps"
 
 ## Onda 8 — Consumo por aplicativo ⬜ (v1.3.0)
 

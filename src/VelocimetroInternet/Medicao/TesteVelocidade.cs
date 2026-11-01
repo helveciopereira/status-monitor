@@ -115,10 +115,24 @@ public sealed class TesteVelocidade
 
     // ------------------------------------------------------------------ download / upload
 
-    /// <summary>Contador compartilhado pelas conexões da etapa (Interlocked).</summary>
+    /// <summary>
+    /// v1.2.1: tamanho MÁXIMO de cada pedido. O speed.cloudflare.com recusa (403) alguns tamanhos
+    /// acima de ~10 MB de forma irregular (medido em 2026-11-01: 11, 12, 12,5, 15 e 16 MB → 403;
+    /// 20, 25 e 30 MB → 200; até 10 MB → sempre 200). Na v1.2.0 cada pedido tinha 12,5 MB e o
+    /// download inteiro dava 0. Pedidos de até 8 MB ficam com folga dentro da faixa sempre aceita.
+    /// </summary>
+    public const long TamanhoMaximoPedido = 8_000_000;
+
+    /// <summary>Menor pedido tentado depois de recusas sucessivas (abaixo disso, desiste).</summary>
+    public const long TamanhoMinimoPedido = 1_000_000;
+
+    /// <summary>Contador compartilhado pelas conexões da etapa (Interlocked) + 1º erro visto.</summary>
     private sealed class Contador
     {
         public long Bytes;
+
+        /// <summary>v1.2.1: erro que fez uma conexão desistir (antes era engolido em silêncio).</summary>
+        public HttpRequestException? Erro;
     }
 
     private async Task<(double Bps, long Bytes)> MedirAsync(
@@ -133,8 +147,8 @@ public sealed class TesteVelocidade
         long bytesNoAquecimento = -1;
         double segundosNoAquecimento = 0;
 
-        // Cada conexão repete pedidos de 1/conexões do teto até o tempo ou o teto acabarem
-        long porPedido = Math.Max(64 * 1024, teto / (_limites.Conexoes * 2));
+        // Cada conexão repete pedidos até o tempo ou o teto acabarem (v1.2.1: no máximo 8 MB cada)
+        long porPedido = CalculoTeste.TamanhoDoPedido(teto, _limites.Conexoes);
         Task[] conexoes = Enumerable.Range(0, _limites.Conexoes)
             .Select(_ => Task.Run(() => LacoConexaoAsync(etapa, porPedido, teto, contador, fim.Token), CancellationToken.None))
             .ToArray();
@@ -158,8 +172,17 @@ public sealed class TesteVelocidade
 
         ct.ThrowIfCancellationRequested(); // cancelado pelo usuário (não pelo tempo da etapa)
         relogio.Stop();
+        await todas.ConfigureAwait(false); // v1.2.1: erro inesperado de uma conexão aparece, não some
 
         long total = Interlocked.Read(ref contador.Bytes);
+
+        // v1.2.1: etapa sem NENHUM byte não é "0 Mbps" — é falha. Vai para a tela como erro
+        // (a janela mostra "o servidor recusou…"), em vez de um resultado falso.
+        if (total == 0)
+        {
+            throw contador.Erro ?? new HttpRequestException(
+                $"Nenhum dado {(etapa == EtapaTeste.Download ? "recebido" : "enviado")} na etapa de {etapa.ToString().ToLowerInvariant()}.");
+        }
         double bps = CalculoTeste.VelocidadeSemAquecimento(
             total, relogio.Elapsed.TotalSeconds, Math.Max(0, bytesNoAquecimento), segundosNoAquecimento);
         return (bps, total);
@@ -168,9 +191,9 @@ public sealed class TesteVelocidade
     private async Task LacoConexaoAsync(EtapaTeste etapa, long porPedido, long teto, Contador contador, CancellationToken ct)
     {
         byte[] buffer = new byte[64 * 1024];
-        try
+        while (!ct.IsCancellationRequested && Interlocked.Read(ref contador.Bytes) < teto)
         {
-            while (!ct.IsCancellationRequested && Interlocked.Read(ref contador.Bytes) < teto)
+            try
             {
                 if (etapa == EtapaTeste.Download)
                 {
@@ -194,14 +217,28 @@ public sealed class TesteVelocidade
                     r.EnsureSuccessStatusCode();
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Fim do tempo da etapa (ou cancelado): o que já passou conta
-        }
-        catch (HttpRequestException) when (ct.IsCancellationRequested)
-        {
-            // Conexão cortada pelo cancelamento no meio da transferência
+            catch (OperationCanceledException)
+            {
+                return; // fim do tempo da etapa (ou cancelado): o que já passou conta
+            }
+            catch (HttpRequestException) when (ct.IsCancellationRequested)
+            {
+                return; // conexão cortada pelo cancelamento no meio da transferência
+            }
+            catch (HttpRequestException ex)
+            {
+                // v1.2.1: servidor recusou (ex.: 403 em certos tamanhos) ou a conexão caiu.
+                // Tenta de novo com a METADE do tamanho; abaixo do mínimo, desiste e guarda o
+                // erro para a etapa poder explicá-lo se nenhuma conexão conseguiu nada.
+                long menor = CalculoTeste.PedidoAposRecusa(porPedido);
+                if (menor <= 0)
+                {
+                    Interlocked.CompareExchange(ref contador.Erro, ex, null);
+                    return;
+                }
+
+                porPedido = menor;
+            }
         }
     }
 
@@ -257,6 +294,19 @@ public sealed class TesteVelocidade
 /// <summary>Contas puras do teste (testáveis sem rede).</summary>
 public static class CalculoTeste
 {
+    /// <summary>
+    /// v1.2.1: tamanho de cada pedido = 1/(conexões × 2) do teto, entre 64 KB e
+    /// <see cref="TesteVelocidade.TamanhoMaximoPedido"/> (o servidor recusa alguns tamanhos maiores).
+    /// </summary>
+    public static long TamanhoDoPedido(long teto, int conexoes) =>
+        Math.Clamp(teto / (Math.Max(1, conexoes) * 2L), 64 * 1024, TesteVelocidade.TamanhoMaximoPedido);
+
+    /// <summary>
+    /// v1.2.1: próximo tamanho depois de uma recusa (metade); 0 = desistir (já estava no mínimo).
+    /// </summary>
+    public static long PedidoAposRecusa(long atual) =>
+        atual <= TesteVelocidade.TamanhoMinimoPedido ? 0 : Math.Max(TesteVelocidade.TamanhoMinimoPedido, atual / 2);
+
     public static double BitsPorSegundo(long bytes, double segundos) =>
         segundos > 0 && double.IsFinite(segundos) ? bytes * 8 / segundos : 0;
 

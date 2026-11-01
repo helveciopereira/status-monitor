@@ -1,5 +1,32 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.2.1 — 2026-11-01 — Correção: o teste de velocidade não media o download
+
+### O que mudou
+- O teste agora mede o download. Cada pedido tem no máximo **8 MB**; se o servidor recusar mesmo assim, a
+  conexão tenta de novo com a **metade** do tamanho (até 1 MB). Etapa que não transfere **nenhum** byte vira
+  mensagem de erro na janela ("o servidor de teste recusou…"), nunca mais um "0,0 Mbps" falso.
+
+### Por quê (causa raiz)
+- Relato do dono: "só mediu latência e upload". O log mostrava `↓ 0,0 Mbps · ↑ 29,9 Mbps`.
+- Cada pedido de download pedia 1/8 do teto de 100 MB = **12,5 MB**, e o speed.cloudflare.com responde
+  **403** a alguns tamanhos acima de ~10 MB, de forma irregular (medido com curl: 11, 12, 12,5, 15 e 16 MB →
+  403; 20, 25 e 30 MB → 200; até 10 MB → sempre 200).
+- O 403 virava exceção dentro da tarefa de cada conexão, e ninguém aguardava essas tarefas com `await`:
+  o erro sumia e a etapa terminava com 0 bytes.
+- A validação da v1.2.0 usou tetos reduzidos (20 MB → pedidos de 2,5 MB) e por isso não pegou o defeito.
+
+### Arquivos
+- `Medicao/TesteVelocidade.cs` (`TamanhoMaximoPedido`, `CalculoTeste.TamanhoDoPedido/PedidoAposRecusa`,
+  nova tentativa por conexão, `await` das conexões, erro quando a etapa zera).
+- `tests/.../V120ModosETesteTests.cs`: +3 testes, entre eles um servidor falso em memória que recusa com 403
+  acima de 10 MB (reproduz o defeito) e outro que recusa tudo (tem de dar erro, não 0).
+
+### Validação
+- Build Release 0 avisos; **189/189 testes**.
+- Teste real com os limites PADRÃO do app: ↓ 13,2 Mbps (15,4 MB recebidos), ↑ 12,0 Mbps, 80 relatos de
+  progresso. A rede estava lenta na hora: o curl baixou 8 MB a 13–30 Mbps no mesmo minuto.
+
 ## v1.2.0 — 2026-11-01 — Onda 7: modos de exibição e teste de velocidade
 
 ### O que mudou
