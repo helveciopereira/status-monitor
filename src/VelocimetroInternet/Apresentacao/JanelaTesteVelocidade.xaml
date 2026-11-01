@@ -1,0 +1,101 @@
+<Window x:Class="VelocimetroInternet.Apresentacao.JanelaTesteVelocidade"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Status Monitor — teste de velocidade"
+        Width="460" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Tema.Superficie}"
+        Foreground="{DynamicResource Tema.Texto}"
+        FontFamily="{DynamicResource Tema.Fonte}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        AutomationProperties.Name="Status Monitor — teste de velocidade">
+
+    <!--
+        v1.2.0 (Onda 7): teste de velocidade SOB DEMANDA. Só começa no clique em "Iniciar"; a nota
+        diz antes quanto de dados gasta e para onde vai (franquia e privacidade). O resultado vem
+        em Mbps (a unidade do plano) e é comparado com o plano contratado, quando informado.
+    -->
+    <Window.Resources>
+        <Style x:Key="Rotulo" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Tema.TextoSecundario}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="20,18,20,20">
+        <TextBlock Text="Teste de velocidade" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock x:Name="TextoNota" Style="{StaticResource Rotulo}" Margin="0,4,0,16"
+                   Text="Mede download, upload e latência com o servidor da Cloudflare (speed.cloudflare.com). Leva cerca de 25 s e usa até ~130 MB de dados — conta na franquia. Para o resultado mais fiel, feche downloads e prefira cabo." />
+
+        <!-- Download em destaque; upload e latência ao lado -->
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.3*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Background="{DynamicResource Tema.SuperficieElevada}" BorderBrush="{DynamicResource Tema.Borda}"
+                    BorderThickness="1" CornerRadius="6" Padding="12,10">
+                <StackPanel>
+                    <TextBlock Text="↓ Download" Style="{StaticResource Rotulo}" />
+                    <TextBlock Margin="0,4,0,0">
+                        <Run x:Name="NumeroDownload" Text="—" FontSize="26" FontWeight="SemiBold" Typography.NumeralAlignment="Tabular" />
+                        <Run x:Name="UnidadeDownload" Text="Mbps" FontSize="12" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Background="{DynamicResource Tema.SuperficieElevada}" BorderBrush="{DynamicResource Tema.Borda}"
+                    BorderThickness="1" CornerRadius="6" Padding="12,10">
+                <StackPanel>
+                    <TextBlock Text="↑ Upload" Style="{StaticResource Rotulo}" />
+                    <TextBlock Margin="0,4,0,0">
+                        <Run x:Name="NumeroUpload" Text="—" FontSize="20" FontWeight="SemiBold" Typography.NumeralAlignment="Tabular" />
+                        <Run x:Name="UnidadeUpload" Text="Mbps" FontSize="12" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Background="{DynamicResource Tema.SuperficieElevada}" BorderBrush="{DynamicResource Tema.Borda}"
+                    BorderThickness="1" CornerRadius="6" Padding="12,10">
+                <StackPanel>
+                    <TextBlock Text="Latência" Style="{StaticResource Rotulo}" />
+                    <TextBlock Margin="0,4,0,0">
+                        <Run x:Name="NumeroLatencia" Text="—" FontSize="20" FontWeight="SemiBold" Typography.NumeralAlignment="Tabular" />
+                        <Run Text="ms" FontSize="12" Foreground="{DynamicResource Tema.TextoSecundario}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Andamento: etapa + barra -->
+        <Grid Margin="0,0,0,6">
+            <TextBlock x:Name="TextoEtapa" Text="Pronto para testar." FontSize="12" AutomationProperties.Name="EtapaTeste" />
+        </Grid>
+        <Grid Height="4" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="ColunaFeita" Width="0*" />
+                <ColumnDefinition x:Name="ColunaFalta" Width="1*" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.ColumnSpan="2" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="2" />
+            <Border Background="{DynamicResource Tema.Acento}" CornerRadius="2" />
+        </Grid>
+
+        <!-- Comparação com o plano e dados gastos (aparecem no fim) -->
+        <TextBlock x:Name="TextoComparacao" Style="{StaticResource Rotulo}" FontSize="13"
+                   Foreground="{DynamicResource Tema.Texto}" Visibility="Collapsed" Margin="0,0,0,6"
+                   AutomationProperties.Name="ComparacaoPlano" />
+        <TextBlock x:Name="TextoDetalhe" Style="{StaticResource Rotulo}" Visibility="Collapsed" Margin="0,0,0,14" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BotaoFechar" Content="Fechar" Style="{StaticResource BotaoSecundario}" Margin="0,0,8,0"
+                    Click="AoClicarFechar" AutomationProperties.Name="Fechar teste" />
+            <Button x:Name="BotaoIniciar" Content="Iniciar teste" Style="{StaticResource BotaoPrincipal}"
+                    Click="AoClicarIniciar" IsDefault="True" AutomationProperties.Name="Iniciar teste" />
+        </StackPanel>
+    </StackPanel>
+</Window>

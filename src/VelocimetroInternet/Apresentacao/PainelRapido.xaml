@@ -282,15 +282,27 @@
                               Click="AoAlternarSistema" AutomationProperties.Name="CPU e RAM na barra" />
             </Grid>
 
-            <Button Style="{StaticResource BotaoDiscreto}" Padding="8,6" HorizontalAlignment="Left"
-                    Click="AoClicarEstudio" AutomationProperties.Name="Abrir estúdio de cores">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
-                               VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Tema.Acento}" />
-                    <TextBlock Text="Cores e mais configurações" VerticalAlignment="Center"
-                               Foreground="{DynamicResource Tema.Acento}" />
-                </StackPanel>
-            </Button>
+            <!-- Rodapé: estúdio à esquerda e (v1.2.0) teste de velocidade à direita -->
+            <Grid>
+                <Button Style="{StaticResource BotaoDiscreto}" Padding="8,6" HorizontalAlignment="Left"
+                        Click="AoClicarEstudio" AutomationProperties.Name="Abrir estúdio de cores">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Tema.Acento}" />
+                        <TextBlock Text="Cores e mais configurações" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Tema.Acento}" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource BotaoDiscreto}" Padding="8,6" HorizontalAlignment="Right"
+                        Click="AoClicarTeste" AutomationProperties.Name="Testar velocidade">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xEC4A;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Tema.Acento}" />
+                        <TextBlock Text="Testar velocidade" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Tema.Acento}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
         </StackPanel>
     </Border>
 </Window>

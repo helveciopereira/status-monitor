@@ -221,6 +221,21 @@
                             </Border>
                         </Grid>
 
+                        <!-- v1.2.0 (Onda 7): modo de exibição na barra -->
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Modo de exibição" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
+                                <StackPanel x:Name="GrupoModo" Orientation="Horizontal">
+                                    <RadioButton GroupName="Modo" Tag="duas-linhas" Content="Duas linhas" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Modo duas linhas" />
+                                    <RadioButton GroupName="Modo" Tag="uma-linha" Content="Uma linha" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Modo uma linha" />
+                                    <RadioButton GroupName="Modo" Tag="so-download" Content="Só download" Style="{StaticResource Segmento}"
+                                                 Checked="AoEscolherOpcao" AutomationProperties.Name="Modo só download" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
                         <Grid Margin="0,0,0,12">
                             <TextBlock Text="Linha de cima" FontWeight="SemiBold" VerticalAlignment="Center" />
                             <Border HorizontalAlignment="Right" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">

@@ -109,6 +109,27 @@ public sealed class TaskbarHost : IDisposable
 
     private bool _mostrarSistema;
 
+    /// <summary>v1.2.0: modo de exibição (duas linhas / uma linha / só download). Ao mudar, recalcula.</summary>
+    public ModoExibicaoWidget ModoExibicao
+    {
+        get => _modoExibicao;
+        set
+        {
+            if (_modoExibicao == value)
+            {
+                return;
+            }
+
+            _modoExibicao = value;
+            if (_hwndWidget != nint.Zero)
+            {
+                _ = AtualizarPosicaoAsync(forcarReencaixe: false);
+            }
+        }
+    }
+
+    private ModoExibicaoWidget _modoExibicao;
+
     // ------------------------------------------------------------------ v0.8.0
 
     /// <summary>
@@ -410,7 +431,8 @@ public sealed class TaskbarHost : IDisposable
                 bordaBandejaPx,
                 escalaDpi,
                 _mostrarSistema,
-                _fatorTexto);
+                _fatorTexto,
+                _modoExibicao);
 
             // Guardado para o arrasto (limites e "ímã" que devolve ao automático)
             _ultimaBarra = rectBarra;
@@ -424,7 +446,7 @@ public sealed class TaskbarHost : IDisposable
             if (_posicaoManualLogica is int xManual)
             {
                 PosicaoWidgetBarra? manual = TaskbarLayout.CalcularPosicaoManual(
-                    rectBarra, xManual, zonasOcupadas, bordaBandejaPx, escalaDpi, _mostrarSistema, _fatorTexto);
+                    rectBarra, xManual, zonasOcupadas, bordaBandejaPx, escalaDpi, _mostrarSistema, _fatorTexto, _modoExibicao);
                 if (manual is { } m)
                 {
                     pos = m;
@@ -442,7 +464,7 @@ public sealed class TaskbarHost : IDisposable
             {
                 // v0.5.0: mantém a borda DIREITA (encostada no '^' da bandeja) ao alargar — antes o
                 // X ficava o do modo normal e a caixa compacta, mais larga, invadia o '^'.
-                int larguraCompacta = (int)Math.Round(TaskbarLayout.LarguraLogicaCompacta(_mostrarSistema) * escalaDpi);
+                int larguraCompacta = (int)Math.Round(TaskbarLayout.LarguraLogicaCompacta(_mostrarSistema, _fatorTexto, _modoExibicao) * escalaDpi);
                 int deslocamento = larguraCompacta - pos.LarguraFisicaPx;
                 pos = pos with
                 {
@@ -730,7 +752,7 @@ public sealed class TaskbarHost : IDisposable
         {
             int xLogico = (int)Math.Round((_xArrasteAtualPx - _ultimaBarra.Left) / _ultimaEscala);
             bool valida = TaskbarLayout.CalcularPosicaoManual(
-                _ultimaBarra, xLogico, _ultimasZonas, _ultimaBordaBandejaPx, _ultimaEscala, _mostrarSistema, _fatorTexto) is not null;
+                _ultimaBarra, xLogico, _ultimasZonas, _ultimaBordaBandejaPx, _ultimaEscala, _mostrarSistema, _fatorTexto, _modoExibicao) is not null;
             if (!valida)
             {
                 _logger?.Invoke($"Arrasto solto em cima de botões da barra (x={_xArrasteAtualPx}px) — recusado.");

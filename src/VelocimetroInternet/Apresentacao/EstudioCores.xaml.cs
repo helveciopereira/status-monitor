@@ -126,6 +126,7 @@ public partial class EstudioCores : Window
             MarcarSegmento(GrupoTamanho, _rascunho.TamanhoTexto);
             MarcarSegmento(GrupoFonte, _rascunho.Fonte);
             MarcarSegmento(GrupoOrdem, _rascunho.DownloadEmCima ? "download" : "envio");
+            MarcarSegmento(GrupoModo, _rascunho.ModoExibicao); // v1.2.0
             MarcarSegmento(GrupoIntervalo, _rascunho.IntervaloSegundos.ToString(CultureInfo.InvariantCulture));
             ChaveMonitores.IsChecked = _rascunho.MostrarEmTodasAsBarras;
 
@@ -261,25 +262,71 @@ public partial class EstudioCores : Window
 
         // v0.8.0: a amostra também mostra fonte, tamanho e ordem escolhidos
         var aparencia = new AparenciaWidget(_rascunho.Fonte, _rascunho.TamanhoTexto, _rascunho.DownloadEmCima);
-        AmostraEscura.Content = MiniWidget(escura, aparencia);
-        AmostraClara.Content = MiniWidget(clara, aparencia);
+        // v1.2.0: e o modo de exibição (duas linhas / uma linha / só download)
+        ModoExibicaoWidget modo = ModosExibicao.DeCodigo(_rascunho.ModoExibicao);
+        AmostraEscura.Content = MiniWidget(escura, aparencia, modo);
+        AmostraClara.Content = MiniWidget(clara, aparencia, modo);
         PreencherSelo(SeloEscuro, TextoSeloEscuro, Math.Min(escura.ContrasteUpload, escura.ContrasteDownload));
         PreencherSelo(SeloClaro, TextoSeloClaro, Math.Min(clara.ContrasteUpload, clara.ContrasteDownload));
     }
 
     /// <summary>Réplica do widget (2 pílulas) com as cores resolvidas — mesmo desenho da barra.</summary>
-    private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a)
+    private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a, ModoExibicaoWidget modo)
     {
         // A largura acompanha o fator da fonte/tamanho, como o widget real faz na barra
         var pilha = new StackPanel { Width = Math.Round(104 * a.FatorLargura()) };
         FontFamily familia = AparenciaWidget.FamiliaDe(a.Fonte);
         double tamanho = AparenciaWidget.TamanhoDe(a.Tamanho);
+
+        // v1.2.0: amostra de cada modo, com o mesmo desenho da barra
+        if (modo == ModoExibicaoWidget.SoDownload)
+        {
+            pilha.Children.Add(Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho));
+            return pilha;
+        }
+
+        if (modo == ModoExibicaoWidget.UmaLinha)
+        {
+            return LinhaUnica(c, a, familia, tamanho - 0.5);
+        }
+
         Border envio = Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho);
         Border download = Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho);
         pilha.Children.Add(a.DownloadEmCima ? download : envio);
         pilha.Children.Add(new Border { Height = 2 });
         pilha.Children.Add(a.DownloadEmCima ? envio : download);
         return pilha;
+    }
+
+    /// <summary>v1.2.0: amostra da linha única "↑ 1,24 | ↓ 38,7 MB/s" (como o modo compacto da barra).</summary>
+    private static UIElement LinhaUnica(CoresResolvidas c, AparenciaWidget a, FontFamily familia, double tamanho)
+    {
+        TextBlock Texto(string t, Color cor) => new()
+        {
+            Text = t,
+            Foreground = new SolidColorBrush(cor),
+            FontWeight = FontWeights.SemiBold,
+            FontSize = tamanho,
+            FontFamily = familia,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var linha = new StackPanel { Orientation = Orientation.Horizontal };
+        TextBlock envio = Texto(a.DownloadEmCima ? "↑ 1,24 MB/s" : "↑ 1,24", c.Upload);
+        TextBlock download = Texto(a.DownloadEmCima ? "↓ 38,7" : "↓ 38,7 MB/s", c.Download);
+        linha.Children.Add(a.DownloadEmCima ? download : envio);
+        linha.Children.Add(Texto("  |  ", c.Separador));
+        linha.Children.Add(a.DownloadEmCima ? envio : download);
+        return new Border
+        {
+            Background = new SolidColorBrush(c.FundoCompacto),
+            BorderBrush = new SolidColorBrush(c.BordaCompacto),
+            BorderThickness = new Thickness(0.75),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(6, 3, 6, 3),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Child = linha
+        };
     }
 
     private static Border Pilula(string seta, string valor, Color texto, Color fundo, Color borda,
@@ -499,6 +546,9 @@ public partial class EstudioCores : Window
                 break;
             case "Ordem":
                 _rascunho.DownloadEmCima = valor == "download";
+                break;
+            case "Modo": // v1.2.0
+                _rascunho.ModoExibicao = valor;
                 break;
             case "Intervalo":
                 _rascunho.IntervaloSegundos = double.Parse(valor, CultureInfo.InvariantCulture);

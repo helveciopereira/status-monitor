@@ -14,6 +14,39 @@ public enum EstadoColisaoBarra
 }
 
 /// <summary>
+/// v1.2.0 (Onda 7): como o widget mostra os números na barra (estúdio › "Modo de exibição").
+/// </summary>
+public enum ModoExibicaoWidget
+{
+    /// <summary>↑ em cima e ↓ embaixo, em pílulas (o de sempre). Compacta sozinho se faltar espaço.</summary>
+    DuasLinhas = 0,
+
+    /// <summary>Sempre a linha única "↑ 1,2 | ↓ 38,7 MB/s" (a mesma do modo anti-colisão).</summary>
+    UmaLinha = 1,
+
+    /// <summary>Só a pílula de download, centralizada (para quem não liga para o envio).</summary>
+    SoDownload = 2
+}
+
+/// <summary>v1.2.0: conversão entre o modo e o código gravado no settings.json.</summary>
+public static class ModosExibicao
+{
+    public static ModoExibicaoWidget DeCodigo(string? codigo) => codigo switch
+    {
+        "uma-linha" => ModoExibicaoWidget.UmaLinha,
+        "so-download" => ModoExibicaoWidget.SoDownload,
+        _ => ModoExibicaoWidget.DuasLinhas
+    };
+
+    public static string Codigo(ModoExibicaoWidget modo) => modo switch
+    {
+        ModoExibicaoWidget.UmaLinha => "uma-linha",
+        ModoExibicaoWidget.SoDownload => "so-download",
+        _ => "duas-linhas"
+    };
+}
+
+/// <summary>
 /// Geometria calculada (em pixels físicos da tela e da barra) para posicionar o widget na "vaga do Clima".
 /// </summary>
 public readonly record struct PosicaoWidgetBarra(
@@ -94,6 +127,29 @@ public static class TaskbarLayout
     /// <summary>Coluna CPU/RAM (px lógicos) para o fator de texto — usada também pelo widget.</summary>
     public static int LarguraColunaSistema(double fatorTexto) => Escalar(LarguraColunaSistemaLogicaPx, fatorTexto);
 
+    /// <summary>
+    /// v1.2.0: linha única SÓ com o download ("↓ 88,8 Mbps" + padding 6+6 + borda): o trecho
+    /// "↑ 1,2  |  " some. Medido no pior caso, como as demais larguras.
+    /// </summary>
+    public const int LarguraLogicaCompactaSoDownloadPx = 84;
+
+    /// <summary>v1.2.0: largura da linha única no modo dado (só download = mais estreita).</summary>
+    public static int LarguraLogicaCompacta(bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo) =>
+        modo == ModoExibicaoWidget.SoDownload
+            ? Escalar(LarguraLogicaCompactaSoDownloadPx, fatorTexto)
+              + (mostrarSistema ? Escalar(LarguraLogicaSistemaCompactaPx, fatorTexto) : 0)
+            : LarguraLogicaCompacta(mostrarSistema, fatorTexto);
+
+    /// <summary>
+    /// v1.2.0: largura e estado PREFERIDOS (com espaço sobrando). Uma linha prefere a linha única;
+    /// os outros dois, o bloco de duas linhas (o "só download" ocupa a mesma pílula de rede).
+    /// </summary>
+    public static (int LarguraLogica, EstadoColisaoBarra Estado) Preferido(
+        bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo) =>
+        modo == ModoExibicaoWidget.UmaLinha
+            ? (LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo), EstadoColisaoBarra.CompactoUmaLinha)
+            : (LarguraLogicaNormal(mostrarSistema, fatorTexto), EstadoColisaoBarra.NormalDuasLinhas);
+
     private static int Escalar(int larguraPadrao, double fator) =>
         (int)Math.Round(larguraPadrao * (double.IsFinite(fator) && fator > 0 ? fator : 1.0));
 
@@ -112,12 +168,15 @@ public static class TaskbarLayout
         int bordaEsquerdaBandejaPx,
         double escalaDpi,
         bool mostrarSistema = false,
-        double fatorTexto = 1.0)
+        double fatorTexto = 1.0,
+        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas)
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
 
-        int larguraNormalPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema, fatorTexto) * escala);
-        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema, fatorTexto) * escala);
+        // v1.2.0: "normal" = o tamanho PREFERIDO do modo (a linha única, no modo Uma linha)
+        (int larguraPreferidaLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo);
+        int larguraNormalPx = (int)Math.Round(larguraPreferidaLogica * escala);
+        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo) * escala);
         int alturaWidgetPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
 
@@ -130,7 +189,7 @@ public static class TaskbarLayout
 
         if (espacoLivrePx >= larguraNormalPx + (margemPx * 2))
         {
-            estado = EstadoColisaoBarra.NormalDuasLinhas;
+            estado = estadoPreferido;
             larguraEscolhidaPx = larguraNormalPx;
         }
         else if (espacoLivrePx >= (int)(larguraNormalPx * 0.75) + margemPx)
@@ -178,10 +237,13 @@ public static class TaskbarLayout
         int bordaEsquerdaBandejaPx,
         double escalaDpi,
         bool mostrarSistema = false,
-        double fatorTexto = 1.0)
+        double fatorTexto = 1.0,
+        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas)
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
-        int larguraPx = (int)Math.Round(LarguraLogicaNormal(mostrarSistema, fatorTexto) * escala);
+        // v1.2.0: a posição manual usa o tamanho preferido do modo (linha única no "Uma linha")
+        (int larguraLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo);
+        int larguraPx = (int)Math.Round(larguraLogica * escala);
         int alturaPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
 
@@ -200,7 +262,7 @@ public static class TaskbarLayout
 
         int yTelaPx = rectBarra.Top + ((rectBarra.Height - alturaPx) / 2);
         return new PosicaoWidgetBarra(
-            Estado: EstadoColisaoBarra.NormalDuasLinhas,
+            Estado: estadoPreferido,
             XRelativoBarraPx: xTelaPx - rectBarra.Left,
             YRelativoBarraPx: yTelaPx - rectBarra.Top,
             XTelaPx: xTelaPx,

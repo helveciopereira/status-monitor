@@ -142,6 +142,22 @@ Itens "alto valor, baixo esforço" do `04-IDEIAS.md`:
 
 Fica para decisão do dono (não entra sem conversa): teste de velocidade sob demanda (precisa de
 servidor externo), consumo por aplicativo (exige administrador/ETW) e relatório para a operadora.
+→ Decidido em 2026-11-01: teste de velocidade, modos de exibição e consumo por app (Ondas 7 e 8).
+O relatório para a operadora continua em aberto.
+
+## Onda 7 — Modos de exibição e teste de velocidade ✅ (v1.2.0, 2026-11-01)
+
+- [x] **Modos de exibição** do widget: duas linhas (padrão), **uma linha** (`↑ 1,18 | ↓ 36,9 MB/s`, mais
+      largo e baixo) e **só download** (uma pílula, ocupa o mesmo espaço) — estúdio › Aparência, com prévia;
+      a vaga automática e o Ctrl + arrastar usam a largura do modo
+- [x] **Teste de velocidade sob demanda** (Cloudflare `speed.cloudflare.com`): latência (mediana), download
+      e upload com 4 conexões, 10 s por etapa, tetos de 100 MB / 30 MB, aquecimento descartado; resultado em
+      Mbps comparado com o plano (faixas da Anatel). Botão no painel e no menu; nunca roda sozinho
+
+## Onda 8 — Consumo por aplicativo ⬜ (v1.3.0)
+
+- [ ] "Quem está usando minha banda?" — bytes por processo via ETW (exige administrador): modo opcional,
+      desligado por padrão, que explica a elevação antes de pedir
 
 ---
 

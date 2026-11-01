@@ -23,7 +23,7 @@ principal é "dois números certos, bonitos e leves na barra".
 | **Mini gráfico (sparkline)** dos últimos 60 s atrás dos números ou num popup | Mostra tendência, não só o instante |
 | ✅ v1.1.0 — **Painel ao clicar — versão ampliada**: gráfico de 5 min/1 h, máximos, médias | O flyout básico (60 s) **subiu para a Onda 2** por causa do estilo "Clima"; aqui fica a versão completa |
 | ✅ v1.1.0 — **Latência (ping)** para o gateway e para 1.1.1.1, a cada 5 s, como terceira informação opcional | Internet "lenta" muitas vezes é latência, não banda. Custo de rede desprezível |
-| **Teste de velocidade sob demanda** (botão no menu) | Só quando o usuário pedir, nunca em segundo plano |
+| ✅ v1.2.0 — **Teste de velocidade sob demanda** (botão no menu) | Só quando o usuário pedir, nunca em segundo plano |
 | **Histórico em SQLite** (por hora/dia) com exportação CSV | Base para relatórios e franquia |
 
 ## Alto valor, alto esforço
@@ -32,7 +32,7 @@ principal é "dois números certos, bonitos e leves na barra".
 |---|---|
 | **Consumo por aplicativo** ("quem está usando minha banda?") | Exige ETW (rastreamento de eventos do kernel) → normalmente **administrador**. Pode ser um modo opcional |
 | **Relatório para reclamar com a operadora**: registra quedas e velocidades abaixo do contratado, gera PDF | Muito útil no Brasil (Anatel exige 40% instantâneo / 80% média mensal) |
-| **Temas completos**: fonte, tamanho, só setas, só números, uma linha `↑1,2 ↓38` | Personalização além de cores |
+| ✅ v1.2.0 (modos) — **Temas completos**: fonte, tamanho, só setas, só números, uma linha `↑1,2 ↓38` | Personalização além de cores |
 
 ## Ideias descartadas (e por quê)
 

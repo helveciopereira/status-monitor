@@ -1,5 +1,48 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.2.0 — 2026-11-01 — Onda 7: modos de exibição e teste de velocidade
+
+### O que mudou
+- **Modos de exibição** (estúdio › Aparência › "Modo de exibição", com prévia de cada um):
+  - **Duas linhas** — o de sempre;
+  - **Uma linha** — `CPU 12% · RAM 48% | ↑ 1,18 | ↓ 36,9 MB/s`, o formato compacto como preferido;
+  - **Só download** — uma pílula centralizada, com a unidade (`↓ 36,9 MB/s`).
+  A vaga automática, a compactação por falta de espaço e o Ctrl + arrastar usam a largura do modo.
+- **Teste de velocidade sob demanda**: botão "Testar velocidade" no rodapé do painel e item "Testar
+  velocidade da internet…" no menu do clique direito. A janela avisa antes o que vai acontecer (servidor da
+  Cloudflare, ~25 s, até ~130 MB). Mede latência (mediana de 7 pings HTTP), download e upload (4 conexões,
+  10 s cada, tetos de 100 MB / 30 MB), em **Mbps**. No fim compara com a velocidade contratada: ≥ 80 %
+  "dentro do esperado", 40–80 % "acima do mínimo instantâneo da Anatel", < 40 % "ABAIXO do mínimo".
+  O botão vira "Cancelar" durante o teste; fechar a janela cancela. Resultado vai para o log.
+
+### Por quê
+- Pedido do dono (2026-11-01). Uma linha só cabe melhor em barra pequena; "só download" é o número que a
+  maioria olha. Os modos reaproveitam o estado compacto que já existia (sem layout novo para manter).
+- O medidor mostra o que está passando, não o que o link aguenta; o teste responde "estou recebendo o que
+  pago?". Fica sob demanda porque gasta banda e franquia — nunca roda em segundo plano. O 1º segundo de
+  cada etapa é descartado (aceleração do TCP) para não subestimar; a latência usa mediana para que um pico
+  isolado não distorça.
+
+### Como usar
+- Modo: clique direito › "Cores e mais configurações" › Aparência › Modo de exibição › Salvar.
+- Teste: clique no widget › "Testar velocidade" › "Iniciar teste". Informe a velocidade contratada no
+  estúdio para ver a comparação com o plano.
+
+### Arquivos
+- Novos: `Medicao/TesteVelocidade.cs` (`TesteVelocidade`, `CalculoTeste`), `Apresentacao/JanelaTesteVelocidade.xaml(.cs)`,
+  `tests/.../V120ModosETesteTests.cs` (26 testes).
+- Alterados: `TaskbarLayout.cs` (`ModoExibicaoWidget`, `ModosExibicao`, `Preferido`, largura do só download),
+  `TaskbarHost.cs` (`ModoExibicao`), `TaskbarWidget.xaml.cs` (`DefinirModoExibicao`), `Configuracoes.cs`
+  (`ModoExibicao`), `EstudioCores.xaml(.cs)` (grupo e prévias), `PainelRapido.xaml(.cs)` (botão do teste),
+  `App.xaml.cs` (menu, janela do teste, modo aplicado nos widgets de todos os monitores; a janela do teste
+  aberta adia a atualização automática).
+
+### Validação
+- Build Release 0 avisos; **186/186 testes**.
+- Render fora da tela dos 3 modos (com e sem CPU/RAM) e da janela do teste.
+- Teste real contra speed.cloudflare.com pela classe do app (tetos reduzidos, ~25 MB): latência 108 ms,
+  ↓ 58,7 Mbps, ↑ 26,3 Mbps, 20 relatos de progresso.
+
 ## v1.1.0 — 2026-10-31 — Onda 6: painel ampliado e latência
 
 ### O que mudou

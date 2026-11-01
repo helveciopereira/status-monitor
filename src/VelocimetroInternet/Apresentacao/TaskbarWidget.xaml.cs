@@ -98,7 +98,12 @@ public partial class TaskbarWidget : Window
 
         // Linha única: o 1º valor sai só com o número e o ÚLTIMO leva a unidade (economiza
         // largura). v0.8.0: com "download em cima" o ↓ vem primeiro, então os papéis se invertem.
-        if (_downloadEmCima)
+        // v1.2.0: no "só download" o ↓ está sozinho na linha e leva a unidade sempre.
+        if (_modo == ModoExibicaoWidget.SoDownload)
+        {
+            TextoCompactoDownload.Text = $"↓ {downCompleto}";
+        }
+        else if (_downloadEmCima)
         {
             TextoCompactoDownload.Text = $"↓ {downCompleto.Split(' ')[0]}";
             TextoCompactoUpload.Text = $"↑ {upCompleto}";
@@ -150,7 +155,46 @@ public partial class TaskbarWidget : Window
         LinhaCompacta.Children.Add(_downloadEmCima ? TextoCompactoDownload : TextoCompactoUpload);
         LinhaCompacta.Children.Add(SeparadorCompactoRede);
         LinhaCompacta.Children.Add(_downloadEmCima ? TextoCompactoUpload : TextoCompactoDownload);
+
+        DefinirModoExibicao(_modo); // a troca de linhas acima não pode desfazer o "só download"
     }
+
+    // ------------------------------------------------------------------ v1.2.0: modo de exibição
+
+    private ModoExibicaoWidget _modo = ModoExibicaoWidget.DuasLinhas;
+
+    /// <summary>
+    /// v1.2.0 (Onda 7): duas linhas (o de sempre), uma linha (o host já entrega o estado compacto)
+    /// ou só download — a pílula ↓ ocupa as duas linhas, centralizada, e o ↑ some dos dois layouts.
+    /// A LARGURA continua sendo do TaskbarHost (TaskbarLayout com o mesmo modo).
+    /// </summary>
+    public void DefinirModoExibicao(ModoExibicaoWidget modo)
+    {
+        _modo = modo;
+        bool soDownload = modo == ModoExibicaoWidget.SoDownload;
+        Visibility envio = soDownload ? Visibility.Collapsed : Visibility.Visible;
+        PilulaUpload.Visibility = envio;
+        TextoCompactoUpload.Visibility = envio;
+        SeparadorCompactoRede.Visibility = envio;
+
+        if (soDownload)
+        {
+            Grid.SetRow(PilulaDownload, 0);
+            Grid.SetRowSpan(PilulaDownload, 3);
+            PilulaDownload.VerticalAlignment = VerticalAlignment.Center;
+            PilulaDownload.Height = AlturaPilulaUnica;
+        }
+        else
+        {
+            Grid.SetRow(PilulaDownload, _downloadEmCima ? 0 : 2);
+            Grid.SetRowSpan(PilulaDownload, 1);
+            PilulaDownload.VerticalAlignment = VerticalAlignment.Stretch;
+            PilulaDownload.Height = double.NaN;
+        }
+    }
+
+    /// <summary>Altura da pílula sozinha: a de uma linha do modo normal (42 − 4 − 2) ÷ 2 ≈ 18, +2 de respiro.</summary>
+    private const double AlturaPilulaUnica = 20;
 
     /// <summary>
     /// v0.5.0: mostra/esconde a coluna CPU (em cima) / RAM (embaixo) à esquerda do upload/download.

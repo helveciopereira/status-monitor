@@ -150,6 +150,7 @@ public partial class App : Application
             MostrarSistema = cfg.MostrarCpuRam,
             // v0.8.0: idem para a fonte/tamanho e a posição escolhida com Ctrl + arrastar
             FatorTexto = _fatorTexto,
+            ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao), // v1.2.0
             PosicaoManualLogica = PosicaoManualDe(cfg, "principal")
         };
         _host.PosicaoManualEscolhida += GravarPosicaoManual;
@@ -328,6 +329,7 @@ public partial class App : Application
         _fatorTexto = aparencia.FatorLargura();
         widget.AplicarAparencia(aparencia, _fatorTexto);
         widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
+        widget.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
         widget.AplicarCores(Paletas.Resolver(
             Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada),
             TemaWindows.BarraClara()));
@@ -412,6 +414,7 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         host.MostrarSistema = cfg.MostrarCpuRam;
         host.FatorTexto = _fatorTexto;
+        host.ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao); // v1.2.0
         host.PosicaoManualLogica = PosicaoManualDe(cfg, host.ChavePosicao);
         host.FixadoNaBarra = cfg.FixarNaBarra;
         host.PosicaoManualEscolhida += GravarPosicaoManual;
@@ -450,12 +453,14 @@ public partial class App : Application
             w.DefinirUnidade(UnidadeDe(cfg));
             w.AplicarAparencia(aparencia, _fatorTexto);
             w.DefinirMostrarSistema(cfg.MostrarCpuRam);
+            w.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
         }
 
         foreach (TaskbarHost h in TodosHosts())
         {
             h.MostrarSistema = cfg.MostrarCpuRam; // recalcula a largura na barra se mudou
             h.FatorTexto = _fatorTexto;
+            h.ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao); // v1.2.0
             h.PosicaoManualLogica = PosicaoManualDe(cfg, h.ChavePosicao);
             h.FixadoNaBarra = cfg.FixarNaBarra;
         }
@@ -603,6 +608,7 @@ public partial class App : Application
             _painel.MostrarSistemaAlterado += mostrar => _config.Alterar(c => c.MostrarCpuRam = mostrar);
             _painel.IniciarComWindowsAlterado += DefinirInicioComWindows;
             _painel.AbrirEstudioPedido += AbrirEstudio;
+            _painel.TesteVelocidadePedido += AbrirTesteVelocidade; // v1.2.0
             _painel.IsVisibleChanged += (_, ev) =>
             {
                 if (ev.NewValue is false)
@@ -641,6 +647,30 @@ public partial class App : Application
         _estudio.Activate();
     }
 
+    // ------------------------------------------------------------------ v1.2.0: teste de velocidade
+
+    private JanelaTesteVelocidade? _teste;
+
+    /// <summary>Abre (ou traz para frente) a janela do teste. O teste só começa no botão dela.</summary>
+    private void AbrirTesteVelocidade()
+    {
+        _painel?.Fechar();
+        if (_teste is { IsLoaded: true })
+        {
+            _teste.Activate();
+            return;
+        }
+
+        _teste = new JanelaTesteVelocidade(() => _config.Atual.VelocidadeContratadaMbps, RegistrarLog);
+        _teste.Closed += (_, _) =>
+        {
+            _teste = null;
+            AparaMemoriaEmBreve();
+        };
+        _teste.Show();
+        _teste.Activate();
+    }
+
     /// <summary>Rodapé do estúdio: versão e se/como a atualização automática está agindo.</summary>
     private string TextoVersaoRodape()
     {
@@ -675,6 +705,11 @@ public partial class App : Application
         var itemEstudio = new MenuItem { Header = "Estúdio de cores e configurações…" };
         itemEstudio.Click += (_, _) => AbrirEstudio();
         menu.Items.Add(itemEstudio);
+
+        // v1.2.0: teste de velocidade sob demanda (a janela explica o gasto antes de começar)
+        var itemTeste = new MenuItem { Header = "Testar velocidade da internet…" };
+        itemTeste.Click += (_, _) => AbrirTesteVelocidade();
+        menu.Items.Add(itemTeste);
 
         menu.Items.Add(new Separator());
 
@@ -901,7 +936,8 @@ public partial class App : Application
 
         return RegraMomentoTranquilo.Avaliar(
             painelAberto: _painel is { IsVisible: true },
-            estudioAberto: _estudio is not null,
+            // v1.2.0: janela do teste aberta conta como "em uso" (não reinicia no meio de um teste)
+            estudioAberto: _estudio is not null || _teste is not null,
             menuAberto: _menuAberto,
             mouseSobreOApp: mouseSobre,
             telaCheia: _host?.EmTelaCheia == true,

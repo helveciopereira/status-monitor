@@ -111,6 +111,14 @@ public sealed class Configuracoes
     /// <summary>Janela do gráfico do painel lembrada entre aberturas: "1min" (padrão), "5min" ou "1h".</summary>
     public string JanelaGrafico { get; set; } = "1min";
 
+    // ---------------------------------------------------------------- v1.2.0 (Onda 7)
+
+    /// <summary>
+    /// Modo de exibição na barra: "duas-linhas" (padrão, o de sempre), "uma-linha" (↑ e ↓ lado a
+    /// lado, sempre) ou "so-download" (só a pílula ↓).
+    /// </summary>
+    public string ModoExibicao { get; set; } = "duas-linhas";
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -148,6 +156,8 @@ public sealed class Configuracoes
         FranquiaMensalGb = double.IsFinite(FranquiaMensalGb) ? Math.Clamp(FranquiaMensalGb, 0, 100_000) : 0;
         // v1.1.0: janela desconhecida (arquivo editado à mão) volta ao padrão de 1 minuto
         JanelaGrafico = JanelaGrafico is "1min" or "5min" or "1h" ? JanelaGrafico : "1min";
+        // v1.2.0: modo desconhecido volta às duas linhas de sempre
+        ModoExibicao = ModoExibicao is "duas-linhas" or "uma-linha" or "so-download" ? ModoExibicao : "duas-linhas";
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {
