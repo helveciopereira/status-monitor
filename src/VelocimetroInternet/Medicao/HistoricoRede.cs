@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 
@@ -19,13 +20,19 @@ public sealed record InstantaneoHistorico(
     string NomeInterface,
     // v0.8.0: quantos pontos cabem nos 60 s com o intervalo atual (o gráfico distribui a
     // largura por ESTE número, não mais por 60 fixo). Padrão 60 = intervalo de 1 s.
-    int Capacidade = HistoricoRede.JanelaSegundos);
+    int Capacidade = HistoricoRede.JanelaSegundos,
+    // v1.0.0 (Onda 5): consumo do MÊS-calendário (soma dos dias, incluindo hoje)
+    ulong BytesEnviadosMes = 0,
+    ulong BytesRecebidosMes = 0);
 
 /// <summary>
 /// Memória curta do medidor para o "NetTraffic Quick Flyout" do Modelo 3:
 /// - últimos 60 s (gráfico "Telemetria em Tempo Real (60s)" e o "Pico" de cada cartão);
-/// - consumo acumulado do DIA ("Hoje: ↑ 1,2 GB · ↓ 14,8 GB"), persistido em consumo.json
-///   para sobreviver a reinício do app/PC no mesmo dia, e zerado na virada do dia.
+/// - consumo acumulado do DIA ("Hoje: ↑ 1,2 GB · ↓ 14,8 GB"), persistido para sobreviver a
+///   reinício do app/PC no mesmo dia, e zerado na virada do dia;
+/// - v1.0.0: consumo de CADA dia (~13 meses) em consumo-diario.json → consumo do mês, alerta de
+///   franquia e exportação CSV (ver <see cref="RegistroConsumo"/>). O consumo.json antigo (só o
+///   dia em que foi gravado) é migrado na 1ª leitura.
 ///
 /// Escrito pelo loop de medição (thread do pool) e lido pela UI → tudo sob <c>lock</c>;
 /// a UI recebe um <see cref="InstantaneoHistorico"/> copiado.
@@ -49,23 +56,31 @@ public sealed class HistoricoRede
     private double _segundosDesdeGravacao;
 
     private DateOnly _dia;
-    private ulong _enviadosHoje;
-    private ulong _recebidosHoje;
+    // v1.0.0: o consumo de hoje é a linha de hoje do registro diário (antes: dois campos soltos,
+    // zerados na virada do dia — o dia anterior se perdia)
+    private RegistroConsumo _registro = new();
     private ulong _linkBps;
     private string _nomeInterface = string.Empty;
 
     private readonly string _caminhoConsumo;
+    private readonly string _caminhoDiario;
     private readonly Func<DateOnly> _hoje;
 
+    /// <summary>Formato antigo (até v0.9.0): só o dia em que foi gravado.</summary>
     private sealed record ConsumoGravado(string Dia, ulong Enviados, ulong Recebidos);
 
-    /// <param name="caminhoConsumo">Sobrescrito em testes.</param>
+    /// <param name="caminhoConsumo">consumo.json antigo (lido só para migrar). Sobrescrito em testes.</param>
     /// <param name="hoje">Relógio injetável (testes da virada do dia).</param>
     public HistoricoRede(string? caminhoConsumo = null, Func<DateOnly>? hoje = null)
     {
         _caminhoConsumo = caminhoConsumo ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "VelocimetroInternet", "consumo.json");
+        // Ao lado do consumo.json e com o mesmo prefixo: em produção "consumo-diario.json"; nos
+        // testes cada arquivo temporário ganha o seu (sem colisão entre testes em paralelo)
+        _caminhoDiario = Path.Combine(
+            Path.GetDirectoryName(_caminhoConsumo) ?? string.Empty,
+            Path.GetFileNameWithoutExtension(_caminhoConsumo) + "-diario.json");
         _hoje = hoje ?? (() => DateOnly.FromDateTime(DateTime.Now));
         _dia = _hoje();
         CarregarConsumo();
@@ -113,10 +128,9 @@ public sealed class HistoricoRede
             DateOnly hoje = _hoje();
             if (hoje != _dia)
             {
-                // Virou o dia: o consumo "Hoje" recomeça do zero
+                // Virou o dia: o consumo "Hoje" recomeça do zero — o dia anterior fica no registro
                 _dia = hoje;
-                _enviadosHoje = 0;
-                _recebidosHoje = 0;
+                _registro.Podar(hoje);
             }
 
             int capacidade = _anel.Length;
@@ -131,8 +145,7 @@ public sealed class HistoricoRede
                 _inicio = (_inicio + 1) % capacidade;
             }
 
-            _enviadosHoje += bytesEnviadosNoIntervalo;
-            _recebidosHoje += bytesRecebidosNoIntervalo;
+            _registro.Somar(_dia, bytesEnviadosNoIntervalo, bytesRecebidosNoIntervalo);
             _linkBps = linkBps;
             _nomeInterface = nomeInterface;
 
@@ -162,15 +175,57 @@ public sealed class HistoricoRede
             }
 
             PontoHistorico ultimo = _quantidade > 0 ? pontos[^1] : default;
-            bool diaAtual = _hoje() == _dia;
+            // Virada do dia SEM medição (pausa, sem rede): "hoje" já é o dia novo, ainda vazio
+            DateOnly hoje = _hoje();
+            ConsumoDia dia = _registro.Do(hoje);
+            ConsumoDia mes = _registro.DoMes(hoje);
             return new InstantaneoHistorico(
                 pontos, ultimo.UploadBps, ultimo.DownloadBps, picoUp, picoDown,
-                diaAtual ? _enviadosHoje : 0, diaAtual ? _recebidosHoje : 0,
-                _linkBps, _nomeInterface, _anel.Length);
+                dia.Enviados, dia.Recebidos,
+                _linkBps, _nomeInterface, _anel.Length,
+                mes.Enviados, mes.Recebidos);
         }
     }
 
-    /// <summary>Grava o consumo do dia (chamado no encerramento do app).</summary>
+    // ------------------------------------------------------------------ v1.0.0: franquia e CSV
+
+    /// <summary>
+    /// Marco da franquia mensal (80 ou 100 %) a avisar agora, ou null. Cada marco sai uma vez por
+    /// mês; o "já avisado" é gravado junto do consumo (reiniciar o app não repete o aviso).
+    /// </summary>
+    public int? MarcoFranquiaParaAvisar(double franquiaGb)
+    {
+        lock (_trava)
+        {
+            int? marco = _registro.MarcoFranquiaParaAvisar(_hoje(), franquiaGb);
+            if (marco is not null)
+            {
+                GravarSemTrava();
+            }
+
+            return marco;
+        }
+    }
+
+    /// <summary>Fração da franquia mensal já usada (0 = sem franquia).</summary>
+    public double FracaoFranquia(double franquiaGb)
+    {
+        lock (_trava)
+        {
+            return _registro.FracaoFranquia(_hoje(), franquiaGb);
+        }
+    }
+
+    /// <summary>Consumo de cada dia guardado, em CSV pt-BR (";" e vírgula decimal).</summary>
+    public string ExportarCsv()
+    {
+        lock (_trava)
+        {
+            return _registro.ParaCsv();
+        }
+    }
+
+    /// <summary>Grava o consumo (chamado no encerramento do app e antes de atualizar).</summary>
     public void SalvarConsumo()
     {
         lock (_trava)
@@ -183,11 +238,11 @@ public sealed class HistoricoRede
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_caminhoConsumo)!);
-            string tmp = _caminhoConsumo + ".tmp";
-            File.WriteAllText(tmp, JsonSerializer.Serialize(
-                new ConsumoGravado(_dia.ToString("yyyy-MM-dd"), _enviadosHoje, _recebidosHoje)));
-            File.Move(tmp, _caminhoConsumo, overwrite: true);
+            Directory.CreateDirectory(Path.GetDirectoryName(_caminhoDiario)!);
+            // Grava num .tmp e troca: queda de energia no meio não deixa um arquivo pela metade
+            string tmp = _caminhoDiario + ".tmp";
+            File.WriteAllText(tmp, _registro.ParaJson());
+            File.Move(tmp, _caminhoDiario, overwrite: true);
         }
         catch
         {
@@ -197,6 +252,25 @@ public sealed class HistoricoRede
 
     private void CarregarConsumo()
     {
+        // v1.0.0: o registro diário é a fonte; sem ele (1ª abertura depois de atualizar), migra o
+        // consumo.json antigo, que guardava só o dia em que foi gravado
+        try
+        {
+            if (File.Exists(_caminhoDiario))
+            {
+                _registro = RegistroConsumo.DeJson(File.ReadAllText(_caminhoDiario));
+                _registro.Podar(_dia);
+            }
+        }
+        catch
+        {
+            // Corrompido: tenta o formato antigo abaixo e, sem ele, recomeça do zero
+            _registro = new RegistroConsumo();
+        }
+
+        // O consumo.json antigo é SEMPRE conferido: uma versão anterior pode ter rodado depois
+        // (ex.: a 0.9.0 aberta de novo antes de a atualização chegar) e contado mais naquele dia.
+        // Fica o MAIOR valor de cada campo — nunca soma (seria contar duas vezes o mesmo tráfego).
         try
         {
             if (!File.Exists(_caminhoConsumo))
@@ -205,11 +279,13 @@ public sealed class HistoricoRede
             }
 
             ConsumoGravado? c = JsonSerializer.Deserialize<ConsumoGravado>(File.ReadAllText(_caminhoConsumo));
-            // Só aproveita o que foi gravado HOJE; de outro dia é descartado
-            if (c is not null && c.Dia == _dia.ToString("yyyy-MM-dd"))
+            if (c is not null && DateOnly.TryParseExact(c.Dia, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out DateOnly diaGravado))
             {
-                _enviadosHoje = c.Enviados;
-                _recebidosHoje = c.Recebidos;
+                // Antes, um dia diferente de hoje era descartado; agora vira histórico do mês
+                ConsumoDia atual = _registro.Do(diaGravado);
+                _registro.Definir(diaGravado, new ConsumoDia(
+                    Math.Max(atual.Enviados, c.Enviados), Math.Max(atual.Recebidos, c.Recebidos)));
             }
         }
         catch

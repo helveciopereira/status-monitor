@@ -85,6 +85,21 @@ public sealed class Configuracoes
     /// <summary>Mostrar o widget também nas barras dos outros monitores (padrão: só na principal).</summary>
     public bool MostrarEmTodasAsBarras { get; set; }
 
+    // ---------------------------------------------------------------- v1.0.0 (Onda 5)
+
+    /// <summary>
+    /// Franquia mensal da internet em GB (decimal, como a operadora conta: 1 GB = 10⁹ bytes).
+    /// 0 = sem franquia (padrão) → nenhum aviso. Com valor, avisa UMA vez aos 80 % e UMA vez aos
+    /// 100 % do mês (envio + download, que é o que a operadora soma).
+    /// </summary>
+    public double FranquiaMensalGb { get; set; }
+
+    /// <summary>
+    /// Números mais fortes quanto mais perto da velocidade do plano (ou do link, sem plano).
+    /// Padrão DESLIGADO: muda o visual de sempre; é para quem quer ler "está cheio?" de relance.
+    /// </summary>
+    public bool CorPorIntensidade { get; set; }
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -118,6 +133,8 @@ public sealed class Configuracoes
         TamanhoTexto = TamanhoTexto is "pequeno" or "normal" or "grande" ? TamanhoTexto : "normal";
         Fonte = Fonte is "segoe" or "segoe-classica" or "cascadia" ? Fonte : "segoe";
         PosicoesManuais ??= [];
+        // v1.0.0: franquia entre 0 (desligada) e 100 TB; NaN/negativo de arquivo editado à mão → 0
+        FranquiaMensalGb = double.IsFinite(FranquiaMensalGb) ? Math.Clamp(FranquiaMensalGb, 0, 100_000) : 0;
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {

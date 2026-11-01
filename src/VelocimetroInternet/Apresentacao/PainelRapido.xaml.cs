@@ -63,6 +63,7 @@ public partial class PainelRapido : Window
             ChaveFixar.IsChecked = cfg.FixarNaBarra;
             ChaveSistema.IsChecked = cfg.MostrarCpuRam;
             _velocidadeContratadaMbps = cfg.VelocidadeContratadaMbps;
+            _franquiaGb = cfg.FranquiaMensalGb; // v1.0.0
 
             ModoUnidadeVelocidade modo = bits ? ModoUnidadeVelocidade.BitsPorSegundo : ModoUnidadeVelocidade.BytesPorSegundo;
             _formatadorUp.ModoUnidade = modo;
@@ -235,9 +236,36 @@ public partial class PainelRapido : Window
 
         ConsumoUpload.Text = $"↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosHoje)}";
         ConsumoDownload.Text = $"↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosHoje)}";
+        ConsumoMesUpload.Text = $"↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosMes)}";
+        ConsumoMesDownload.Text = $"↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosMes)}";
+        PreencherFranquia(h);
 
         DesenharGrafico(h);
     }
+
+    /// <summary>
+    /// v1.0.0: barra e texto da franquia do mês ("8,2 de 10 GB · 82 %"). Acima de 80 % a barra
+    /// fica na cor de download (atenção); sem franquia definida, o bloco some.
+    /// </summary>
+    private void PreencherFranquia(InstantaneoHistorico h)
+    {
+        if (!(_franquiaGb > 0))
+        {
+            BlocoFranquia.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        BlocoFranquia.Visibility = Visibility.Visible;
+        ulong usado = h.BytesEnviadosMes + h.BytesRecebidosMes;
+        double fracao = usado / (_franquiaGb * 1_000_000_000d);
+        double usada = Math.Clamp(fracao, 0, 1);
+        ColunaFranquiaUsada.Width = new GridLength(usada, GridUnitType.Star);
+        ColunaFranquiaResto.Width = new GridLength(1 - usada, GridUnitType.Star);
+        BarraFranquia.SetResourceReference(Border.BackgroundProperty, fracao >= 0.8 ? "Painel.Download" : "Tema.Acento");
+        TextoFranquia.Text = $"{SpeedFormatter.FormatarQuantidade(usado)} de {_franquiaGb:0.##} GB da franquia · {DicaWidget.TextoPercentual(fracao)}";
+    }
+
+    private double _franquiaGb;
 
     private static void AjustarBarra(FrameworkElement barra, FrameworkElement trilho, double atualBps, double referenciaBps)
     {

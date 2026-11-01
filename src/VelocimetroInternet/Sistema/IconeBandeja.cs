@@ -68,6 +68,26 @@ public sealed class IconeBandeja : IDisposable
         NativeMethods.Shell_NotifyIconW(NativeMethods.NIM_MODIFY, ref dados);
     }
 
+    /// <summary>
+    /// v1.0.0: notificação do Windows saindo do ícone (usada só no aviso de franquia — o app é
+    /// silencioso por regra). Respeita o "não perturbe". Devolve false se o ícone está oculto:
+    /// sem ícone não há de onde a notificação sair, e quem chama mostra o aviso no painel.
+    /// </summary>
+    public bool MostrarAviso(string titulo, string texto)
+    {
+        if (!_visivel)
+        {
+            return false;
+        }
+
+        var dados = CriarDados();
+        dados.uFlags = NativeMethods.NIF_INFO;
+        dados.szInfoTitle = titulo.Length > 63 ? titulo[..63] : titulo;
+        dados.szInfo = texto.Length > 255 ? texto[..255] : texto;
+        dados.dwInfoFlags = NativeMethods.NIIF_INFO | NativeMethods.NIIF_RESPECT_QUIET_TIME;
+        return NativeMethods.Shell_NotifyIconW(NativeMethods.NIM_MODIFY, ref dados);
+    }
+
     /// <summary>Depois que o Explorer reinicia, o ícone precisa ser recriado.</summary>
     public void Readicionar()
     {

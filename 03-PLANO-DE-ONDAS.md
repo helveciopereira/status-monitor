@@ -116,6 +116,31 @@ primeira atualização REAL pelo GitHub acontece na próxima versão publicada (
 
 ---
 
+## Onda 5 — Informação extra sem ocupar espaço ✅ (2026-10-31 · v1.0.0)
+
+Itens "alto valor, baixo esforço" do `04-IDEIAS.md`:
+
+- [x] **Dica ao passar o mouse** no widget: interface + IP local, consumo de hoje e do mês (com % da
+      franquia), picos dos últimos 60 s e os atalhos escondidos — v1.0.0
+- [x] **Consumo do mês** (soma persistida por dia, ~13 meses em `consumo-diario.json`; o `consumo.json`
+      antigo é migrado) — no painel ("Este mês") e no estúdio — v1.0.0
+- [x] **Alerta de franquia**: campo "Franquia mensal (GB)" no estúdio; notificação UMA vez aos 80 % e UMA
+      aos 100 % por mês (respeita o "não perturbe"); barra da franquia no painel — v1.0.0
+- [x] **Histórico com exportação CSV** (no lugar do SQLite da ideia original: um JSON de ~400 linhas não
+      justifica a dependência) — botão "Exportar CSV…" no estúdio, pt-BR (";" e vírgula decimal) — v1.0.0
+- [x] **Cor por intensidade** (opcional, desligada por padrão): números mais fortes perto da velocidade
+      do plano/link — v1.0.0
+- [x] **Duplo clique abre o Gerenciador de Tarefas** (também no menu do clique direito) — v1.0.0
+- [x] Indicador de sem conexão — já existia desde a v0.2.0 ("—" no widget, "Sem conexão" no painel)
+
+## Onda 6 — Painel ampliado e latência ⬜
+
+- [ ] Gráfico do painel com **1 min / 5 min / 1 h** e média de cada janela
+- [ ] **Latência (ping)** opcional — roteador e internet, desligada por padrão (o app continua sem
+      acessar a internet a menos que o usuário ligue)
+
+---
+
 ## Validação padrão de toda onda
 
 1. `dotnet build -c Release` sem avisos novos

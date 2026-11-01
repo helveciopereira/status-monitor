@@ -1,5 +1,59 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.0.0 — 2026-10-31 — Onda 5: informação extra sem ocupar espaço
+
+### O que mudou
+- **Dica ao parar o mouse no widget** (0,7 s): interface + IP local, consumo de hoje e do mês (com % da
+  franquia), picos dos últimos 60 s e os atalhos escondidos. Montada só na hora de abrir.
+- **Consumo do mês**: o consumo passa a ser guardado **por dia** (~13 meses, `consumo-diario.json`). Painel
+  ganhou a linha "Este mês"; o estúdio mostra o total do mês ao lado da franquia.
+- **Franquia mensal (GB)** no estúdio, cartão novo "Consumo e franquia": notificação do Windows **uma vez aos
+  80 % e uma vez aos 100 %** do mês (envio + download, GB decimal como a operadora), respeitando o "não
+  perturbe"; barra da franquia no painel (fica na cor de download acima de 80 %).
+- **Exportar CSV…** do histórico por dia (pt-BR: `;` e vírgula decimal, UTF-8 com BOM para o Excel).
+- **Cor por intensidade** (opcional, desligada): opacidade dos números de 0,5 (parado) a 1 (na velocidade do
+  plano; sem plano, do link), em curva de raiz quadrada.
+- **Duplo clique no widget → Gerenciador de Tarefas**; também no menu do clique direito.
+
+### Por quê
+Itens "alto valor, baixo esforço" do `04-IDEIAS.md`. Até a v0.9.0 o consumo só existia para HOJE e era
+zerado na virada do dia (`consumo.json` guardava um único dia) — sem histórico não havia como ter mês,
+franquia ou CSV. Por isso a base é o `RegistroConsumo` (puro, testável) e as três ideias vêm dele.
+
+### Decisões
+- **SQLite trocado por JSON**: ~400 linhas por ano não justificam uma dependência nativa.
+- **Migração sem perda**: na leitura, o `consumo.json` antigo é sempre conferido e fica o **maior** valor de
+  cada campo daquele dia (nunca soma). Cobre a 0.9.0 voltando a rodar antes de a atualização chegar.
+- **Duplo clique contado à mão** (`GetDoubleClickTime` + `SM_CXDOUBLECLK`): o 1º clique abre o painel, que
+  rouba o foco — o `ClickCount` do WPF não é confiável aí. O 1º clique continua instantâneo (esperar o tempo do
+  duplo deixaria o clique comum lento); o 2º fecha o painel e abre o Gerenciador.
+- **Aviso de franquia só pela bandeja**: sem ícone visível não há de onde a notificação sair → vai para o log, e
+  o painel mostra o uso de qualquer forma. O "já avisei" fica gravado com o consumo (reiniciar não repete).
+- Barra da franquia em **colunas proporcionais** (`usado*`/`resto*`): a 1ª versão usava a largura medida do
+  trilho, que é 0 enquanto o bloco estava recolhido — a barra saía vazia na 1ª abertura (visto no render).
+
+### Como usar
+Estúdio › **Consumo e franquia**: digite a franquia em GB (vazio = sem franquia) e **Aplicar**; "Exportar CSV…"
+salva o histórico. Estúdio › Medição › **Cor por intensidade**. Na barra: pare o mouse no widget para a dica;
+duplo clique para o Gerenciador de Tarefas.
+
+### Validação
+- Build Release 0 avisos; **suíte inteira 137/137** (22 testes novos em `V100ConsumoEDicaTests`).
+- Ao vivo no PC do dono (settings salvo e restaurado por hash, entrada Run conferida): com franquia de 4,5 GB e
+  3,9 GB já usados no dia, o log registrou `Franquia 80 %: aviso mostrado.` no 1º tick; `consumo-diario.json`
+  criado pela migração; cor por intensidade visível na captura da barra (download a 6 KB/s apagado).
+- Dica, painel e estúdio **desenhados fora da tela** com o consumo real (o dono estava usando o PC — o mouse não
+  foi movido): "Mês … (86 % da franquia)", barra a 86 % em vermelho, "Este mês até agora: 3,6 GB · 86 %".
+- **Validação manual recomendada:** parar o mouse no widget (dica), duplo clique (Gerenciador abre, painel
+  fecha), Exportar CSV e abrir no Excel.
+
+### Arquivos tocados
+`Medicao/RegistroConsumo.cs` (novo), `Medicao/HistoricoRede.cs`, `Apresentacao/DicaWidget.cs` (novo, inclui
+`RegraDuploClique`), `Sistema/InfoRede.cs` (novo), `Sistema/IconeBandeja.cs`, `Sistema/NativeMethods.cs`,
+`Apresentacao/TaskbarWidget.xaml.cs`, `Apresentacao/PainelRapido.xaml(.cs)`, `Apresentacao/EstudioCores.xaml(.cs)`,
+`Config/Configuracoes.cs`, `App.xaml` (estilo de ToolTip no tema), `App.xaml.cs`, csproj (1.0.0),
+`tests/.../V100ConsumoEDicaTests.cs` (novo), `03-PLANO-DE-ONDAS.md`, `04-IDEIAS.md`, `README.md`.
+
 ## v0.9.0 — 2026-10-31 — Seletor visual de cor (fecha a Onda 3)
 
 ### O que mudou

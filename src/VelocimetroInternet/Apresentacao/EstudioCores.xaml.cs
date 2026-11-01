@@ -22,11 +22,17 @@ public partial class EstudioCores : Window
     private bool _carregando;
     private readonly Dictionary<string, RadioButton> _cartoes = [];
 
+    /// <summary>v1.0.0: histórico de consumo (exportar CSV e mostrar o mês). null = sem histórico (testes).</summary>
+    private readonly HistoricoRede? _historico;
+
     /// <param name="textoVersao">Rodapé (v0.4.0), ex.: "Versão 0.4.3 · auto update".</param>
-    public EstudioCores(ServicoConfiguracoes servico, string textoVersao = "")
+    /// <param name="historico">v1.0.0: para "Exportar CSV" e o consumo do mês ao lado da franquia.</param>
+    public EstudioCores(ServicoConfiguracoes servico, string textoVersao = "", HistoricoRede? historico = null)
     {
         InitializeComponent();
         TextoVersao.Text = textoVersao;
+        _historico = historico;
+        BotaoExportar.IsEnabled = historico is not null;
         _servico = servico;
         _rascunho = servico.Atual.Clonar();
         Seletor.CorAlterada += AoMoverSeletor; // v0.9.0: seletor visual de cor
@@ -122,6 +128,12 @@ public partial class EstudioCores : Window
             MarcarSegmento(GrupoOrdem, _rascunho.DownloadEmCima ? "download" : "envio");
             MarcarSegmento(GrupoIntervalo, _rascunho.IntervaloSegundos.ToString(CultureInfo.InvariantCulture));
             ChaveMonitores.IsChecked = _rascunho.MostrarEmTodasAsBarras;
+
+            // v1.0.0 (Onda 5)
+            ChaveIntensidade.IsChecked = _rascunho.CorPorIntensidade;
+            CampoFranquia.Text = _rascunho.FranquiaMensalGb > 0
+                ? _rascunho.FranquiaMensalGb.ToString("0.##", PtBr)
+                : string.Empty;
         }
         finally
         {
@@ -132,7 +144,91 @@ public partial class EstudioCores : Window
         SincronizarSeletor();
         AtualizarTextoSuavizacao();
         AtualizarInterfacesAtivas();
+        AtualizarConsumoMes();
         AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.0.0: "Este mês: 8,2 GB · 82 % da franquia" abaixo do campo (com o valor do rascunho).</summary>
+    private void AtualizarConsumoMes()
+    {
+        if (_historico is null)
+        {
+            TextoConsumoMes.Text = string.Empty;
+            return;
+        }
+
+        InstantaneoHistorico h = _historico.Capturar();
+        ulong total = h.BytesEnviadosMes + h.BytesRecebidosMes;
+        string texto = $"Este mês até agora: {SpeedFormatter.FormatarQuantidade(total)}";
+        if (_rascunho.FranquiaMensalGb > 0)
+        {
+            texto += $" · {DicaWidget.TextoPercentual(total / (_rascunho.FranquiaMensalGb * 1_000_000_000d))} da franquia";
+        }
+
+        TextoConsumoMes.Text = texto;
+    }
+
+    private void AoMudarFranquia(object sender, TextChangedEventArgs e)
+    {
+        if (_carregando)
+        {
+            return;
+        }
+
+        // Mesmo critério do campo do plano: vazio = 0; texto inválido mantém o último valor bom
+        string t = CampoFranquia.Text.Trim();
+        if (t.Length == 0)
+        {
+            _rascunho.FranquiaMensalGb = 0;
+        }
+        else if (double.TryParse(t, NumberStyles.Number, PtBr, out double v) && v >= 0)
+        {
+            _rascunho.FranquiaMensalGb = Math.Min(v, 100_000);
+        }
+
+        AtualizarConsumoMes();
+        AtualizarEstadoSalvo();
+    }
+
+    private void AoAlternarIntensidade(object sender, RoutedEventArgs e)
+    {
+        _rascunho.CorPorIntensidade = ChaveIntensidade.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>
+    /// Salva o histórico diário em CSV (";" e vírgula decimal, como o Excel em português espera).
+    /// UTF-8 COM BOM: sem ele, o Excel abre "Mês"/"Data" com acentos quebrados.
+    /// </summary>
+    private void AoExportarCsv(object sender, RoutedEventArgs e)
+    {
+        if (_historico is null)
+        {
+            return;
+        }
+
+        var dialogo = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Exportar consumo por dia",
+            FileName = $"status-monitor-consumo-{DateTime.Now:yyyy-MM-dd}.csv",
+            DefaultExt = ".csv",
+            Filter = "Planilha CSV (*.csv)|*.csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        };
+        if (dialogo.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            System.IO.File.WriteAllText(dialogo.FileName, _historico.ExportarCsv(), new System.Text.UTF8Encoding(true));
+            TextoEstadoSalvo.Text = "CSV exportado";
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            TextoEstadoSalvo.Text = $"Não deu para salvar o CSV: {ex.Message}";
+        }
     }
 
     /// <summary>Marca, num grupo de segmentos, o RadioButton cujo Tag é <paramref name="valor"/>.</summary>

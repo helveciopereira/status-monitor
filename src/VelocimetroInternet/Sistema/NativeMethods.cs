@@ -184,6 +184,11 @@ public static class NativeMethods
     public const uint NIF_ICON = 0x00000002;
     public const uint NIF_TIP = 0x00000004;
     public const uint NIF_SHOWTIP = 0x00000080;
+    // v1.0.0: balão/notificação do ícone (aviso de franquia). NIIF_INFO = ícone "i";
+    // NIIF_RESPECT_QUIET_TIME = não aparece no "não perturbe" nem na 1ª hora após instalar o Windows.
+    public const uint NIF_INFO = 0x00000010;
+    public const uint NIIF_INFO = 0x00000001;
+    public const uint NIIF_RESPECT_QUIET_TIME = 0x00000080;
     public const uint NOTIFYICON_VERSION_4 = 4;
     public const int WM_LBUTTONUP = 0x0202;
     public const int WM_RBUTTONUP = 0x0205;
@@ -217,6 +222,18 @@ public static class NativeMethods
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool Shell_NotifyIconW(uint dwMessage, ref NOTIFYICONDATAW lpData);
+
+    // v1.0.0: duplo clique no widget (abre o Gerenciador de Tarefas). Contado à mão porque o
+    // 1º clique abre o painel e tira o foco do widget — o ClickCount do WPF não é confiável aí.
+    [DllImport("user32.dll")]
+    public static extern uint GetDoubleClickTime();
+
+    /// <summary>Largura/altura (px) do retângulo em que o 2º clique ainda conta como duplo.</summary>
+    public const int SM_CXDOUBLECLK = 36;
+    public const int SM_CYDOUBLECLK = 37;
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
 
     public const uint IMAGE_ICON = 1;
     public const uint LR_DEFAULTCOLOR = 0x00000000;

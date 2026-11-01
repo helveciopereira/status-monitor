@@ -171,21 +171,49 @@
                 </StackPanel>
             </Border>
 
-            <!-- Consumo do dia -->
+            <!-- Consumo do dia e (v1.0.0) do mês, com a franquia quando definida -->
             <Border BorderBrush="{DynamicResource Tema.Borda}" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,0,0,12">
-                <Grid>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE9D9;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
-                                   Foreground="{DynamicResource Tema.TextoSecundario}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <TextBlock Text="Consumo de hoje" VerticalAlignment="Center" FontSize="12" />
+                <StackPanel>
+                    <Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D9;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                       Foreground="{DynamicResource Tema.TextoSecundario}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="Consumo de hoje" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                                   Typography.NumeralAlignment="Tabular" AutomationProperties.Name="ConsumoHoje">
+                            <Run x:Name="ConsumoUpload" Text="↑ 0 B" Foreground="{DynamicResource Painel.Upload}" />
+                            <Run Text=" · " Foreground="{DynamicResource Tema.TextoSecundario}" />
+                            <Run x:Name="ConsumoDownload" Text="↓ 0 B" Foreground="{DynamicResource Painel.Download}" />
+                        </TextBlock>
+                    </Grid>
+                    <Grid Margin="0,7,0,0">
+                        <!-- Mesmo recuo do texto de cima (ícone 13 + margem 8), para as linhas alinharem -->
+                        <TextBlock Text="Este mês" Margin="21,0,0,0" VerticalAlignment="Center" FontSize="12" />
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                                   Typography.NumeralAlignment="Tabular" AutomationProperties.Name="ConsumoMes">
+                            <Run x:Name="ConsumoMesUpload" Text="↑ 0 B" Foreground="{DynamicResource Painel.Upload}" />
+                            <Run Text=" · " Foreground="{DynamicResource Tema.TextoSecundario}" />
+                            <Run x:Name="ConsumoMesDownload" Text="↓ 0 B" Foreground="{DynamicResource Painel.Download}" />
+                        </TextBlock>
+                    </Grid>
+                    <!-- Franquia (só aparece com franquia definida no estúdio) -->
+                    <StackPanel x:Name="BlocoFranquia" Margin="21,8,0,0" Visibility="Collapsed">
+                        <!-- Colunas proporcionais (usado* / resto*): a barra fica certa já na 1ª
+                             abertura, sem depender da largura medida do trilho (que é 0 enquanto
+                             o bloco estava recolhido) -->
+                        <Grid Height="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="ColunaFranquiaUsada" Width="0*" />
+                                <ColumnDefinition x:Name="ColunaFranquiaResto" Width="1*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" Background="{DynamicResource Painel.Trilho}" CornerRadius="2" />
+                            <Border x:Name="BarraFranquia" Background="{DynamicResource Tema.Acento}" CornerRadius="2" />
+                        </Grid>
+                        <TextBlock x:Name="TextoFranquia" Margin="0,5,0,0" FontSize="11" Style="{StaticResource Rotulo}"
+                                   AutomationProperties.Name="Franquia" />
                     </StackPanel>
-                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
-                               Typography.NumeralAlignment="Tabular" AutomationProperties.Name="ConsumoHoje">
-                        <Run x:Name="ConsumoUpload" Text="↑ 0 B" Foreground="{DynamicResource Painel.Upload}" />
-                        <Run Text=" · " Foreground="{DynamicResource Tema.TextoSecundario}" />
-                        <Run x:Name="ConsumoDownload" Text="↓ 0 B" Foreground="{DynamicResource Painel.Download}" />
-                    </TextBlock>
-                </Grid>
+                </StackPanel>
             </Border>
 
             <Border Height="1" Background="{DynamicResource Tema.Borda}" Margin="0,0,0,10" />

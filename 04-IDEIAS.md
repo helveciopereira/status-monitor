@@ -5,6 +5,8 @@ principal é "dois números certos, bonitos e leves na barra".
 
 ## Alto valor, baixo esforço (candidatas à Onda 5)
 
+> ✅ **Todas entregues na Onda 5 (v1.0.0, 2026-10-31)** — ver `03-PLANO-DE-ONDAS.md`.
+
 | Ideia | Por quê |
 |---|---|
 | **Tooltip ao passar o mouse**: interface ativa, IP local, total baixado/enviado hoje, pico da sessão | Informação extra sem ocupar espaço |

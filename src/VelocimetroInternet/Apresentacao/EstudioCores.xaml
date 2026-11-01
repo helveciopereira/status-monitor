@@ -303,6 +303,44 @@
                         <TextBox x:Name="CampoExcluir" AcceptsReturn="True" Height="64" VerticalScrollBarVisibility="Auto"
                                  TextWrapping="NoWrap" TextChanged="AoMudarExclusoes" AutomationProperties.Name="Interfaces ignoradas" />
                         <TextBlock x:Name="TextoInterfacesAtivas" Style="{StaticResource Rotulo}" Margin="0,6,0,0" />
+
+                        <!-- v1.0.0 (Onda 5): cor por intensidade (opcional, desligada por padrão) -->
+                        <Grid Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="Cor por intensidade" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Os números ficam mais fortes quanto mais perto da velocidade do plano (ou do link da placa, sem plano) — dá para ver de relance se a internet está cheia." />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveIntensidade" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarIntensidade"
+                                          AutomationProperties.Name="Cor por intensidade" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- v1.0.0 (Onda 5): consumo do mês, franquia e exportação -->
+                <TextBlock Text="Consumo e franquia" Style="{StaticResource Titulo}" />
+                <Border Style="{StaticResource Cartao}">
+                    <StackPanel>
+                        <TextBlock Text="Franquia mensal" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Rotulo}" Margin="0,2,0,6"
+                                   Text="Para internet com limite (4G/5G, satélite). Avisa uma vez aos 80 % e uma vez aos 100 % do mês, somando envio e download. Em branco ou 0 = sem franquia." />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="CampoFranquia" Width="100" TextChanged="AoMudarFranquia" AutomationProperties.Name="Franquia mensal em GB" />
+                            <TextBlock Text="GB por mês" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock x:Name="TextoConsumoMes" Style="{StaticResource Rotulo}" Margin="0,6,0,0" AutomationProperties.Name="Consumo do mês" />
+
+                        <Grid Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,160,0">
+                                <TextBlock Text="Histórico por dia" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Guarda o consumo de cada dia por 13 meses. Exporta em CSV para abrir no Excel e comparar com a fatura." />
+                            </StackPanel>
+                            <Button x:Name="BotaoExportar" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource BotaoSecundario}" Content="Exportar CSV…"
+                                    Click="AoExportarCsv" AutomationProperties.Name="Exportar consumo em CSV" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

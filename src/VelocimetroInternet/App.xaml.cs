@@ -325,7 +325,78 @@ public partial class App : Application
         widget.AplicarCores(Paletas.Resolver(
             Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada),
             TemaWindows.BarraClara()));
+        // v1.0.0 (Onda 5): dica ao passar o mouse e duplo clique → Gerenciador de Tarefas (todas as barras)
+        widget.PedirDica = MontarDicaWidget;
+        widget.DuploClique += AbrirGerenciadorDeTarefas;
         return widget;
+    }
+
+    // ------------------------------------------------------------------ v1.0.0: dica, duplo clique, franquia
+
+    /// <summary>Última leitura do loop: sem interface física conectada (a dica diz "Sem conexão").</summary>
+    private volatile bool _semConexao;
+
+    /// <summary>Texto da dica do widget, montado só quando ela vai abrir (IP lido na hora).</summary>
+    private string? MontarDicaWidget()
+    {
+        if (_pausado)
+        {
+            return "Status Monitor — medição pausada (clique direito › Pausar medição para retomar)";
+        }
+
+        Configuracoes cfg = _config.Atual;
+        InstantaneoHistorico h = _historico.Capturar();
+        return DicaWidget.Montar(h, _semConexao ? null : InfoRede.IpLocal(h.NomeInterface), UnidadeDe(cfg),
+            _historico.FracaoFranquia(cfg.FranquiaMensalGb), _semConexao);
+    }
+
+    /// <summary>
+    /// Duplo clique: o 1º clique abriu o painel — fecha e abre o Gerenciador de Tarefas.
+    /// UseShellExecute: o taskmgr se eleva sozinho; se o Windows pedir confirmação e o usuário
+    /// cancelar, vem Win32Exception — vai para o log, sem janela de erro (app silencioso).
+    /// </summary>
+    private void AbrirGerenciadorDeTarefas()
+    {
+        _painel?.Fechar();
+        try
+        {
+            Process.Start(new ProcessStartInfo("taskmgr.exe") { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            RegistrarLog($"Gerenciador de Tarefas não abriu: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Referência da cor por intensidade (bytes/s): plano contratado; sem plano, o link da placa.
+    /// 0 = opção desligada (ou nada conhecido) → números com opacidade normal.
+    /// </summary>
+    private static double ReferenciaIntensidade(Configuracoes cfg, ulong linkBitsPorSegundo) =>
+        !cfg.CorPorIntensidade ? 0
+        : cfg.VelocidadeContratadaMbps > 0 ? cfg.VelocidadeContratadaMbps * 1_000_000 / 8
+        : linkBitsPorSegundo / 8.0;
+
+    /// <summary>
+    /// Franquia: confere o marco (80/100 %) e avisa uma vez. Com o ícone da bandeja oculto não há
+    /// de onde a notificação sair — fica no log, e o painel mostra o uso do mês de qualquer forma.
+    /// </summary>
+    private void ConferirFranquia()
+    {
+        double franquia = _config.Atual.FranquiaMensalGb;
+        if (_historico.MarcoFranquiaParaAvisar(franquia) is not int marco)
+        {
+            return;
+        }
+
+        string texto = marco >= 100
+            ? $"A franquia de {franquia:0.##} GB deste mês acabou. A operadora pode reduzir a velocidade."
+            : $"Você já usou {marco} % da franquia de {franquia:0.##} GB deste mês.";
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            bool mostrou = _bandeja?.MostrarAviso("Status Monitor — franquia", texto) == true;
+            RegistrarLog($"Franquia {marco} %: {(mostrou ? "aviso mostrado" : "ícone oculto, só no painel")}.");
+        });
     }
 
     /// <summary>Host de barra secundária: mesmas opções do principal; clique abre o painel ancorado NELE.</summary>
@@ -550,7 +621,7 @@ public partial class App : Application
             return;
         }
 
-        _estudio = new EstudioCores(_config, TextoVersaoRodape());
+        _estudio = new EstudioCores(_config, TextoVersaoRodape(), _historico); // v1.0.0: CSV e consumo do mês
         _estudio.Closed += (_, _) =>
         {
             _estudio = null;
@@ -624,6 +695,11 @@ public partial class App : Application
         };
         itemAutomatica.Click += (_, _) => _config.Alterar(c => c.PosicoesManuais.Clear());
         menu.Items.Add(itemAutomatica);
+
+        // v1.0.0: atalho também pelo menu (o duplo clique não é descobrível sozinho)
+        var itemTaskmgr = new MenuItem { Header = "Abrir Gerenciador de Tarefas" };
+        itemTaskmgr.Click += (_, _) => AbrirGerenciadorDeTarefas();
+        menu.Items.Add(itemTaskmgr);
 
         var itemPausar = new MenuItem { Header = "Pausar medição", IsChecked = _pausado };
         itemPausar.Click += (_, _) => DefinirPausa(!_pausado);
@@ -846,6 +922,8 @@ public partial class App : Application
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(_config.Atual.IntervaloSegundos));
         // Log "longo" a cada 10 min por RELÓGIO (antes: a cada 600 ticks, que só era 10 min com 1 s)
         TimeSpan proximoLogLongo = TimeSpan.FromMinutes(10);
+        // v1.0.0: 1ª conferência da franquia logo no 1º tick (aviso de quem abriu o PC já acima de 80 %)
+        TimeSpan proximaConferenciaFranquia = TimeSpan.Zero;
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
@@ -874,6 +952,7 @@ public partial class App : Application
                 VelocidadeRede vel = medidor.Calculadora.CalcularProximaAmostra(
                     leitura.TotalBytesRecebidos, leitura.TotalBytesEnviados, decurso);
                 bool semConexao = leitura.InterfacesFisicasAtivas == 0;
+                _semConexao = semConexao;
 
                 ulong deltaRecebidos = 0, deltaEnviados = 0;
                 if (ReferenceEquals(medidor, medidorAnterior))
@@ -908,6 +987,15 @@ public partial class App : Application
                         leitura.NomeInterfacePrincipal, leitura.VelocidadeLinkBitsPorSegundo);
                 }
 
+                // v1.0.0: franquia conferida a cada 30 s (soma o mês inteiro — não precisa ser por tick)
+                if (agora >= proximaConferenciaFranquia)
+                {
+                    proximaConferenciaFranquia = agora + TimeSpan.FromSeconds(30);
+                    ConferirFranquia();
+                }
+
+                double referencia = ReferenciaIntensidade(_config.Atual, leitura.VelocidadeLinkBitsPorSegundo);
+
                 if (!manterTextoFixoNaTela && _widget is not null)
                 {
                     _ = _widget.Dispatcher.InvokeAsync(() =>
@@ -922,7 +1010,11 @@ public partial class App : Application
                         }
                         else if (vel.AmostraValida)
                         {
-                            widgets.ForEach(w => w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo));
+                            widgets.ForEach(w =>
+                            {
+                                w.DefinirReferenciaIntensidade(referencia); // v1.0.0: 0 = desligada
+                                w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo);
+                            });
                             formatador.ModoUnidade = UnidadeDe(_config.Atual);
                             // v0.5.0: com CPU/RAM ligados, a dica da bandeja ganha uma 3ª linha
                             string linhaSistema = mostrarSistema

@@ -42,6 +42,36 @@
             </Setter>
         </Style>
 
+        <!--
+            v1.0.0: dicas (ToolTip) no tema do app — a do widget mostra interface, IP, consumo de
+            hoje/mês e picos. Sem isto sairia a dica clara padrão do WPF, fora do tema escuro.
+        -->
+        <Style TargetType="ToolTip">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="HasDropShadow" Value="False" />
+            <Setter Property="FontFamily" Value="{DynamicResource Tema.Fonte}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource Tema.Texto}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{DynamicResource Tema.Superficie}"
+                                BorderBrush="{DynamicResource Tema.Borda}"
+                                BorderThickness="1" CornerRadius="6" Padding="10,7" MaxWidth="360">
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                        <Setter Property="LineHeight" Value="18" />
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="Separator" x:Key="{x:Static MenuItem.SeparatorStyleKey}">
             <Setter Property="Template">
                 <Setter.Value>

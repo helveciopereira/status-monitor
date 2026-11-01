@@ -19,6 +19,55 @@ public partial class TaskbarWidget : Window
         InitializeComponent();
         _formatadorUpload = new SpeedFormatter(modoUnidade);
         _formatadorDownload = new SpeedFormatter(modoUnidade);
+
+        // v1.0.0 (Onda 5): dica ao parar o mouse em cima. O texto é montado NA HORA de abrir
+        // (o App responde PedirDica com consumo/IP atuais) — nada é calculado enquanto ninguém olha.
+        _dica = new ToolTip { Placement = System.Windows.Controls.Primitives.PlacementMode.Top };
+        ContornoHover.ToolTip = _dica;
+        ToolTipService.SetInitialShowDelay(ContornoHover, 700);
+        ToolTipService.SetShowDuration(ContornoHover, 20_000);
+        ContornoHover.ToolTipOpening += (_, e) =>
+        {
+            string? texto = PedirDica?.Invoke();
+            if (texto is null)
+            {
+                e.Handled = true; // ninguém respondeu: não abre uma dica vazia
+                return;
+            }
+
+            _dica.Content = texto;
+        };
+    }
+
+    // ------------------------------------------------------------------ v1.0.0: dica e intensidade
+
+    private readonly ToolTip _dica;
+
+    /// <summary>Texto da dica, pedido ao App na hora de abrir (null = não mostrar).</summary>
+    public Func<string?>? PedirDica { get; set; }
+
+    /// <summary>Duplo clique no widget (abre o Gerenciador de Tarefas).</summary>
+    public event Action? DuploClique;
+
+    /// <summary>
+    /// Velocidade de referência da "cor por intensidade" (bytes/s). 0 = desligada: os números
+    /// ficam sempre com opacidade 1, o visual de sempre.
+    /// </summary>
+    private double _referenciaIntensidade;
+
+    public void DefinirReferenciaIntensidade(double referenciaBytesPorSegundo)
+    {
+        _referenciaIntensidade = referenciaBytesPorSegundo > 0 ? referenciaBytesPorSegundo : 0;
+        if (_referenciaIntensidade == 0)
+        {
+            AplicarOpacidade(1, 1); // desligou: volta ao normal já, sem esperar o próximo tick
+        }
+    }
+
+    private void AplicarOpacidade(double upload, double download)
+    {
+        TextoUpload.Opacity = TextoCompactoUpload.Opacity = upload;
+        TextoDownload.Opacity = TextoCompactoDownload.Opacity = download;
     }
 
     /// <summary>
@@ -58,6 +107,14 @@ public partial class TaskbarWidget : Window
         {
             TextoCompactoUpload.Text = $"↑ {upCompleto.Split(' ')[0]}";
             TextoCompactoDownload.Text = $"↓ {downCompleto}";
+        }
+
+        // v1.0.0: cor por intensidade (opcional) — mais forte quanto mais perto da referência
+        if (_referenciaIntensidade > 0)
+        {
+            AplicarOpacidade(
+                DicaWidget.OpacidadePorIntensidade(uploadBytesPorSegundo, _referenciaIntensidade),
+                DicaWidget.OpacidadePorIntensidade(downloadBytesPorSegundo, _referenciaIntensidade));
         }
     }
 
@@ -217,17 +274,33 @@ public partial class TaskbarWidget : Window
     protected override void OnMouseLeftButtonDown(System.Windows.Input.MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonDown(e);
+        _dica.IsOpen = false; // clicou: a dica sai da frente do painel/arrasto
+
+        bool comCtrl = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0;
+        if (!Sistema.NativeMethods.GetCursorPos(out Sistema.NativeMethods.POINT p))
+        {
+            return;
+        }
 
         // Só com Ctrl: o clique simples continua abrindo o painel rápido, como sempre
-        if ((System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == 0
-            || !Sistema.NativeMethods.GetCursorPos(out Sistema.NativeMethods.POINT p))
+        if (!comCtrl)
         {
+            // v1.0.0: duplo clique contado à mão (tempo e distância do Windows) — ver NativeMethods
+            _duploPendente = RegraDuploClique.EhDuplo(
+                Environment.TickCount64 - _ultimoApertoMs, p.X - _ultimoApertoPx.X, p.Y - _ultimoApertoPx.Y,
+                Sistema.NativeMethods.GetDoubleClickTime(),
+                Sistema.NativeMethods.GetSystemMetrics(Sistema.NativeMethods.SM_CXDOUBLECLK),
+                Sistema.NativeMethods.GetSystemMetrics(Sistema.NativeMethods.SM_CYDOUBLECLK));
+            // Depois de um duplo, o próximo aperto recomeça a contagem (3 cliques ≠ 2 duplos)
+            _ultimoApertoMs = _duploPendente ? long.MinValue / 2 : Environment.TickCount64;
+            _ultimoApertoPx = p;
             return;
         }
 
         // Cursor em px físicos (o processo é PerMonitorV2): mesma unidade do SetWindowPos do host
         _cursorInicialXPx = p.X;
         _arrastando = true;
+        ToolTipService.SetIsEnabled(ContornoHover, false); // nada de dica pulando durante o arrasto
         CaptureMouse(); // continua recebendo o movimento mesmo com o cursor fora do widget
         System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeWE;
         ArrasteIniciado?.Invoke();
@@ -259,6 +332,7 @@ public partial class TaskbarWidget : Window
         }
 
         _arrastando = false;
+        ToolTipService.SetIsEnabled(ContornoHover, true);
         System.Windows.Input.Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
         {
@@ -280,8 +354,21 @@ public partial class TaskbarWidget : Window
             return;
         }
 
+        // v1.0.0: o 1º clique já abriu o painel (sem atraso — esperar o tempo do duplo deixaria
+        // o clique comum lento); o 2º vira "duplo" e o App fecha o painel e abre o Gerenciador
+        if (_duploPendente)
+        {
+            _duploPendente = false;
+            DuploClique?.Invoke();
+            return;
+        }
+
         CliqueEsquerdo?.Invoke();
     }
+
+    private bool _duploPendente;
+    private long _ultimoApertoMs = long.MinValue / 2; // "nunca" sem risco de estouro na subtração
+    private Sistema.NativeMethods.POINT _ultimoApertoPx;
 
     protected override void OnMouseRightButtonUp(System.Windows.Input.MouseButtonEventArgs e)
     {
