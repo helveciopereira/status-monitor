@@ -1,5 +1,32 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.2.2 — 2026-11-01 — Teste de velocidade: download maior (+50 %)
+
+### O que mudou
+- Teto do download do teste: **100 → 150 MB** (+50 %, pedido do dono). Aviso da janela: "até ~180 MB".
+- Pedidos de download com tamanhos da lista aceita pelo servidor: **25 MB** (o do teste da Cloudflare no
+  navegador); se recusar, **8 MB**; depois 1 MB. Nunca um tamanho calculado.
+
+### Por quê
+- Relato do dono: "a velocidade não está chegando no máximo da rede"; pediu +50 % no arquivo de teste.
+- Medido nesta rede: o teste chegou a ~530 Mbps e **batia o teto de 100 MB em ~1,5 s**. Com 1 s de
+  aquecimento descartado sobrava ~0,5 s de medição, com o TCP ainda acelerando.
+- Pedidos de 12 MB (+50 % sobre os 8 MB por pedido da v1.2.1) **não existem** para o servidor: medição
+  com 3 repetições por tamanho deu ≤ 10,5 MB → 200; **11 a 16,7 MB → 403 sempre**; 20 a 30 MB → 200.
+- Depois de uso intenso o servidor responde **429 a pedidos de ≥ 10 MB por 15+ minutos** (8 MB ou menos
+  continuam passando) — por isso a queda vai direto de 25 para 8 MB, sem o degrau de 10 MB.
+
+### Arquivos
+- `Medicao/TesteVelocidade.cs` (`TamanhosDownloadAceitos`, `CalculoTeste.PedidoDownload` /
+  `PedidoDownloadAposRecusa`, teto de 150 MB), `Apresentacao/JanelaTesteVelocidade.xaml` (aviso de dados),
+  `tests/.../V120ModosETesteTests.cs` (+2 testes; o servidor falso imita a faixa recusada real).
+
+### Validação
+- Build Release 0 avisos; **191/191 testes**.
+- Teste real (limites padrão): com 100 MB → ↓ 529,8 Mbps (teto atingido); com 150 MB → ↓ 492,5 Mbps
+  (150 MB recebidos), ↑ 157,9 Mbps. As duas rodadas usaram pedidos de 8 MB (os de 25 MB estavam em 429
+  pelas medições desta sessão) — a diferença entre elas é variação normal da rede, não ganho medido.
+
 ## v1.2.1 — 2026-11-01 — Correção: o teste de velocidade não media o download
 
 ### O que mudou

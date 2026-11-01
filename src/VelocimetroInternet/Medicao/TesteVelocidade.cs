@@ -44,11 +44,16 @@ public sealed class TesteVelocidade
 {
     public const string ServidorPadrao = "https://speed.cloudflare.com";
 
-    /// <summary>Limites de uma rodada. Os padrões gastam no máximo ~130 MB.</summary>
+    /// <summary>
+    /// Limites de uma rodada. Os padrões gastam no máximo ~180 MB.
+    /// v1.2.2: teto do download 100 → 150 MB (+50 %, pedido do dono). A 530 Mbps (medido nesta
+    /// rede em 2026-11-01) 100 MB acabavam em ~1,5 s — tirando 1 s de aquecimento sobrava meio
+    /// segundo de medição, com o TCP ainda acelerando, e o resultado ficava abaixo do real.
+    /// </summary>
     public sealed record Limites(
         int Conexoes = 4,
         double SegundosPorEtapa = 10,
-        long TetoDownloadBytes = 100_000_000,
+        long TetoDownloadBytes = 150_000_000,
         long TetoUploadBytes = 30_000_000,
         int AmostrasLatencia = 7,
         double SegundosAquecimento = 1.0);
@@ -120,8 +125,20 @@ public sealed class TesteVelocidade
     /// acima de ~10 MB de forma irregular (medido em 2026-11-01: 11, 12, 12,5, 15 e 16 MB → 403;
     /// 20, 25 e 30 MB → 200; até 10 MB → sempre 200). Na v1.2.0 cada pedido tinha 12,5 MB e o
     /// download inteiro dava 0. Pedidos de até 8 MB ficam com folga dentro da faixa sempre aceita.
+    /// v1.2.2: vale só para o UPLOAD; o download usa <see cref="TamanhosDownloadAceitos"/>.
     /// </summary>
     public const long TamanhoMaximoPedido = 8_000_000;
+
+    /// <summary>
+    /// v1.2.2: tamanhos de pedido de DOWNLOAD que o servidor aceita, do maior para o menor. Medido
+    /// em 2026-11-01 (3 repetições cada): ≤ 10,5 MB → 200; 11 a 16,7 MB → 403 SEMPRE; 20 a 30 MB → 200.
+    /// 25 MB é o tamanho do próprio teste da Cloudflare no navegador. Pedido maior = menos pausas
+    /// entre pedidos (1 ida e volta cada), que impediam de chegar no máximo da rede.
+    /// Depois de uso intenso o servidor passa a responder 429 a pedidos de ≥ 10 MB por 15+ minutos
+    /// (pedidos de 8 MB ou menos continuam passando) — por isso a recusa cai DIRETO para 8 MB,
+    /// sem o degrau de 10 MB, e depois para 1 MB.
+    /// </summary>
+    public static readonly long[] TamanhosDownloadAceitos = [25_000_000, 8_000_000, 1_000_000];
 
     /// <summary>Menor pedido tentado depois de recusas sucessivas (abaixo disso, desiste).</summary>
     public const long TamanhoMinimoPedido = 1_000_000;
@@ -147,8 +164,11 @@ public sealed class TesteVelocidade
         long bytesNoAquecimento = -1;
         double segundosNoAquecimento = 0;
 
-        // Cada conexão repete pedidos até o tempo ou o teto acabarem (v1.2.1: no máximo 8 MB cada)
-        long porPedido = CalculoTeste.TamanhoDoPedido(teto, _limites.Conexoes);
+        // Cada conexão repete pedidos até o tempo ou o teto acabarem. Download (v1.2.2): o maior
+        // tamanho ACEITO pelo servidor que caiba na parte do teto de cada conexão; upload: até 8 MB.
+        long porPedido = etapa == EtapaTeste.Download
+            ? CalculoTeste.PedidoDownload(teto, _limites.Conexoes)
+            : CalculoTeste.TamanhoDoPedido(teto, _limites.Conexoes);
         Task[] conexoes = Enumerable.Range(0, _limites.Conexoes)
             .Select(_ => Task.Run(() => LacoConexaoAsync(etapa, porPedido, teto, contador, fim.Token), CancellationToken.None))
             .ToArray();
@@ -230,7 +250,9 @@ public sealed class TesteVelocidade
                 // v1.2.1: servidor recusou (ex.: 403 em certos tamanhos) ou a conexão caiu.
                 // Tenta de novo com a METADE do tamanho; abaixo do mínimo, desiste e guarda o
                 // erro para a etapa poder explicá-lo se nenhuma conexão conseguiu nada.
-                long menor = CalculoTeste.PedidoAposRecusa(porPedido);
+                long menor = etapa == EtapaTeste.Download
+                    ? CalculoTeste.PedidoDownloadAposRecusa(porPedido) // v1.2.2: próximo tamanho aceito
+                    : CalculoTeste.PedidoAposRecusa(porPedido);
                 if (menor <= 0)
                 {
                     Interlocked.CompareExchange(ref contador.Erro, ex, null);
@@ -306,6 +328,22 @@ public static class CalculoTeste
     /// </summary>
     public static long PedidoAposRecusa(long atual) =>
         atual <= TesteVelocidade.TamanhoMinimoPedido ? 0 : Math.Max(TesteVelocidade.TamanhoMinimoPedido, atual / 2);
+
+    /// <summary>
+    /// v1.2.2: pedido de download = o maior tamanho aceito que caiba em teto ÷ conexões (padrão:
+    /// 150 MB ÷ 4 = 37,5 → 25 MB); teto pequeno usa o menor da lista. Nunca um tamanho fora da lista —
+    /// tamanhos calculados (ex.: 12,5 MB) caem na faixa que o servidor recusa.
+    /// </summary>
+    public static long PedidoDownload(long teto, int conexoes)
+    {
+        long parte = teto / Math.Max(1, conexoes);
+        long[] lista = TesteVelocidade.TamanhosDownloadAceitos;
+        return lista.FirstOrDefault(t => t <= parte, lista[^1]);
+    }
+
+    /// <summary>v1.2.2: próximo tamanho aceito abaixo do atual; 0 = desistir (já no menor).</summary>
+    public static long PedidoDownloadAposRecusa(long atual) =>
+        TesteVelocidade.TamanhosDownloadAceitos.FirstOrDefault(t => t < atual, 0);
 
     public static double BitsPorSegundo(long bytes, double segundos) =>
         segundos > 0 && double.IsFinite(segundos) ? bytes * 8 / segundos : 0;

@@ -190,6 +190,40 @@ public sealed class V120ModosETesteTests
         Assert.Equal(0, CalculoTeste.PedidoAposRecusa(TesteVelocidade.TamanhoMinimoPedido));
     }
 
+    // ---------------------------------------------------------------- v1.2.2: pedidos de 25 MB
+
+    [Fact]
+    public void PedidoDownload_SoUsaTamanhosAceitos()
+    {
+        Assert.Equal(25_000_000, CalculoTeste.PedidoDownload(new TesteVelocidade.Limites().TetoDownloadBytes, 4)); // padrão do app
+        Assert.Equal(150_000_000, new TesteVelocidade.Limites().TetoDownloadBytes); // v1.2.2: +50 %
+        Assert.Equal(8_000_000, CalculoTeste.PedidoDownload(60_000_000, 4));   // parte de 15 MB: nunca 15 (403)
+        Assert.Equal(1_000_000, CalculoTeste.PedidoDownload(2_000_000, 4));    // teto pequeno: o menor da lista
+        // 429 nos ≥ 10 MB → cai direto para 8 MB (o degrau de 10 MB seria recusado junto)
+        Assert.Equal(8_000_000, CalculoTeste.PedidoDownloadAposRecusa(25_000_000));
+        Assert.Equal(1_000_000, CalculoTeste.PedidoDownloadAposRecusa(8_000_000));
+        Assert.Equal(0, CalculoTeste.PedidoDownloadAposRecusa(1_000_000));
+        // Nenhum tamanho da lista cai na faixa recusada medida (11 a 16,7 MB)
+        Assert.DoesNotContain(TesteVelocidade.TamanhosDownloadAceitos, t => t > 10_500_000 && t < 17_000_000);
+    }
+
+    [Fact]
+    public async Task Teste_ComOServidorReal_PedeDe25MB()
+    {
+        // Servidor falso com a faixa recusada REAL (11–17 MB): 25 MB passa de primeira
+        var servidor = new ServidorFalso(recusarAcimaDe: 10_500_000, aceitarAPartirDe: 17_000_000);
+        using var http = new HttpClient(servidor);
+        var t = new TesteVelocidade(http, "https://falso.test",
+            new TesteVelocidade.Limites(Conexoes: 4, SegundosPorEtapa: 1, TetoDownloadBytes: 100_000_000,
+                TetoUploadBytes: 2_000_000, AmostrasLatencia: 2, SegundosAquecimento: 0.2));
+
+        ResultadoTeste r = await t.ExecutarAsync(null, CancellationToken.None);
+
+        Assert.True(r.BytesBaixados > 0);
+        Assert.Contains(25_000_000L, servidor.TamanhosPedidos);
+        Assert.Equal(0, servidor.Recusas);
+    }
+
     [Fact]
     public async Task Teste_ServidorQueRecusaPedidosGrandes_AindaMedeODownload()
     {
@@ -220,8 +254,14 @@ public sealed class V120ModosETesteTests
     /// Servidor de teste em memória: /__down devolve N zeros (403 se N passar do limite, exceto
     /// N = 0, a "latência"); /__up lê o corpo e responde 200. -1 = recusa todo download com dados.
     /// </summary>
-    private sealed class ServidorFalso(long recusarAcimaDe) : HttpMessageHandler
+    /// v1.2.2: <paramref name="aceitarAPartirDe"/> reabre a faixa acima dela (o servidor real recusa só
+    /// de ~11 a ~17 MB); registra os tamanhos pedidos e quantas recusas deu.
+    private sealed class ServidorFalso(long recusarAcimaDe, long aceitarAPartirDe = long.MaxValue) : HttpMessageHandler
     {
+        public System.Collections.Concurrent.ConcurrentBag<long> TamanhosPedidos { get; } = [];
+        private int _recusas;
+        public int Recusas => _recusas;
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage pedido, CancellationToken ct)
         {
             if (pedido.Method == HttpMethod.Post)
@@ -231,8 +271,10 @@ public sealed class V120ModosETesteTests
             }
 
             long n = long.Parse(pedido.RequestUri!.Query.Split('=')[1]);
-            if (n > 0 && (recusarAcimaDe < 0 || n > recusarAcimaDe))
+            TamanhosPedidos.Add(n);
+            if (n > 0 && (recusarAcimaDe < 0 || (n > recusarAcimaDe && n < aceitarAPartirDe)))
             {
+                Interlocked.Increment(ref _recusas);
                 return new HttpResponseMessage(System.Net.HttpStatusCode.Forbidden);
             }
 

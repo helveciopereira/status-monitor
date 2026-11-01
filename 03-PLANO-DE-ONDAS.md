@@ -155,6 +155,7 @@ O relatório para a operadora continua em aberto.
       Mbps comparado com o plano (faixas da Anatel). Botão no painel e no menu; nunca roda sozinho
 - [x] v1.2.1: correção — o download dava 0 (servidor recusava pedidos de 12,5 MB); pedidos de até 8 MB,
       nova tentativa com metade do tamanho e erro visível em vez de "0 Mbps"
+- [x] v1.2.2: download do teste 100 → 150 MB (+50 %) e pedidos de 25 MB (cai para 8 MB se o servidor limitar)
 
 ## Onda 8 — Consumo por aplicativo ⬜ (v1.3.0)
 
