@@ -46,6 +46,12 @@ tempo). A diferença grande é a latência; o upload ficou igual ou melhor no fa
 - Build Release 0 avisos; **276/276 testes**.
 - Motor real contra a internet de verdade: 3 + 6 + 6 rodadas (tabela acima = as 6 finais), servidor
   escolhido sempre `ipv4-c004-slz001-claro-br-net-isp…`, sem nenhuma troca para a reserva.
+- Publicada (GitHub release v1.6.0) e aplicada no PC: log do Velopack "1.6.0 applied successfully",
+  `sq.version` 1.6.0, app reaberto pelo atualizador. Teste REAL no app instalado às 09:56 (sem mouse,
+  pela UI Automation): ↓ 234 Mbps · ↑ 145 Mbps · **8,6 ms** · 200 MB, gravado com `Servidor = "fast.com"`
+  e link 2,4 Gbps. O teste das 09:33 (v1.5.0, Cloudflare) tinha dado ↓ 180 · ↑ 38 · 102 ms.
+  A foto da janela saiu em branco porque a tela estava bloqueada/desligada (sem janela em primeiro
+  plano); a janela nova foi conferida na imagem gerada fora da tela (texto em 4 linhas, nada cortado).
 - Observação: o token do fast.com não é API documentada; a reserva (Cloudflare) e a releitura do token
   do site cobrem a troca. Os testes automatizados cobrem os três caminhos (fast, token novo, reserva).
 
