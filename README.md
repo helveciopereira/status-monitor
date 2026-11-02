@@ -12,6 +12,8 @@
 > (ping ao roteador e a 1.1.1.1, desligada por padrão — estúdio › Medição).
 > **v1.2.0:** **modos de exibição** do widget (duas linhas, uma linha, só download — estúdio › Aparência) e
 > **teste de velocidade sob demanda** (botão no painel e no menu; servidor do fast.com mais próximo, com a Cloudflare de reserva; compara com o plano).
+> **v1.7.0:** **mini gráfico** do último minuto atrás de cada número da barra (opcional, desligado por padrão —
+> estúdio › Na barra de tarefas › "Mini gráfico").
 >
 > **v0.9.0:** **seletor visual de cor** (quadrado + barra de matiz) na paleta Personalizada.
 
@@ -26,7 +28,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0 a 11 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.6.1** · 2026-11-02
+> Status: **Ondas 0 a 11 e 13 concluídas** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.7.0** · 2026-11-02
 >
 > **Instalar:** baixe e execute [`StatusMonitor-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/StatusMonitor-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

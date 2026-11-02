@@ -129,6 +129,7 @@ public partial class EstudioCores : Window
             MarcarSegmento(GrupoModo, _rascunho.ModoExibicao); // v1.2.0
             MarcarSegmento(GrupoIntervalo, _rascunho.IntervaloSegundos.ToString(CultureInfo.InvariantCulture));
             ChaveMonitores.IsChecked = _rascunho.MostrarEmTodasAsBarras;
+            ChaveMiniGrafico.IsChecked = _rascunho.MiniGrafico; // v1.7.0
 
             // v1.0.0 (Onda 5)
             ChaveIntensidade.IsChecked = _rascunho.CorPorIntensidade;
@@ -198,6 +199,14 @@ public partial class EstudioCores : Window
         AtualizarEstadoSalvo();
     }
 
+    /// <summary>v1.7.0 (Onda 13): mini gráfico atrás dos números; a amostra do estúdio já o mostra.</summary>
+    private void AoAlternarMiniGrafico(object sender, RoutedEventArgs e)
+    {
+        _rascunho.MiniGrafico = ChaveMiniGrafico.IsChecked == true;
+        AtualizarPreVisualizacao();
+        AtualizarEstadoSalvo();
+    }
+
     /// <summary>v1.1.0: liga/desliga o ping (vale ao salvar, como as demais opções).</summary>
     private void AoAlternarLatencia(object sender, RoutedEventArgs e)
     {
@@ -264,14 +273,14 @@ public partial class EstudioCores : Window
         var aparencia = new AparenciaWidget(_rascunho.Fonte, _rascunho.TamanhoTexto, _rascunho.DownloadEmCima);
         // v1.2.0: e o modo de exibição (duas linhas / uma linha / só download)
         ModoExibicaoWidget modo = ModosExibicao.DeCodigo(_rascunho.ModoExibicao);
-        AmostraEscura.Content = MiniWidget(escura, aparencia, modo);
-        AmostraClara.Content = MiniWidget(clara, aparencia, modo);
+        AmostraEscura.Content = MiniWidget(escura, aparencia, modo, _rascunho.MiniGrafico);
+        AmostraClara.Content = MiniWidget(clara, aparencia, modo, _rascunho.MiniGrafico);
         PreencherSelo(SeloEscuro, TextoSeloEscuro, Math.Min(escura.ContrasteUpload, escura.ContrasteDownload));
         PreencherSelo(SeloClaro, TextoSeloClaro, Math.Min(clara.ContrasteUpload, clara.ContrasteDownload));
     }
 
     /// <summary>Réplica do widget (2 pílulas) com as cores resolvidas — mesmo desenho da barra.</summary>
-    private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a, ModoExibicaoWidget modo)
+    private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a, ModoExibicaoWidget modo, bool grafico)
     {
         // A largura acompanha o fator da fonte/tamanho, como o widget real faz na barra
         var pilha = new StackPanel { Width = Math.Round(104 * a.FatorLargura()) };
@@ -281,7 +290,8 @@ public partial class EstudioCores : Window
         // v1.2.0: amostra de cada modo, com o mesmo desenho da barra
         if (modo == ModoExibicaoWidget.SoDownload)
         {
-            pilha.Children.Add(Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho));
+            pilha.Children.Add(Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
+                grafico ? c.MascaraGrafico : null, ExemploDownload));
             return pilha;
         }
 
@@ -290,8 +300,10 @@ public partial class EstudioCores : Window
             return LinhaUnica(c, a, familia, tamanho - 0.5);
         }
 
-        Border envio = Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho);
-        Border download = Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho);
+        Border envio = Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho,
+            grafico ? c.MascaraGrafico : null, ExemploUpload);
+        Border download = Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
+            grafico ? c.MascaraGrafico : null, ExemploDownload);
         pilha.Children.Add(a.DownloadEmCima ? download : envio);
         pilha.Children.Add(new Border { Height = 2 });
         pilha.Children.Add(a.DownloadEmCima ? envio : download);
@@ -329,10 +341,18 @@ public partial class EstudioCores : Window
         };
     }
 
+    /// <summary>v1.7.0: um minuto de exemplo para a amostra (download com um pico; envio quase parado).</summary>
+    private static readonly IReadOnlyList<(double X, double Y)> ExemploDownload = Exemplo(i => 0.25 + 0.6 * Math.Exp(-Math.Pow((i - 40) / 6.0, 2)) + 0.08 * Math.Sin(i * 0.9));
+    private static readonly IReadOnlyList<(double X, double Y)> ExemploUpload = Exemplo(i => 0.12 + 0.18 * Math.Exp(-Math.Pow((i - 22) / 4.0, 2)) + 0.05 * Math.Sin(i * 1.3));
+
+    private static List<(double X, double Y)> Exemplo(Func<int, double> f) =>
+        [.. Enumerable.Range(0, 61).Select(i => (i / 60.0, Math.Clamp(f(i), 0, 1)))];
+
     private static Border Pilula(string seta, string valor, Color texto, Color fundo, Color borda,
-        FontFamily familia, double tamanho)
+        FontFamily familia, double tamanho,
+        Color? corGrafico = null, IReadOnlyList<(double X, double Y)>? pontos = null)
     {
-        var grade = new Grid();
+        var grade = new Grid { Margin = new Thickness(6, 1, 6, 1) }; // v1.7.0: respiro saiu do Padding
         grade.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grade.ColumnDefinitions.Add(new ColumnDefinition());
         var pincel = new SolidColorBrush(texto);
@@ -354,9 +374,25 @@ public partial class EstudioCores : Window
             BorderBrush = new SolidColorBrush(borda),
             BorderThickness = new Thickness(0.75),
             CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(6, 1, 6, 1),
-            Child = grade
+            Child = ComGrafico(grade, corGrafico, pontos)
         };
+    }
+
+    /// <summary>v1.7.0: põe o mini gráfico atrás do conteúdo da pílula (igual ao widget da barra).</summary>
+    private static UIElement ComGrafico(UIElement conteudo, Color? cor, IReadOnlyList<(double X, double Y)>? pontos)
+    {
+        if (cor is null || pontos is null)
+        {
+            return conteudo;
+        }
+
+        var grafico = new MiniGrafico();
+        grafico.DefinirCor(cor.Value);
+        grafico.DefinirPontos(pontos);
+        var camadas = new Grid();
+        camadas.Children.Add(grafico);
+        camadas.Children.Add(conteudo);
+        return camadas;
     }
 
     /// <summary>Selo "Contraste 9,2:1 (AAA)" — verde se passa AA, âmbar se não.</summary>

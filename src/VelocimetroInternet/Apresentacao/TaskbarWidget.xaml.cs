@@ -121,6 +121,59 @@ public partial class TaskbarWidget : Window
                 DicaWidget.OpacidadePorIntensidade(uploadBytesPorSegundo, _referenciaIntensidade),
                 DicaWidget.OpacidadePorIntensidade(downloadBytesPorSegundo, _referenciaIntensidade));
         }
+
+        RegistrarNoGrafico(uploadBytesPorSegundo, downloadBytesPorSegundo); // v1.7.0
+    }
+
+    // ------------------------------------------------------------------ v1.7.0: mini gráfico
+
+    private bool _miniGrafico;
+    private readonly SerieCurta _serieUpload = new();
+    private readonly SerieCurta _serieDownload = new();
+
+    /// <summary>
+    /// v1.7.0 (Onda 13): liga/desliga o mini gráfico dos últimos 60 s atrás dos números (padrão
+    /// desligado). Só existe no layout de duas linhas e no "só download": na linha única não há
+    /// altura para um gráfico legível. Desligar apaga o histórico curto (religar começa do zero).
+    /// </summary>
+    public void DefinirMiniGrafico(bool ligado)
+    {
+        _miniGrafico = ligado;
+        Visibility v = ligado ? Visibility.Visible : Visibility.Collapsed;
+        GraficoUpload.Visibility = v;
+        GraficoDownload.Visibility = v;
+        if (!ligado)
+        {
+            _serieUpload.Limpar();
+            _serieDownload.Limpar();
+            GraficoUpload.DefinirPontos([]);
+            GraficoDownload.DefinirPontos([]);
+        }
+    }
+
+    /// <summary>Guarda a amostra e redesenha — só com a opção ligada e o layout de duas linhas na tela.</summary>
+    private void RegistrarNoGrafico(double upload, double download)
+    {
+        if (!_miniGrafico)
+        {
+            return;
+        }
+
+        long agora = Environment.TickCount64; // relógio monotônico: não pula com a hora do Windows
+        _serieUpload.Adicionar(agora, upload);
+        _serieDownload.Adicionar(agora, download);
+
+        // Na linha única os gráficos não aparecem: guarda as amostras, mas não gasta com desenho
+        if (PainelDuasLinhas.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        GraficoDownload.DefinirPontos(_serieDownload.Pontos(agora));
+        if (_modo != ModoExibicaoWidget.SoDownload)
+        {
+            GraficoUpload.DefinirPontos(_serieUpload.Pontos(agora));
+        }
     }
 
     // ------------------------------------------------------------------ v0.8.0: aparência
@@ -256,6 +309,9 @@ public partial class TaskbarWidget : Window
         Resources["CompactoFundoBrush"] = CriarBrush(cores.FundoCompacto);
         Resources["CompactoBordaBrush"] = CriarBrush(cores.BordaCompacto);
         Resources["SeparadorBrush"] = CriarBrush(cores.Separador);
+        // v1.7.0: a "borracha" do gráfico é a cor da barra (a mesma para ↑ e ↓)
+        GraficoUpload.DefinirCor(cores.MascaraGrafico);
+        GraficoDownload.DefinirCor(cores.MascaraGrafico);
 
         // v0.5.0: CPU/RAM em tom neutro derivado do separador (branco na barra escura, preto na
         // clara) — legível nos dois temas e sem disputar atenção com as cores da paleta.
@@ -280,6 +336,7 @@ public partial class TaskbarWidget : Window
         TextoDownload.Text = "—";
         TextoCompactoUpload.Text = "↑ —";
         TextoCompactoDownload.Text = "↓ —";
+        RegistrarNoGrafico(0, 0); // v1.7.0: sem placa = nada passando; o gráfico desce ao chão
     }
 
     /// <summary>Medição pausada pelo menu (v0.3.0): texto explícito em vez de números congelados.</summary>
@@ -290,6 +347,11 @@ public partial class TaskbarWidget : Window
         TextoCompactoUpload.Text = "↑ —";
         TextoCompactoDownload.Text = "↓ pausado";
         AtualizarSistema(null, null); // pausa vale para tudo: nada de CPU/RAM congelados
+        // v1.7.0: o tempo pausado não foi medido — apaga o gráfico em vez de ligar os pontos por cima do buraco
+        _serieUpload.Limpar();
+        _serieDownload.Limpar();
+        GraficoUpload.DefinirPontos([]);
+        GraficoDownload.DefinirPontos([]);
     }
 
     /// <summary>Clique esquerdo no widget (abre o painel rápido, como o Clima abre os widgets).</summary>

@@ -1,5 +1,52 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.7.0 — 2026-11-02 — Onda 13: mini gráfico atrás dos números da barra
+
+### O que mudou
+- Opção **"Mini gráfico"** (Estúdio › Na barra de tarefas; **desligada por padrão**): cada pílula do
+  widget (↑ e ↓) mostra, atrás do número, um gráfico de área do **último minuto**. Dá para ver de
+  relance se a velocidade está subindo, caindo ou oscilando. A amostra "Como fica na barra" do estúdio
+  já mostra o efeito ao ligar a chave.
+- Vale nos modos **duas linhas** e **só download**. Na **linha única** não aparece (não há altura para
+  um gráfico legível); o texto da opção avisa.
+- Medição pausada apaga o gráfico (o tempo pausado não foi medido); sem conexão, ele desce a zero.
+
+### Por quê / como foi feito
+- Pedido do backlog (04-IDEIAS, "Alto valor, esforço médio"). A janela é por **tempo** (60 s), não por
+  número de amostras: vale igual com atualização de 0,5 s a 5 s, e buracos (PC suspenso) não esticam
+  o desenho. Escala = maior valor do minuto (+10 % de folga), com piso de 64 KB/s para o tráfego de
+  fundo de um PC parado não encher a pílula.
+- **Contraste — o caminho óbvio foi medido e descartado.** As cores dos números já ficam calibradas no
+  limite do contraste mínimo (4,5:1; 7:1 no Alto Contraste) sobre o véu da pílula. Um gráfico na cor
+  do número, pintado por cima, derruba esse contraste: a opacidade que sobrava era de 1–3 % (invisível),
+  e recalibrar o texto não resolve na barra escura — com o gráfico a 18 %, nem o texto **branco** passava
+  (3,74:1), porque o gráfico clareia junto com o número.
+- **Solução: desenho por subtração.** O gráfico pinta a cor da **barra** (75 %) na região **acima** da
+  curva, apagando ali o véu da pílula; o que continua colorido, do chão até a curva, é o gráfico. O fundo
+  atrás do número nunca fica mais parecido com ele: abaixo da curva é o de sempre, acima o contraste
+  **sobe** (ex.: Clássico ↓ na barra escura 4,68 → 5,83:1). Nenhuma cor de paleta mudou.
+
+### Arquivos
+- Novos: `Apresentacao/SerieCurta.cs` (últimos 60 s, sem WPF, testável) e `Apresentacao/MiniGrafico.cs`
+  (desenho com recorte nos cantos da pílula; sem timer nem animação).
+- `Apresentacao/TaskbarWidget.xaml(.cs)` (gráfico atrás do número; o respiro de 6 px passou do Padding da
+  pílula para a grade do texto), `Apresentacao/Paletas.cs` (`MascaraGrafico`, `AlfaMascaraGrafico`),
+  `Apresentacao/EstudioCores.xaml(.cs)` (chave e amostra), `Config/Configuracoes.cs` (`MiniGrafico`),
+  `App.xaml.cs` (aplica a opção nos widgets de todas as barras).
+- Testes: `V170MiniGraficoTests.cs` (17).
+
+### Validação
+- Build Release 0 avisos; **293/293 testes** (17 novos: série curta — posição pelo tempo, âncora na borda,
+  buraco de 5 min, piso, valores inválidos, relógio que volta — e o contraste nas 5 paletas × 2 temas,
+  calculado à mão: acima da curva ≥ abaixo ≥ mínimo da paleta).
+- Widget **real** desenhado fora da tela com um minuto sintético, nas paletas Clássico, Mono e Bio, barra
+  escura e clara, modos duas linhas e só download: gráfico visível e número nítido nos 12 casos.
+  Estúdio desenhado com a chave ligada: amostra com o gráfico e a chave nova no cartão.
+- Custo: 600 atualizações do widget com e sem o gráfico — < 0,1 ms cada nos dois casos (diferença
+  dentro do ruído da medição).
+- **Validação manual recomendada:** ligar a opção no estúdio, salvar e olhar a barra por 1 min durante
+  um download (o gráfico de ↓ sobe e acompanha); trocar o tema do Windows claro/escuro.
+
 ## v1.6.1 — 2026-11-02 — Teste com ~500 MB de download e ~500 MB de upload
 
 ### O que mudou

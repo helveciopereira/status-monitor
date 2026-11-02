@@ -248,6 +248,18 @@
                             </Border>
                         </Grid>
 
+                        <!-- v1.7.0 (Onda 13): mini gráfico atrás dos números (opcional, desligado por padrão) -->
+                        <Grid Margin="0,4,0,12">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="Mini gráfico" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Mostra o último minuto atrás de cada número, para ver se a velocidade está subindo, caindo ou oscilando. Não aparece no modo uma linha." />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveMiniGrafico" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarMiniGrafico"
+                                          AutomationProperties.Name="Mini gráfico" />
+                        </Grid>
+
                         <Grid Margin="0,4,0,12">
                             <StackPanel Margin="0,0,56,0">
                                 <TextBlock Text="Mostrar em todos os monitores" FontWeight="SemiBold" />

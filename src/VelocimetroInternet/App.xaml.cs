@@ -334,6 +334,7 @@ public partial class App : Application
         widget.AplicarAparencia(aparencia, _fatorTexto);
         widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
         widget.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
+        widget.DefinirMiniGrafico(cfg.MiniGrafico); // v1.7.0 (Onda 13)
         widget.AplicarCores(Paletas.Resolver(
             Paletas.Obter(cfg.Paleta, cfg.CorUploadPersonalizada, cfg.CorDownloadPersonalizada),
             TemaWindows.BarraClara()));
@@ -458,6 +459,7 @@ public partial class App : Application
             w.AplicarAparencia(aparencia, _fatorTexto);
             w.DefinirMostrarSistema(cfg.MostrarCpuRam);
             w.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
+            w.DefinirMiniGrafico(cfg.MiniGrafico); // v1.7.0 (Onda 13)
         }
 
         foreach (TaskbarHost h in TodosHosts())

@@ -31,7 +31,10 @@ public readonly record struct CoresResolvidas(
     Color BordaCompacto,
     Color Separador,
     double ContrasteUpload,
-    double ContrasteDownload);
+    double ContrasteDownload,
+    // v1.7.0 (Onda 13): "borracha" do mini gráfico — a cor da barra, translúcida, pintada ACIMA da
+    // curva para apagar parte do véu da pílula. O que sobra colorido (abaixo da curva) é o gráfico.
+    Color MascaraGrafico = default);
 
 /// <summary>
 /// Catálogo das paletas + o algoritmo de contraste WCAG 2.1 ("Motor WCAG" do design):
@@ -105,8 +108,20 @@ public static class Paletas
             BordaCompacto: barraClara ? Color.FromArgb(0x26, 0, 0, 0) : Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF),
             Separador: barraClara ? Color.FromArgb(0x55, 0, 0, 0) : Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF),
             ContrasteUpload: RazaoContraste(up, Misturar(barra, up, alfaFundo)),
-            ContrasteDownload: RazaoContraste(down, Misturar(barra, down, alfaFundo)));
+            ContrasteDownload: RazaoContraste(down, Misturar(barra, down, alfaFundo)),
+            MascaraGrafico: ComAlfa(barra, AlfaMascaraGrafico));
     }
+
+    /// <summary>
+    /// v1.7.0 (Onda 13): quanto do véu da pílula some acima da curva do mini gráfico (75%).
+    ///
+    /// Por que apagar em vez de pintar: as cores do texto já estão calibradas no limite do contraste
+    /// sobre o véu da pílula. Um gráfico na cor do número, pintado POR CIMA do véu, derrubava o
+    /// contraste (medido: sobra 1–3% de opacidade para ele; com 18% nem o texto branco passava na
+    /// barra escura — 3,74:1). Apagar o véu leva o fundo para a cor da barra, que só AUMENTA o
+    /// contraste: abaixo da curva o fundo é o de sempre, acima é mais neutro. Nenhuma cor muda.
+    /// </summary>
+    public const byte AlfaMascaraGrafico = 0xC0;
 
     /// <summary>
     /// Clareia (barra escura) ou escurece (barra clara) a cor em passos de 4% de luminosidade HSL

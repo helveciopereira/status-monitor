@@ -214,7 +214,7 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] v1.6.1 (pedido do dono): ~500 MB de download e ~500 MB de upload por teste, até 20 s por etapa
       (o teste vai a ~1 GB e ~40 s); upload de 3 rodadas no fast.com: 168–195 Mbps (antes 31–184)
 
-## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.6.1 · valor médio, esforço baixo)
+## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.7.1 · valor médio, esforço baixo)
 
 - [ ] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
       CSV de consumo da v1.0.0)
@@ -224,17 +224,24 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
       frase genérica "a operadora pode atribuir a lentidão ao Wi-Fi" por "o link do Wi-Fi era de
       2,4 Gbps, acima do plano: ele não limitou estes testes" (achado no teste real de 2026-11-02)
 
-## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.7.0 · valor médio, esforço médio)
+## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.8.0 · valor médio, esforço médio)
 
 - [ ] O ping do app (a cada 5 s, quando ligado) passa a ser resumido por hora: mediana, pior 5 % e
       % de respostas perdidas para a internet e para o roteador. Separa "internet lenta" de "Wi-Fi ruim"
 - [ ] Relatório ganha a seção de latência (só com o ping ligado). Metas da Anatel para latência e
       perda **só entram se conferidas no regulamento vigente**; sem fonte, mostra só os números
 
-## Onda 13 — Mini gráfico nos números do widget ⬜ (backlog antigo · valor médio, esforço médio)
+## Onda 13 — Mini gráfico nos números do widget ✅ (v1.7.0, 2026-11-02 · pedido do dono)
 
-- [ ] Sparkline dos últimos 60 s atrás dos números (04-IDEIAS, "Alto valor, esforço médio"),
-      opcional, sem custo de CPU perceptível; passar pelo Impeccable (legível em barra clara e escura)
+- [x] Gráfico de área dos últimos 60 s atrás do número, dentro de cada pílula (↑ e ↓), nos layouts
+      de duas linhas e "só download" (a linha única não tem altura). Opcional, **desligado por padrão**:
+      Estúdio › Na barra de tarefas › "Mini gráfico"; a amostra do estúdio já mostra o efeito
+- [x] Legível nas 5 paletas e nos dois temas: o gráfico é desenhado "por subtração" (apaga o véu da
+      pílula ACIMA da curva), então o contraste do número nunca cai — sobe acima da curva. Pintar na
+      cor do número foi medido e descartado (sobravam 1–3 % de opacidade; com 18 % nem o branco
+      passava na barra escura: 3,74:1)
+- [x] Custo: < 0,1 ms por atualização na thread da interface (600 atualizações medidas, com e sem
+      o gráfico, dentro do ruído); sem timer nem animação próprios
 
 ## Dívida técnica anotada (sem onda própria)
 

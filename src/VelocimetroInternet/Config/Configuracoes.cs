@@ -119,6 +119,14 @@ public sealed class Configuracoes
     /// </summary>
     public string ModoExibicao { get; set; } = "duas-linhas";
 
+    // ---------------------------------------------------------------- v1.7.0 (Onda 13)
+
+    /// <summary>
+    /// Mini gráfico dos últimos 60 s atrás dos números da barra. Padrão DESLIGADO: muda o visual de
+    /// sempre. Só aparece nos layouts de duas linhas e "só download" (a linha única não tem altura).
+    /// </summary>
+    public bool MiniGrafico { get; set; }
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
