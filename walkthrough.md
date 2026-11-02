@@ -39,7 +39,20 @@ No relatório, a conclusão e a coluna "Link" mostram quais testes valem para a 
   80 %, −59 dBm, 5 GHz — iguais; 28 ms; sem pedir a permissão de localização.
 - Render fora da tela: janela do teste (Wi-Fi limitado, cabo 1 Gbps, cabo 100 Mbps), janela do
   relatório e PDF de 14 e 25 testes (MuPDF: A4, 2 folhas, coluna "Link" sem corte depois de alargada).
-- ⚠️ Não automatizado: um teste REAL pelo app instalado (gasta ~180 MB) conferindo a linha "Conexão".
+- Teste REAL pelo app instalado (1.5.0), feito em 2026-11-02 às 09:33, sem mouse: a 2ª cópia do .exe
+  abriu o painel, a UI Automation acionou "Testar velocidade" e "Iniciar teste", e o menu foi aberto
+  pela mensagem da bandeja (clique direito) para chegar ao "Relatório para a operadora…".
+  - Resultado: ↓ 180 Mbps · ↑ 37,8 Mbps · 102 ms · 172 MB gastos, em 16 s.
+  - Linha mostrada: "Conexão: Wi-Fi 5 GHz · sinal 84 % · link 2,4 Gbps." Sem aviso de limite, o que está
+    certo: o link estava acima do plano de 700 Mbps.
+  - Gravado em `qualidade.json` com `Rede` (2402/2402 Mbps, 84 %, −64 dBm, 5 GHz). O log tem a mesma
+    descrição. O relatório de novembro mostra 2 testes, média de 176 Mbps (25 % do plano), 0 testes
+    limitados e o aviso genérico de Wi-Fi.
+  - Leitura do resultado: com link de 2,4 Gbps, o Wi-Fi não era o gargalo dos 180 Mbps. Com latência
+    de ~100 ms nos dois testes do dia, um teste por cabo é o próximo passo para confirmar a operadora.
+- Fora do escopo, anotado no plano (Onda 11): quando o link de TODOS os testes por Wi-Fi está acima do
+  plano, o relatório ainda usa a frase genérica "a operadora pode atribuir a lentidão ao Wi-Fi". Podia
+  dizer que o link medido estava acima do plano, que é justamente o argumento contra essa desculpa.
 - Fora do escopo, anotado: com o teste por cabo, a frase de comparação da v1.2.0 ainda diz "Repita o
   teste por cabo para confirmar" quando o resultado fica abaixo de 40 %.
 

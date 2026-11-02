@@ -197,6 +197,8 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] Relatório: média **por cabo × por Wi-Fi**, quantos testes o link não deixava chegar ao plano, e
       coluna "Link" (com `*`) na tabela do PDF
 - [x] Testes da v1.4.0 (sem o campo) continuam lidos (JSON versão 1); para eles vale o aviso genérico
+- [x] Conferido no app instalado em 2026-11-02 com um teste real: "Wi-Fi 5 GHz · sinal 84 % · link
+      2,4 Gbps", gravado no `qualidade.json` e contado no relatório do mês
 
 ## Onda 11 — Anexos e aviso de queda ⬜ (candidata a v1.5.1 · valor médio, esforço baixo)
 
@@ -204,6 +206,9 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
       CSV de consumo da v1.0.0)
 - [ ] **Aviso opcional** "A internet voltou após 12 min" quando uma queda ≥ 1 min termina —
       **desligado por padrão** (04-IDEIAS: notificação só como opção), sai pelo ícone da bandeja
+- [ ] **Wi-Fi que NÃO limitou:** se todos os testes por Wi-Fi do mês tinham link acima do plano, trocar a
+      frase genérica "a operadora pode atribuir a lentidão ao Wi-Fi" por "o link do Wi-Fi era de
+      2,4 Gbps, acima do plano: ele não limitou estes testes" (achado no teste real de 2026-11-02)
 
 ## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.6.0 · valor médio, esforço médio)
 
