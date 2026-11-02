@@ -1,5 +1,54 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.6.0 — 2026-11-02 — Onda 11: teste de velocidade pelo servidor do fast.com
+
+### O que mudou
+- O teste de velocidade mede no **servidor do fast.com mais próximo** (caches da Netflix, muitas vezes
+  dentro da operadora). A **Cloudflare vira reserva**: se o fast.com não informar servidor (API fora,
+  token trocado) ou o servidor dele não responder na latência, o teste segue pela Cloudflare sem gastar
+  dados à toa, e o log diz por quê ("Teste de velocidade pela Cloudflare (reserva): …").
+- Tela e log mostram o servidor usado ("fast.com · Fortaleza", ou só "fast.com" quando a API manda CEP
+  no lugar da cidade). O relatório (janela/PDF) cita o(s) servidor(es) dos testes do mês em vez de
+  "speed.cloudflare.com" fixo; testes antigos continuam como foram gravados.
+- Teto do upload 30 → 60 MB: o teste gasta até ~210 MB (antes ~180).
+
+### Por quê (causa raiz, medida em 2026-11-02 nesta casa: Claro, São Luís, Wi-Fi)
+- A Cloudflare atendia do **Rio** (colo GIG): a latência de ~100 ms que o app mostrava era a distância,
+  não a linha. O fast.com escolhe `…slz001-claro…` — **dentro da Claro, em São Luís**: ~7 ms.
+- Upload oscilando (31 a 184 Mbps em rodadas seguidas): 30 MB acabavam em ~1,6 s e, tirando 1 s de
+  aquecimento, sobrava meio segundo de medição; e envios de 3,75 MB rendem ~40 % menos no fast.com
+  (curl: 58–90 × 124–154 Mbps com 25 MB). Com 60 MB, os envios passam a 7,5 MB e a medição dura mais.
+- Protocolo lido do próprio site (app-*.js): API `api.fast.com/netflix/speedtest/v2` com o token público
+  do site → URLs assinadas; download `range/0-(N-1)`; upload POST com **Content-Length** (envio em
+  partes leva **406**); latência POST vazio em `range/0-0`. Se o token mudar, o app lê o novo do site.
+
+### Comparação real (motor do app, limites padrão, rodadas intercaladas)
+| Rodada | fast.com: latência · ↓ · ↑ | Cloudflare: latência · ↓ · ↑ |
+|---|---|---|
+| 1 | 6,2 ms · 264 · 120 Mbps | 112,7 ms · 228 · 143 Mbps |
+| 2 | 6,5 ms · 138 · 159 Mbps | 117,8 ms · 135 · 94 Mbps |
+| 3 | 7,3 ms · 231 · 148 Mbps | 97,1 ms · 195 · 106 Mbps |
+
+Download parecido nos dois (o Wi-Fi deste PC fica perto de 250 Mbps; a rodada 2 caiu nos dois ao mesmo
+tempo). A diferença grande é a latência; o upload ficou igual ou melhor no fast.com.
+
+### Como usar
+- Nada muda: "Testar velocidade" no painel ou no menu. A linha de detalhe mostra o servidor usado.
+
+### Arquivos
+- Novo: `Medicao/ServidorTeste.cs` (`IServidorTeste`, `ServidorCloudflare`, `ServidorFast`),
+  `tests/.../V160ServidorTests.cs` (+24 testes, com rede falsa que imita o fast.com real).
+- Alterados: `Medicao/TesteVelocidade.cs` (escolha do servidor, reserva, upload com tamanho declarado e
+  reserva do teto, teto 60 MB), `Medicao/CalculoRelatorio.cs` (`ServidoresDosTestes`),
+  `Apresentacao/RelatorioPaginas.cs`, `Apresentacao/JanelaTesteVelocidade.xaml(.cs)`, README, plano.
+
+### Validação
+- Build Release 0 avisos; **276/276 testes**.
+- Motor real contra a internet de verdade: 3 + 6 + 6 rodadas (tabela acima = as 6 finais), servidor
+  escolhido sempre `ipv4-c004-slz001-claro-br-net-isp…`, sem nenhuma troca para a reserva.
+- Observação: o token do fast.com não é API documentada; a reserva (Cloudflare) e a releitura do token
+  do site cobrem a troca. Os testes automatizados cobrem os três caminhos (fast, token novo, reserva).
+
 ## v1.5.0 — 2026-11-02 — Onda 10: Wi-Fi explicado no teste e no relatório
 
 ### O que mudou

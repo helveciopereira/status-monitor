@@ -28,7 +28,7 @@
     <StackPanel Margin="20,18,20,20">
         <TextBlock Text="Teste de velocidade" FontSize="18" FontWeight="SemiBold" />
         <TextBlock x:Name="TextoNota" Style="{StaticResource Rotulo}" Margin="0,4,0,16"
-                   Text="Mede download, upload e latência com o servidor da Cloudflare (speed.cloudflare.com). Leva cerca de 25 s e usa até ~180 MB de dados — conta na franquia. Para o resultado mais fiel, feche downloads e prefira cabo." />
+                   Text="Mede no servidor do fast.com (Netflix) mais perto de você, em geral dentro da sua operadora; se ele falhar, no da Cloudflare. Leva cerca de 25 s e usa até ~210 MB da franquia. Para o resultado mais fiel, feche downloads e prefira cabo." />
 
         <!-- Download em destaque; upload e latência ao lado -->
         <Grid Margin="0,0,0,14">

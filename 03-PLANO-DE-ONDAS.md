@@ -200,7 +200,19 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] Conferido no app instalado em 2026-11-02 com um teste real: "Wi-Fi 5 GHz · sinal 84 % · link
       2,4 Gbps", gravado no `qualidade.json` e contado no relatório do mês
 
-## Onda 11 — Anexos e aviso de queda ⬜ (candidata a v1.5.1 · valor médio, esforço baixo)
+## Onda 11 — Servidor do teste: fast.com ✅ (v1.6.0, 2026-11-02 · pedido do dono)
+
+- [x] O teste mede no servidor do **fast.com** (caches da Netflix) mais próximo, que a API do site
+      lista; a Cloudflare vira **reserva** (API fora, token trocado e não achado no site, ou servidor
+      sem resposta na latência, antes de gastar dados). O motivo da troca vai para o log
+- [x] Medido nesta casa (Claro, São Luís, Wi-Fi): o fast.com escolhe um servidor **dentro da Claro em
+      São Luís**; a Cloudflare atende do **Rio** (GIG). Latência ~7 ms × ~100–118 ms; download e
+      upload iguais ou maiores (3 rodadas intercaladas, ver walkthrough)
+- [x] Upload com tamanho declarado (o fast.com recusa envio em partes com 406) e teto garantido por
+      reserva; teto do upload 30 → 60 MB (meio segundo de medição fazia o upload oscilar 31–184 Mbps)
+- [x] Relatório diz o(s) servidor(es) de verdade dos testes do mês (antes: "speed.cloudflare.com" fixo)
+
+## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.6.1 · valor médio, esforço baixo)
 
 - [ ] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
       CSV de consumo da v1.0.0)
@@ -210,7 +222,7 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
       frase genérica "a operadora pode atribuir a lentidão ao Wi-Fi" por "o link do Wi-Fi era de
       2,4 Gbps, acima do plano: ele não limitou estes testes" (achado no teste real de 2026-11-02)
 
-## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.6.0 · valor médio, esforço médio)
+## Onda 12 — Latência e perda no relatório ⬜ (candidata a v1.7.0 · valor médio, esforço médio)
 
 - [ ] O ping do app (a cada 5 s, quando ligado) passa a ser resumido por hora: mediana, pior 5 % e
       % de respostas perdidas para a internet e para o roteador. Separa "internet lenta" de "Wi-Fi ruim"

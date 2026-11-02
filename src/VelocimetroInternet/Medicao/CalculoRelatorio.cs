@@ -233,6 +233,22 @@ public static class CalculoRelatorio
 
     // ------------------------------------------------------------------ formatação (pt-BR)
 
+    /// <summary>
+    /// v1.6.0 (Onda 11): servidores usados pelos testes do mês, para o relatório dizer com quem se
+    /// mediu. Os do fast.com viram um só ("fast.com (Netflix)", qualquer que seja a cidade); os outros
+    /// aparecem como foram gravados. Ex.: "fast.com (Netflix) e speed.cloudflare.com". Vazio = sem testes.
+    /// </summary>
+    public static string ServidoresDosTestes(IEnumerable<TesteGuardado> testes)
+    {
+        List<string> nomes = [.. testes
+            .Select(t => t.Servidor ?? "") // JSON editado à mão pode trazer null
+            .Select(s => s.StartsWith("fast.com", StringComparison.Ordinal) ? "fast.com (Netflix)" : s)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+        return nomes.Count <= 1 ? nomes.FirstOrDefault() ?? "" : $"{string.Join(", ", nomes[..^1])} e {nomes[^1]}";
+    }
+
     /// <summary>"novembro de 2026".</summary>
     public static string NomeMes(int ano, int mes) =>
         new DateTime(ano, mes, 1).ToString("MMMM 'de' yyyy", PtBr);

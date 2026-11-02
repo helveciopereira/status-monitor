@@ -105,7 +105,11 @@ public static class RelatorioPaginas
         double[] colTestes = [100, 80, 78, 74, 74, 56, 60, 0]; // 0 = o que sobrar
         FrameworkElement CabTestes() => LinhaTabela(colTestes, true, false,
             "Data e hora", "Conexão", "Link", "Download", "Upload", "Latência", "% plano", "Situação");
-        b.Add(new Bloco(Secao("Testes de velocidade", $"{r.Testes.Count} no mês · servidor speed.cloudflare.com"), ManterComProximos: 2));
+        // v1.6.0 (Onda 11): servidor(es) de verdade dos testes do mês (fast.com e/ou Cloudflare), não um nome fixo
+        string servidores = CalculoRelatorio.ServidoresDosTestes(r.Testes);
+        string sobreServidor = servidores.Length == 0 ? ""
+            : servidores.Contains(" e ", StringComparison.Ordinal) ? $" · servidores {servidores}" : $" · servidor {servidores}";
+        b.Add(new Bloco(Secao("Testes de velocidade", $"{r.Testes.Count} no mês{sobreServidor}"), ManterComProximos: 2));
         if (r.Testes.Count == 0)
         {
             b.Add(new Bloco(T("Nenhum teste neste mês. Use \"Testar velocidade da internet…\" no menu do Status Monitor — de preferência por cabo, em horários diferentes.", 11, FontWeights.Normal, TextoSec, new Thickness(0, 0, 0, 22))));
@@ -355,7 +359,7 @@ public static class RelatorioPaginas
         var rodape = new StackPanel { Width = LarguraUtil, VerticalAlignment = VerticalAlignment.Bottom };
         rodape.Children.Add(new Border { Height = 1, Background = Linha, Margin = new Thickness(0, 0, 0, 6) });
         rodape.Children.Add(T("Referência: metas da Anatel para banda larga fixa — pelo menos 40 % da velocidade contratada em cada medição e 80 % na média do mês. " +
-                              "Medições feitas por este computador com o servidor speed.cloudflare.com, por iniciativa do usuário; não substituem a medição oficial da Anatel. " +
+                              "Medições feitas por este computador com servidores públicos de teste (fast.com, da Netflix, ou speed.cloudflare.com), por iniciativa do usuário; não substituem a medição oficial da Anatel. " +
                               "Quedas: estado \"sem internet\" informado pelo Windows, com o computador conectado ao roteador, por 1 minuto ou mais.",
             8.5, FontWeights.Normal, TextoSec));
         rodape.Children.Add(T($"{PrimeiraMaiuscula(r.NomeMes)} · página {pagina} de {total}", 8.5, FontWeights.Normal, TextoSec, new Thickness(0, 4, 0, 0)));

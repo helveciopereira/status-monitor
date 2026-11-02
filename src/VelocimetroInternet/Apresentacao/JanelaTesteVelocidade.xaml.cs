@@ -59,7 +59,13 @@ public partial class JanelaTesteVelocidade : Window
         var progresso = new Progress<ProgressoTeste>(MostrarProgresso);
         try
         {
-            ResultadoTeste r = await new TesteVelocidade().ExecutarAsync(progresso, _cts.Token);
+            var teste = new TesteVelocidade(); // v1.6.0: servidor automático (fast.com; Cloudflare de reserva)
+            ResultadoTeste r = await teste.ExecutarAsync(progresso, _cts.Token);
+            if (teste.MotivoDaReserva is { } motivo)
+            {
+                _log?.Invoke($"Teste de velocidade pela Cloudflare (reserva): {motivo}.");
+            }
+
             _conexao ??= LerConexao(); // upload pulado/rápido demais: lê agora
             MostrarResultado(r);
             _aoConcluir?.Invoke(r, _conexao);
