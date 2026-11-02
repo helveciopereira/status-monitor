@@ -46,7 +46,7 @@ public sealed class TesteVelocidade
     public const string ServidorPadrao = ServidorCloudflare.Endereco;
 
     /// <summary>
-    /// Limites de uma rodada. Os padrões gastam no máximo ~210 MB (v1.6.0; antes ~180 MB).
+    /// Limites de uma rodada. Os padrões gastam no máximo ~1 GB (v1.6.1; antes ~210 MB).
     /// v1.2.2: teto do download 100 → 150 MB (+50 %, pedido do dono). A 530 Mbps (medido nesta
     /// rede em 2026-11-01) 100 MB acabavam em ~1,5 s — tirando 1 s de aquecimento sobrava meio
     /// segundo de medição, com o TCP ainda acelerando, e o resultado ficava abaixo do real.
@@ -54,12 +54,17 @@ public sealed class TesteVelocidade
     /// a ~150 Mbps de upload (medido em 2026-11-02), 30 MB acabavam em ~1,6 s e sobrava meio segundo
     /// de medição — o upload oscilava de 31 a 184 Mbps entre rodadas seguidas. 60 MB também dobram o
     /// tamanho de cada envio (3,75 → 7,5 MB): no fast.com, envios pequenos rendiam ~40 % menos.
+    /// v1.6.1 (pedido do dono, "maior confiabilidade"): ~500 MB por etapa — teto de download e de
+    /// upload 500 MB cada, e o tempo máximo de cada etapa 10 → 20 s. Sem o tempo maior o teto não
+    /// adiantava: a ~250 Mbps (Wi-Fi deste PC) 10 s rendem só ~310 MB. Com 20 s, 500 MB cabem em
+    /// conexões de ~200 Mbps ou mais; conexões mais lentas terminam pelo tempo (20 s de amostra, o
+    /// dobro de antes). Envios de upload passam a 8 MB (o máximo de <see cref="TamanhoMaximoPedido"/>).
     /// </summary>
     public sealed record Limites(
         int Conexoes = 4,
-        double SegundosPorEtapa = 10,
-        long TetoDownloadBytes = 150_000_000,
-        long TetoUploadBytes = 60_000_000,
+        double SegundosPorEtapa = 20,
+        long TetoDownloadBytes = 500_000_000,
+        long TetoUploadBytes = 500_000_000,
         int AmostrasLatencia = 7,
         double SegundosAquecimento = 1.0);
 

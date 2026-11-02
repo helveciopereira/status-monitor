@@ -1,5 +1,33 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.6.1 — 2026-11-02 — Teste com ~500 MB de download e ~500 MB de upload
+
+### O que mudou
+- Pedido do dono, para resultados mais confiáveis: teto de **500 MB no download e 500 MB no upload**
+  (antes 150 e 60 MB) e tempo máximo de cada etapa **10 → 20 s**. Envios de upload de 8 MB.
+- A janela avisa: "Leva até ~50 s e usa até ~1 GB da franquia".
+
+### Por quê
+- Só subir o teto não bastava: a etapa parava em 10 s, e a ~250 Mbps (Wi-Fi deste PC) isso dá ~310 MB.
+  Com 20 s, 500 MB cabem a partir de ~200 Mbps; conexões mais lentas param pelo tempo, com o dobro da
+  amostra de antes.
+- Amostra curta deixava o upload instável (31–184 Mbps entre rodadas seguidas na v1.6.0).
+
+### Validação
+- Build Release 0 avisos; **276/276 testes** (o teste dos limites padrão agora confere 500/500 MB, 20 s
+  e envios de 8 MB).
+- Motor real, limites padrão (cada rodada ~1 GB):
+
+| Rodada | Servidor | Latência | ↓ (MB baixados) | ↑ (MB enviados) | Duração |
+|---|---|---|---|---|---|
+| 1 | fast.com | 6,9 ms | 262 Mbps (500) | 195 Mbps (495) | 37 s |
+| 2 | fast.com | 12,8 ms | 221 Mbps (500) | 168 Mbps (418) | 40 s |
+| 3 | fast.com | 11,5 ms | 211 Mbps (500) | 181 Mbps (455) | 40 s |
+| — | Cloudflare | 108,5 ms | 250 Mbps (500) | 168 Mbps (409) | 38 s |
+
+- Upload no fast.com: 168–195 Mbps (faixa de 27 Mbps; antes 31–184). O upload nem sempre chega aos
+  500 MB a ~170 Mbps: termina pelos 20 s, como previsto.
+
 ## v1.6.0 — 2026-11-02 — Onda 11: teste de velocidade pelo servidor do fast.com
 
 ### O que mudou

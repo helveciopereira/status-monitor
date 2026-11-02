@@ -196,7 +196,12 @@ public sealed class V120ModosETesteTests
     public void PedidoDownload_SoUsaTamanhosAceitos()
     {
         Assert.Equal(25_000_000, CalculoTeste.PedidoDownload(new TesteVelocidade.Limites().TetoDownloadBytes, 4)); // padrão do app
-        Assert.Equal(150_000_000, new TesteVelocidade.Limites().TetoDownloadBytes); // v1.2.2: +50 %
+        // v1.2.2: 150 MB (+50 %); v1.6.1: 500 MB por etapa, com 20 s de tempo máximo (pedido do dono)
+        Assert.Equal(500_000_000, new TesteVelocidade.Limites().TetoDownloadBytes);
+        Assert.Equal(500_000_000, new TesteVelocidade.Limites().TetoUploadBytes);
+        Assert.Equal(20, new TesteVelocidade.Limites().SegundosPorEtapa);
+        Assert.Equal(TesteVelocidade.TamanhoMaximoPedido, // envios de 8 MB no upload
+            CalculoTeste.TamanhoDoPedido(new TesteVelocidade.Limites().TetoUploadBytes, 4));
         Assert.Equal(8_000_000, CalculoTeste.PedidoDownload(60_000_000, 4));   // parte de 15 MB: nunca 15 (403)
         Assert.Equal(1_000_000, CalculoTeste.PedidoDownload(2_000_000, 4));    // teto pequeno: o menor da lista
         // 429 nos ≥ 10 MB → cai direto para 8 MB (o degrau de 10 MB seria recusado junto)
