@@ -183,15 +183,20 @@ Achado que motivou a Onda 10, medido agora (`netsh wlan show interfaces`): este 
 **Wi-Fi 5 GHz, sinal 66 % (−67 dBm), link de recepção 432 Mbps**, com plano de **700 Mbps**. Nenhum
 teste por este Wi-Fi passa de ~62 % do plano, por melhor que esteja a operadora. Hoje o relatório
 diz só "foi por Wi-Fi"; a operadora usa isso para descartar a reclamação.
+→ Correção em 2026-11-02: no dia seguinte o mesmo Wi-Fi estava a **2.402 Mbps, sinal 80 %** (placa
+Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste, não uma vez só.
 
-## Onda 10 — Wi-Fi explicado no teste e no relatório ⬜ (candidata a v1.5.0 · valor alto, esforço baixo)
+## Onda 10 — Wi-Fi explicado no teste e no relatório ✅ (v1.5.0, 2026-11-02)
 
-- [ ] Guardar em cada teste a **velocidade do link** do adaptador (já lida no `NetworkSampler`, sem
-      permissão) e, no Wi-Fi, banda e sinal (WLAN API do Windows, sem administrador; `netsh` já lê
-      nesta máquina, mas conferir se o app precisa da permissão de localização do Windows 11 24H2)
-- [ ] Janela do teste e relatório: "link do Wi-Fi 432 Mbps: este teste não podia passar disso"; a média
-      contra o plano separa **cabo** de **Wi-Fi**; a conclusão recomenda testar por cabo
-- [ ] Testes antigos (sem o campo) continuam lidos normalmente (JSON versão 1)
+- [x] Cada teste guarda a **velocidade do link** (cabo: a da porta; Wi-Fi: recepção e transmissão) e,
+      no Wi-Fi, **banda, sinal e RSSI** (WLAN API do Windows, sem administrador). Lido logo depois da
+      fase de download, com o link sob carga. Conferido contra o `netsh`: todos os campos iguais, 28 ms.
+      Nesta máquina não precisou da permissão de localização; se o Windows negar, fica a velocidade da placa
+- [x] Janela do teste: "Conexão: Wi-Fi 5 GHz · sinal 66 % · link 432 Mbps" e, se o link é menor que o
+      plano, o aviso de que o limite é do Wi-Fi (ou do cabo/porta) e o que fazer
+- [x] Relatório: média **por cabo × por Wi-Fi**, quantos testes o link não deixava chegar ao plano, e
+      coluna "Link" (com `*`) na tabela do PDF
+- [x] Testes da v1.4.0 (sem o campo) continuam lidos (JSON versão 1); para eles vale o aviso genérico
 
 ## Onda 11 — Anexos e aviso de queda ⬜ (candidata a v1.5.1 · valor médio, esforço baixo)
 

@@ -89,6 +89,9 @@
         <TextBlock x:Name="TextoComparacao" Style="{StaticResource Rotulo}" FontSize="13"
                    Foreground="{DynamicResource Tema.Texto}" Visibility="Collapsed" Margin="0,0,0,6"
                    AutomationProperties.Name="ComparacaoPlano" />
+        <!-- v1.5.0 (Onda 10): link/sinal do PC com o roteador e, se ele limita o teste, o aviso -->
+        <TextBlock x:Name="TextoConexao" Style="{StaticResource Rotulo}" Visibility="Collapsed" Margin="0,0,0,6"
+                   AutomationProperties.Name="ConexaoDoTeste" />
         <TextBlock x:Name="TextoDetalhe" Style="{StaticResource Rotulo}" Visibility="Collapsed" Margin="0,0,0,14" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

@@ -667,12 +667,17 @@ public partial class App : Application
         }
 
         // v1.4.0: todo teste concluído entra no relatório do mês (com o tipo de conexão: cabo/Wi-Fi)
-        _teste = new JanelaTesteVelocidade(() => _config.Atual.VelocidadeContratadaMbps, RegistrarLog, r =>
+        // v1.5.0: ... e com o link/sinal do PC com o roteador (o Wi-Fi pode ser o limite, não a operadora)
+        _teste = new JanelaTesteVelocidade(() => _config.Atual.VelocidadeContratadaMbps, RegistrarLog, (r, conexao) =>
         {
             _qualidade.AdicionarTeste(new TesteGuardado(
                 DateTime.Now, r.DownloadBps, r.UploadBps, r.LatenciaMs,
-                InfoRede.TipoConexao(_historico.Capturar().NomeInterface), r.Servidor));
+                conexao?.Tipo ?? InfoRede.TipoConexao(_historico.Capturar().NomeInterface), r.Servidor, conexao));
             _relatorio?.Atualizar();
+        }, () =>
+        {
+            var leitura = _historico.Capturar();
+            return InfoRede.ConexaoAtual(leitura.NomeInterface, leitura.VelocidadeLinkBps);
         });
         _teste.Closed += (_, _) =>
         {

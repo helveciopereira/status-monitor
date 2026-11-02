@@ -37,8 +37,15 @@ public sealed record ResumoMes(
     TimeSpan TempoObservado,
     int DiasObservados,
     double? Disponibilidade,
-    IReadOnlyList<string> Conclusoes)
+    IReadOnlyList<string> Conclusoes,
+    double? MediaCaboBps = null,
+    double? MediaWiFiBps = null,
+    int TestesLimitadosPeloLink = 0)
 {
+    // v1.5.0 (Onda 10): MediaCaboBps/MediaWiFiBps = média do download só dos testes por cabo / só dos
+    // demais (Wi-Fi ou placa desconhecida); TestesLimitadosPeloLink = testes em que o link do PC com o
+    // roteador era mais lento que o plano (o resultado não podia chegar ao contratado).
+
     /// <summary>"novembro de 2026".</summary>
     public string NomeMes => CalculoRelatorio.NomeMes(Ano, Mes);
 }
@@ -113,12 +120,21 @@ public static class CalculoRelatorio
         double? fracao = mediaDown is double md && planoMbps > 0 ? md / (planoMbps * 1_000_000) : null;
         int abaixoMin = testes.Count(t => Classificar(t.DownloadBps, planoMbps) == FaixaAnatel.AbaixoDoMinimo);
         int abaixoMedia = testes.Count(t => Classificar(t.DownloadBps, planoMbps) == FaixaAnatel.AbaixoDaMedia);
-        int wifi = testes.Count(t => !string.Equals(t.Conexao, "Cabo", StringComparison.OrdinalIgnoreCase));
+        List<TesteGuardado> porCabo = [.. testes.Where(EhCabo)];
+        List<TesteGuardado> porWiFi = [.. testes.Where(t => !EhCabo(t))];
+        int wifi = porWiFi.Count;
+
+        // v1.5.0 (Onda 10): separa cabo de Wi-Fi e acha os testes que o link não deixava chegar ao plano
+        double? mediaCabo = porCabo.Count > 0 ? porCabo.Average(t => t.DownloadBps) : null;
+        double? mediaWiFi = porWiFi.Count > 0 ? porWiFi.Average(t => t.DownloadBps) : null;
+        List<TesteGuardado> limitados = [.. testes.Where(t => t.ConexaoCompleta.LimitaODownload(planoMbps))];
 
         List<string> conclusoes = Concluir(testes.Count, planoMbps, mediaDown, fracao, abaixoMin, wifi, internet.Count, semInternet, observado);
+        ConcluirConexao(conclusoes, testes.Count, planoMbps, porCabo.Count, mediaCabo, wifi, mediaWiFi, limitados);
 
         return new ResumoMes(ano, mes, planoMbps, testes, mediaDown, mediaUp, fracao, abaixoMin, abaixoMedia, wifi,
-            internet, rede, semInternet, semRede, observado, dias, disponibilidade, conclusoes);
+            internet, rede, semInternet, semRede, observado, dias, disponibilidade, conclusoes,
+            mediaCabo, mediaWiFi, limitados.Count);
     }
 
     /// <summary>Frases do quadro "Conclusão", na ordem em que importam para a reclamação.</summary>
@@ -154,12 +170,43 @@ public static class CalculoRelatorio
                 : $"{nQuedas} queda(s) de internet com o roteador conectado, somando {Duracao(semInternet)} nas {Duracao(observado)} observadas.");
         }
 
-        if (wifi > 0)
+        // (as frases sobre cabo × Wi-Fi saem do ConcluirConexao, v1.5.0)
+        return c;
+    }
+
+    private static bool EhCabo(TesteGuardado t) => string.Equals(t.Conexao, "Cabo", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// v1.5.0 (Onda 10): frases sobre COMO os testes foram feitos — média por cabo × por Wi-Fi e, o mais
+    /// importante, quantos testes não podiam chegar ao plano porque o link do PC com o roteador era mais
+    /// lento que ele (ex.: Wi-Fi a 432 Mbps num plano de 700). Sem dados de link (testes da v1.4.0),
+    /// mantém o aviso genérico de Wi-Fi.
+    /// </summary>
+    private static void ConcluirConexao(
+        List<string> c, int nTestes, double planoMbps, int nCabo, double? mediaCabo, int nWiFi, double? mediaWiFi,
+        List<TesteGuardado> limitados)
+    {
+        if (nCabo > 0 && nWiFi > 0)
         {
-            c.Add($"{wifi} de {nTestes} teste(s) foram por Wi-Fi — a operadora pode atribuir a lentidão ao Wi-Fi. Testes por cabo têm mais peso numa reclamação.");
+            c.Add(planoMbps > 0
+                ? $"Por cabo: média {Mbps(mediaCabo!.Value)} ({Pct(mediaCabo.Value / (planoMbps * 1_000_000))} do plano) em {nCabo} teste(s). Por Wi-Fi: {Mbps(mediaWiFi!.Value)} ({Pct(mediaWiFi.Value / (planoMbps * 1_000_000))}) em {nWiFi}."
+                : $"Por cabo: média {Mbps(mediaCabo!.Value)} em {nCabo} teste(s). Por Wi-Fi: {Mbps(mediaWiFi!.Value)} em {nWiFi}.");
         }
 
-        return c;
+        if (limitados.Count > 0)
+        {
+            List<double> links = [.. limitados.Select(t => t.ConexaoCompleta.LinkDownMbps!.Value)];
+            double min = links.Min(), max = links.Max();
+            string faixa = ConexaoNoTeste.Link(min) == ConexaoNoTeste.Link(max)
+                ? ConexaoNoTeste.Link(min)
+                : $"entre {ConexaoNoTeste.Link(min)} e {ConexaoNoTeste.Link(max)}";
+            bool todosWiFi = limitados.All(t => t.ConexaoCompleta.EhWiFi);
+            c.Add($"{limitados.Count} de {nTestes} teste(s) foram feitos com o computador ligado ao roteador a {faixa}{(todosWiFi ? " pelo Wi-Fi" : "")}, abaixo do plano de {planoMbps:0} Mbps: nesses, o resultado não podia passar do link, qualquer que fosse a operadora. Para a reclamação valer, repita os testes por cabo.");
+        }
+        else if (nWiFi > 0)
+        {
+            c.Add($"{nWiFi} de {nTestes} teste(s) foram por Wi-Fi — a operadora pode atribuir a lentidão ao Wi-Fi. Testes por cabo têm mais peso numa reclamação.");
+        }
     }
 
     /// <summary>Meses com testes, quedas ou tempo observado (o mais recente primeiro); o mês atual sempre entra.</summary>

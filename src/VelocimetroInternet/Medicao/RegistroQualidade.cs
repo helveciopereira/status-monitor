@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace VelocimetroInternet.Medicao;
 
@@ -19,8 +20,18 @@ public enum EstadoInternet
 
 /// <summary>Um teste de velocidade guardado (velocidades em BITS por segundo, como a operadora vende).</summary>
 /// <param name="Conexao">"Cabo", "Wi-Fi" ou o nome da placa — a Anatel considera a medição por cabo.</param>
+/// <param name="Rede">
+/// v1.5.0 (Onda 10): link, sinal e banda no momento do teste. Null nos testes gravados pela v1.4.0
+/// (o JSON antigo não tem o campo e continua sendo lido — o formato segue na versão 1).
+/// </param>
 public sealed record TesteGuardado(
-    DateTime Quando, double DownloadBps, double UploadBps, double LatenciaMs, string Conexao, string Servidor);
+    DateTime Quando, double DownloadBps, double UploadBps, double LatenciaMs, string Conexao, string Servidor,
+    ConexaoNoTeste? Rede = null)
+{
+    /// <summary>Os dados de conexão do teste; nos testes antigos, só o tipo ("Cabo"/"Wi-Fi").</summary>
+    [JsonIgnore] // calculado: não vai para o arquivo
+    public ConexaoNoTeste ConexaoCompleta => Rede ?? new ConexaoNoTeste(Conexao);
+}
 
 /// <summary>Um período sem internet (ou sem rede) com começo e fim.</summary>
 public sealed record Queda(DateTime Inicio, DateTime Fim, EstadoInternet Tipo)

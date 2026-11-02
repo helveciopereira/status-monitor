@@ -101,9 +101,10 @@ public static class RelatorioPaginas
         b.Add(new Bloco(conclusao));
 
         // Testes de velocidade
-        double[] colTestes = [118, 62, 84, 84, 62, 66, 0]; // 0 = o que sobrar
+        // v1.5.0 (Onda 10): + coluna "Link" (velocidade do PC com o roteador) e banda do Wi-Fi na "Conexão"
+        double[] colTestes = [100, 80, 78, 74, 74, 56, 60, 0]; // 0 = o que sobrar
         FrameworkElement CabTestes() => LinhaTabela(colTestes, true, false,
-            "Data e hora", "Conexão", "Download", "Upload", "Latência", "% plano", "Situação");
+            "Data e hora", "Conexão", "Link", "Download", "Upload", "Latência", "% plano", "Situação");
         b.Add(new Bloco(Secao("Testes de velocidade", $"{r.Testes.Count} no mês · servidor speed.cloudflare.com"), ManterComProximos: 2));
         if (r.Testes.Count == 0)
         {
@@ -124,12 +125,23 @@ public static class RelatorioPaginas
                     FaixaAnatel.AbaixoDoMinimo => ("ABAIXO DE 40 %", Ruim),
                     _ => ("—", TextoSec),
                 };
+                // Link abaixo do plano ganha "*" (explicado na nota logo abaixo da tabela)
+                ConexaoNoTeste con = t.ConexaoCompleta;
+                string link = con.LinkDownMbps is double l && l > 0
+                    ? ConexaoNoTeste.Link(l) + (con.LimitaODownload(r.PlanoMbps) ? " *" : "")
+                    : "—";
                 FrameworkElement linha = LinhaTabela(colTestes, false, i % 2 == 1,
-                    t.Quando.ToString("dd/MM/yyyy HH:mm", PtBr), t.Conexao,
+                    t.Quando.ToString("dd/MM/yyyy HH:mm", PtBr), con.Banda is null ? con.Tipo : $"{con.Tipo} {con.Banda}", link,
                     CalculoRelatorio.Mbps(t.DownloadBps), CalculoRelatorio.Mbps(t.UploadBps),
                     $"{t.LatenciaMs.ToString("0", PtBr)} ms", pct, situacao);
                 ((TextBlock)((Grid)((Border)linha).Child).Children[^1]).Foreground = cor;
                 b.Add(new Bloco(linha, CabTestes));
+            }
+
+            if (r.TestesLimitadosPeloLink > 0)
+            {
+                b.Add(new Bloco(T("* Link do computador com o roteador mais lento que o plano: esse teste não podia chegar ao contratado, qualquer que fosse a operadora. \"—\" = link não registrado (testes antigos).",
+                    9.5, FontWeights.Normal, TextoSec, new Thickness(0, 6, 0, 0))));
             }
 
             b.Add(new Bloco(new Border { Height = 22 }));

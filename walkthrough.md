@@ -1,5 +1,48 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.5.0 — 2026-11-02 — Onda 10: Wi-Fi explicado no teste e no relatório
+
+### O que mudou
+- Cada teste de velocidade guarda **como o PC estava ligado ao roteador**: cabo ou Wi-Fi, velocidade do
+  link e, no Wi-Fi, banda (2,4/5/6 GHz), sinal (%) e RSSI (dBm).
+- Janela do teste: linha "Conexão: Wi-Fi 5 GHz · sinal 66 % · link 432 Mbps". Se o link é menor que o
+  plano, avisa que **nenhum teste por este Wi-Fi passa dele** e manda testar por cabo. No cabo abaixo
+  do plano (ex.: 100 Mbps), sugere conferir o cabo e a porta do roteador.
+- Relatório (janela e PDF): frase com a **média por cabo × por Wi-Fi** e quantos testes o link não
+  deixava chegar ao plano; o PDF ganha a coluna **"Link"** (com `*` e nota quando limita) e a banda do
+  Wi-Fi na coluna "Conexão".
+
+### Por quê (causa raiz)
+- A varredura de 2026-11-01 achou o PC do dono testando por Wi-Fi com link de 432 Mbps num plano de
+  700 Mbps: o teste não podia passar de ~62 % do plano, e o relatório só dizia "foi por Wi-Fi" — a
+  operadora descartaria a reclamação, e o usuário culparia a operadora pelo limite do próprio Wi-Fi.
+- No dia seguinte o mesmo Wi-Fi estava a 2.402 Mbps: a taxa varia muito. Por isso é lida DURANTE cada
+  teste (logo depois do download, com o link sob carga — parado, o Wi-Fi economiza energia e mostra menos).
+- Regra conservadora: só conta como "limitado pelo link" quando a taxa do link é MENOR que o plano. Taxa
+  de link é teto teórico (o real fica abaixo), mas o app não desculpa a operadora sem certeza.
+
+### Como usar
+Nada a configurar: faça um teste (menu › "Testar velocidade da internet…") e veja a linha "Conexão".
+No relatório, a conclusão e a coluna "Link" mostram quais testes valem para a reclamação.
+
+### Arquivos
+- Novos: `Medicao/ConexaoNoTeste.cs` (dados e textos, puro), `Sistema/InfoWiFi.cs` (WLAN API, lida por
+  deslocamento), `tests/.../V150ConexaoTests.cs` (+18 testes).
+- Alterados: `Medicao/RegistroQualidade.cs` (`TesteGuardado.Rede`, opcional), `Medicao/CalculoRelatorio.cs`
+  (médias por tipo, limitados, frases), `Sistema/InfoRede.cs` (`ConexaoAtual`), `Sistema/NativeMethods.cs`
+  (assinaturas da wlanapi), `Apresentacao/JanelaTesteVelocidade.xaml(.cs)`, `Apresentacao/RelatorioPaginas.cs`,
+  `App.xaml.cs` (liga a leitura ao teste).
+
+### Validação
+- Build Release 0 avisos; **252/252 testes** (inclui o JSON exato da v1.4.0 sendo lido).
+- Leitura real nesta máquina pela classe do app × `netsh wlan show interfaces`: 2.402/2.402 Mbps, sinal
+  80 %, −59 dBm, 5 GHz — iguais; 28 ms; sem pedir a permissão de localização.
+- Render fora da tela: janela do teste (Wi-Fi limitado, cabo 1 Gbps, cabo 100 Mbps), janela do
+  relatório e PDF de 14 e 25 testes (MuPDF: A4, 2 folhas, coluna "Link" sem corte depois de alargada).
+- ⚠️ Não automatizado: um teste REAL pelo app instalado (gasta ~180 MB) conferindo a linha "Conexão".
+- Fora do escopo, anotado: com o teste por cabo, a frase de comparação da v1.2.0 ainda diz "Repita o
+  teste por cabo para confirmar" quando o resultado fica abaixo de 40 %.
+
 ## v1.4.0 — 2026-11-01 — Onda 9: relatório para a operadora
 
 ### O que mudou

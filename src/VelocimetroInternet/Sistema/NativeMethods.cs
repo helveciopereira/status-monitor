@@ -485,4 +485,29 @@ public static class NativeMethods
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern nint SHGetFileInfo(string pszPath, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
     // (DestroyIcon já é declarado acima, na seção do ícone da bandeja)
+
+    // =========================================================================
+    // v1.5.0 (Onda 10): WLAN API — sinal, link e banda do Wi-Fi (usada só pelo InfoWiFi, 1× por teste).
+    // Todas devolvem 0 (ERROR_SUCCESS) ou um código Win32; a memória devolvida vai para WlanFreeMemory.
+    // =========================================================================
+    [DllImport("wlanapi.dll")]
+    public static extern int WlanOpenHandle(uint versaoCliente, nint reservado, out uint versaoNegociada, out nint cliente);
+
+    [DllImport("wlanapi.dll")]
+    public static extern int WlanCloseHandle(nint cliente, nint reservado);
+
+    [DllImport("wlanapi.dll")]
+    public static extern int WlanEnumInterfaces(nint cliente, nint reservado, out nint lista);
+
+    [DllImport("wlanapi.dll")]
+    public static extern int WlanQueryInterface(
+        nint cliente, ref Guid guid, int opcode, nint reservado, out int tamanho, out nint dados, out int tipoValor);
+
+    [DllImport("wlanapi.dll")]
+    public static extern int WlanGetNetworkBssList(
+        nint cliente, ref Guid guid, nint ssid, int tipoBss, [MarshalAs(UnmanagedType.Bool)] bool seguranca,
+        nint reservado, out nint lista);
+
+    [DllImport("wlanapi.dll")]
+    public static extern void WlanFreeMemory(nint memoria);
 }
