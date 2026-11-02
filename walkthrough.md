@@ -1,5 +1,36 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.7.1 — 2026-11-02 — CPU e RAM vermelhos a partir de 80 %
+
+### O que mudou
+- Na barra, o **número e o "%"** de CPU e de RAM ficam **vermelhos quando chegam a 80 %** e voltam ao tom
+  neutro quando caem. O rótulo ("CPU"/"RAM") continua neutro. Vale no modo **duas linhas** e no de
+  **uma linha** (ali só o número em alerta fica vermelho; o resto da frase não muda). Sem opção a ligar.
+
+### Por quê / como foi feito
+- Pedido do dono: "quando a CPU bater 80% os números e a porcentagem fiquem vermelhos, assim como a RAM".
+- O limite compara o valor **já arredondado**, o mesmo que aparece: 79,6 % é mostrado "80%" e por isso
+  também fica vermelho — nunca um "80%" branco (`MedidorSistema.EmAlerta`, `LimiteAlertaPercentual = 80`).
+- **Cor calibrada, não fixa:** parte dos vermelhos "crítico" do Fluent (#FF5F5F na barra escura,
+  #C42B1C na clara) e o motor de contraste clareia/escurece até passar o mínimo da paleta (4,5:1; 7:1 no
+  Alto Contraste) sobre os DOIS fundos reais: a pílula neutra de CPU/RAM e o fundo do modo uma linha
+  (`Paletas.GarantirContrasteSobre`, `CoresResolvidas.Alerta`). No Alto Contraste escuro ele fica rosado
+  (#FFB1B1-ish) para chegar a 7:1 — continua lido como vermelho.
+- O texto se liga ao pincel por **referência de recurso**: trocar tema/paleta com o número vermelho já
+  traz o vermelho novo. Só troca a ligação quando o estado muda (não a cada segundo).
+
+### Arquivos
+- `Medicao/MedidorSistema.cs` (`EmAlerta`, `LimiteAlertaPercentual`), `Apresentacao/Paletas.cs`
+  (`Alerta`, `AlertaEscuro/Claro`, `AlfaFundoSistema`, `GarantirContrasteSobre`),
+  `Apresentacao/TaskbarWidget.xaml(.cs)` (`SistemaAlertaBrush`; modo uma linha em trechos `Run`).
+- Testes: `V171AlertaSistemaTests.cs` (16).
+
+### Validação
+- Build Release 0 avisos; **309/309 testes** (16 novos: limite pelo valor mostrado — 79,4 não, 79,5 sim —
+  e o vermelho nas 5 paletas × 2 temas: opaco, contraste ≥ mínimo nos dois fundos, canal R dominante).
+- Widget **real** desenhado nas 5 paletas × 2 temas × 2 modos (40 imagens): CPU 85/RAM 63 e depois, no
+  mesmo widget, CPU 40/RAM 81 — o vermelho entra e sai sem ficar preso, e só no número.
+
 ## v1.7.0 — 2026-11-02 — Onda 13: mini gráfico atrás dos números da barra
 
 ### O que mudou

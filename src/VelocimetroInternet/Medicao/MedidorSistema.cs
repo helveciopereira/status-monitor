@@ -86,4 +86,15 @@ public sealed class MedidorSistema
     /// <summary>Texto curto para o widget: "7%", "100%"; sem leitura → "—". Sem casas decimais: cabe e não "pisca".</summary>
     public static string Formatar(double? percentual) =>
         percentual is { } p ? $"{Math.Round(p, MidpointRounding.AwayFromZero):0}%" : "—";
+
+    /// <summary>v1.7.1: a partir de quanto o número de CPU/RAM fica vermelho na barra (pedido do dono).</summary>
+    public const int LimiteAlertaPercentual = 80;
+
+    /// <summary>
+    /// v1.7.1: o valor está em alerta (≥ 80 %)? Compara o valor JÁ ARREDONDADO, o mesmo que aparece
+    /// na tela: 79,6 % é mostrado como "80%" e por isso também fica vermelho — nunca um "80%" branco.
+    /// Sem leitura (null) não é alerta.
+    /// </summary>
+    public static bool EmAlerta(double? percentual) =>
+        percentual is { } p && Math.Round(p, MidpointRounding.AwayFromZero) >= LimiteAlertaPercentual;
 }

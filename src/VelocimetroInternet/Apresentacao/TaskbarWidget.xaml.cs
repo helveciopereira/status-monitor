@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace VelocimetroInternet.Apresentacao;
@@ -273,7 +274,54 @@ public partial class TaskbarWidget : Window
         string ram = Medicao.MedidorSistema.Formatar(ramPercentual);
         TextoCpu.Text = cpu;
         TextoRam.Text = ram;
-        TextoCompactoSistema.Text = $"CPU {cpu} · RAM {ram}";
+        RunCompactoCpu.Text = cpu;
+        RunCompactoRam.Text = ram;
+
+        // v1.7.1: número + "%" em vermelho a partir de 80 % (o rótulo "CPU"/"RAM" fica neutro)
+        bool cpuAlerta = Medicao.MedidorSistema.EmAlerta(cpuPercentual);
+        bool ramAlerta = Medicao.MedidorSistema.EmAlerta(ramPercentual);
+        PintarAlerta(TextoCpu, cpuAlerta);
+        PintarAlerta(TextoRam, ramAlerta);
+        PintarAlerta(RunCompactoCpu, cpuAlerta);
+        PintarAlerta(RunCompactoRam, ramAlerta);
+    }
+
+    /// <summary>
+    /// v1.7.1: liga o texto ao pincel de alerta ou ao neutro. Por REFERÊNCIA de recurso (não pelo
+    /// pincel em si): se o tema da barra ou a paleta mudarem enquanto está vermelho, a cor nova chega
+    /// sozinha. Só troca quando o estado muda, para não refazer a ligação a cada segundo.
+    /// </summary>
+    private static void PintarAlerta(TextBlock texto, bool alerta)
+    {
+        // A Tag guarda o último estado aplicado (esses TextBlocks não a usam para mais nada)
+        if (texto.Tag is bool anterior && anterior == alerta)
+        {
+            return;
+        }
+
+        texto.SetResourceReference(TextBlock.ForegroundProperty, alerta ? "SistemaAlertaBrush" : "SistemaTextBrush");
+        texto.Tag = alerta;
+    }
+
+    /// <summary>Mesmo que o de cima, para o trecho (Run) do modo uma linha.</summary>
+    private static void PintarAlerta(Run trecho, bool alerta)
+    {
+        if (trecho.Tag is bool anterior && anterior == alerta)
+        {
+            return;
+        }
+
+        if (alerta)
+        {
+            trecho.SetResourceReference(TextElement.ForegroundProperty, "SistemaAlertaBrush");
+        }
+        else
+        {
+            // Sem cor própria, o trecho herda a cor neutra do TextBlock que o contém
+            trecho.ClearValue(TextElement.ForegroundProperty);
+        }
+
+        trecho.Tag = alerta;
     }
 
     /// <summary>
@@ -320,6 +368,8 @@ public partial class TaskbarWidget : Window
         Resources["SistemaRotuloBrush"] = CriarBrush(Color.FromArgb(0xA6, neutro.R, neutro.G, neutro.B));
         Resources["SistemaPillBgBrush"] = CriarBrush(Color.FromArgb(0x1A, neutro.R, neutro.G, neutro.B));
         Resources["SistemaPillBorderBrush"] = CriarBrush(Color.FromArgb(0x33, neutro.R, neutro.G, neutro.B));
+        // v1.7.1: vermelho do alerta ≥ 80 %, já calibrado pelo motor de contraste (opaco, como o texto)
+        Resources["SistemaAlertaBrush"] = CriarBrush(cores.Alerta);
     }
 
     /// <summary>Troca MB/s ↔ Mbps na hora (o próximo tick já sai na unidade nova).</summary>

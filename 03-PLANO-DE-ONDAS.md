@@ -214,7 +214,7 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] v1.6.1 (pedido do dono): ~500 MB de download e ~500 MB de upload por teste, até 20 s por etapa
       (o teste vai a ~1 GB e ~40 s); upload de 3 rodadas no fast.com: 168–195 Mbps (antes 31–184)
 
-## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.7.1 · valor médio, esforço baixo)
+## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.7.2 · valor médio, esforço baixo)
 
 - [ ] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
       CSV de consumo da v1.0.0)

@@ -37,6 +37,8 @@
         <SolidColorBrush x:Key="SistemaRotuloBrush" Color="#A6FFFFFF" />
         <SolidColorBrush x:Key="SistemaPillBgBrush" Color="#1AFFFFFF" />
         <SolidColorBrush x:Key="SistemaPillBorderBrush" Color="#33FFFFFF" />
+        <!-- v1.7.1: número de CPU/RAM em alerta (≥ 80 %). Trocado por AplicarCores (Paletas → Alerta). -->
+        <SolidColorBrush x:Key="SistemaAlertaBrush" Color="#FF5F5F" />
 
         <!-- v0.8.0: fonte e tamanhos do texto viram recursos, trocados por AplicarAparencia
              (estúdio → "Fonte" e "Tamanho do texto"). Os valores abaixo são os de sempre. -->
@@ -217,15 +219,15 @@
                 <StackPanel x:Name="LinhaCompacta" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- v0.5.0: "CPU 12% · RAM 48%  |" antes do ↑↓ (some quando desligado) -->
                     <StackPanel x:Name="CompactoSistema" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- v1.7.1: em trechos (Run), para só o número em alerta (≥ 80 %) ficar vermelho -->
                         <TextBlock x:Name="TextoCompactoSistema"
-                                   Text="CPU 12% · RAM 48%"
                                    Foreground="{DynamicResource SistemaTextBrush}"
                                    FontFamily="{DynamicResource Widget.Fonte}"
                                    FontSize="{DynamicResource Widget.TamanhoCompacto}"
                                    FontWeight="SemiBold"
                                    Typography.NumeralAlignment="Tabular"
                                    VerticalAlignment="Center"
-                                   AutomationProperties.Name="TextoCompactoSistemaBarra" />
+                                   AutomationProperties.Name="TextoCompactoSistemaBarra"><Run Text="CPU " /><Run x:Name="RunCompactoCpu" Text="12%" /><Run Text=" · RAM " /><Run x:Name="RunCompactoRam" Text="48%" /></TextBlock>
                         <TextBlock Text="  |  "
                                    Foreground="{DynamicResource SeparadorBrush}"
                                    FontFamily="{DynamicResource Widget.Fonte}"

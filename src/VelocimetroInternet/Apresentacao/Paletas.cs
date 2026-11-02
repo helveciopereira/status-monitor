@@ -34,7 +34,10 @@ public readonly record struct CoresResolvidas(
     double ContrasteDownload,
     // v1.7.0 (Onda 13): "borracha" do mini gráfico — a cor da barra, translúcida, pintada ACIMA da
     // curva para apagar parte do véu da pílula. O que sobra colorido (abaixo da curva) é o gráfico.
-    Color MascaraGrafico = default);
+    Color MascaraGrafico = default,
+    // v1.7.1: vermelho do número de CPU/RAM em alerta (≥ 80 %), já calibrado para o contraste
+    // mínimo da paleta sobre a pílula neutra do sistema e sobre o fundo do modo uma linha.
+    Color Alerta = default);
 
 /// <summary>
 /// Catálogo das paletas + o algoritmo de contraste WCAG 2.1 ("Motor WCAG" do design):
@@ -96,6 +99,17 @@ public static class Paletas
         up = GarantirContraste(up, barra, alfaFundo, paleta.ContrasteMinimo, escurecer: barraClara);
         down = GarantirContraste(down, barra, alfaFundo, paleta.ContrasteMinimo, escurecer: barraClara);
 
+        // v1.7.1: fundos REAIS por trás do número de CPU/RAM. A pílula do sistema é um véu neutro
+        // (branco na barra escura, preto na clara, alfa 0x1A — o mesmo de TaskbarWidget.AplicarCores);
+        // o modo uma linha usa o FundoCompacto. O vermelho tem de passar nos dois.
+        Color fundoCompacto = barraClara ? Color.FromArgb(0x14, 0, 0, 0) : Color.FromArgb(0x26, 0x1E, 0x20, 0x26);
+        Color neutro = barraClara ? Colors.Black : Colors.White;
+        Color alerta = GarantirContrasteSobre(
+            barraClara ? AlertaClaro : AlertaEscuro,
+            [Misturar(barra, neutro, AlfaFundoSistema), Misturar(barra, fundoCompacto, fundoCompacto.A)],
+            paleta.ContrasteMinimo,
+            escurecer: barraClara);
+
         return new CoresResolvidas(
             Upload: up,
             Download: down,
@@ -104,12 +118,47 @@ public static class Paletas
             FundoPilulaDownload: ComAlfa(down, alfaFundo),
             BordaPilulaDownload: ComAlfa(down, alfaBorda),
             Realce: barraClara ? Color.FromArgb(0x0D, 0, 0, 0) : Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF),
-            FundoCompacto: barraClara ? Color.FromArgb(0x14, 0, 0, 0) : Color.FromArgb(0x26, 0x1E, 0x20, 0x26),
+            FundoCompacto: fundoCompacto,
             BordaCompacto: barraClara ? Color.FromArgb(0x26, 0, 0, 0) : Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF),
             Separador: barraClara ? Color.FromArgb(0x55, 0, 0, 0) : Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF),
             ContrasteUpload: RazaoContraste(up, Misturar(barra, up, alfaFundo)),
             ContrasteDownload: RazaoContraste(down, Misturar(barra, down, alfaFundo)),
-            MascaraGrafico: ComAlfa(barra, AlfaMascaraGrafico));
+            MascaraGrafico: ComAlfa(barra, AlfaMascaraGrafico),
+            Alerta: alerta);
+    }
+
+    /// <summary>
+    /// v1.7.1: vermelho de partida do alerta de CPU/RAM. São os vermelhos "crítico" do Fluent
+    /// (Windows 11): mais claro na barra escura, mais fechado na clara. O motor de contraste ainda
+    /// clareia/escurece se a paleta exigir mais (Alto Contraste pede 7:1).
+    /// </summary>
+    public static readonly Color AlertaEscuro = Color.FromRgb(0xFF, 0x5F, 0x5F);
+    public static readonly Color AlertaClaro = Color.FromRgb(0xC4, 0x2B, 0x1C);
+
+    /// <summary>Opacidade do véu neutro da pílula de CPU/RAM (o mesmo 0x1A de TaskbarWidget.AplicarCores).</summary>
+    public const byte AlfaFundoSistema = 0x1A;
+
+    /// <summary>
+    /// v1.7.1: como <see cref="GarantirContraste"/>, mas para texto sobre fundos FIXOS (que não
+    /// mudam com a cor do texto): passos de 4% de luminosidade até passar em TODOS os fundos.
+    /// </summary>
+    public static Color GarantirContrasteSobre(Color texto, IReadOnlyList<Color> fundos, double minimo, bool escurecer)
+    {
+        (double h, double s, double l) = ParaHsl(texto);
+        Color atual = texto;
+        for (int passo = 0; passo < 30; passo++)
+        {
+            if (fundos.All(f => RazaoContraste(atual, f) >= minimo))
+            {
+                return atual;
+            }
+
+            l = Math.Clamp(l + (escurecer ? -0.04 : 0.04), 0.0, 1.0);
+            atual = DeHsl(h, s, l);
+        }
+
+        // Limite extremo: preto ou branco puros sempre passam
+        return escurecer ? Colors.Black : Colors.White;
     }
 
     /// <summary>
