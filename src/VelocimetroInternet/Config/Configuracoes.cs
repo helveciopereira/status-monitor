@@ -137,6 +137,15 @@ public sealed class Configuracoes
     /// </summary>
     public bool AvisarQuandoInternetVoltar { get; set; }
 
+    // ---------------------------------------------------------------- v1.9.0 (acesso amplo)
+
+    /// <summary>
+    /// Idioma da interface: "auto" (padrão: segue o idioma de exibição do Windows — português → pt-BR,
+    /// qualquer outro → inglês), "pt-BR" ou "en". Relatório PDF, CSV e log ficam sempre em português
+    /// (ver <c>Sistema.Idioma</c>).
+    /// </summary>
+    public string Idioma { get; set; } = "auto";
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -176,6 +185,8 @@ public sealed class Configuracoes
         JanelaGrafico = JanelaGrafico is "1min" or "5min" or "1h" ? JanelaGrafico : "1min";
         // v1.2.0: modo desconhecido volta às duas linhas de sempre
         ModoExibicao = ModoExibicao is "duas-linhas" or "uma-linha" or "so-download" ? ModoExibicao : "duas-linhas";
+        // v1.9.0: idioma desconhecido volta ao automático (o do Windows)
+        Idioma = Idioma is "pt-BR" or "en" ? Idioma : "auto";
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {

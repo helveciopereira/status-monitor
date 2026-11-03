@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
+using VelocimetroInternet.Recursos;
+using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Medicao;
 
@@ -27,8 +29,6 @@ public sealed record ConexaoNoTeste(
     int? RssiDbm = null,
     string? Banda = null)
 {
-    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
-
     /// <summary>O teste foi feito pelo Wi-Fi.</summary>
     [JsonIgnore] // calculado: não vai para o arquivo
     public bool EhWiFi => string.Equals(Tipo, "Wi-Fi", StringComparison.OrdinalIgnoreCase);
@@ -42,27 +42,33 @@ public sealed record ConexaoNoTeste(
         planoMbps > 0 && LinkDownMbps is double l && double.IsFinite(l) && l > 0 && l < planoMbps;
 
     /// <summary>"Wi-Fi 5 GHz · sinal 66 % · link 432 Mbps" / "Cabo · link 1 Gbps" / "Wi-Fi".</summary>
-    public string Descricao()
+    /// <param name="cultura">v1.9.0: null = a da interface (<see cref="Idioma.Cultura"/>); o log passa pt-BR.</param>
+    public string Descricao(CultureInfo? cultura = null)
     {
+        CultureInfo c = cultura ?? Idioma.Cultura;
         var partes = new List<string> { Banda is null ? Tipo : $"{Tipo} {Banda}" };
         if (SinalPct is int s)
         {
-            partes.Add($"sinal {s.ToString(PtBr)} %");
+            partes.Add(string.Format(c, Textos.Obter("Conexao_Sinal", c), s));
         }
 
         if (LinkDownMbps is double l && l > 0)
         {
-            partes.Add($"link {Link(l)}");
+            partes.Add(string.Format(c, Textos.Obter("Conexao_Link", c), Link(l, c)));
         }
 
         return string.Join(" · ", partes);
     }
 
     /// <summary>"432 Mbps", "1 Gbps", "2,5 Gbps" — taxa de link é número redondo, sem casas inúteis.</summary>
-    public static string Link(double mbps) =>
-        mbps >= 1000
-            ? $"{(mbps / 1000).ToString("0.#", PtBr)} Gbps"
-            : $"{Math.Round(mbps).ToString("0", PtBr)} Mbps";
+    /// <param name="cultura">v1.9.0: null = a da interface; o relatório PDF passa pt-BR.</param>
+    public static string Link(double mbps, CultureInfo? cultura = null)
+    {
+        CultureInfo c = cultura ?? Idioma.Cultura;
+        return mbps >= 1000
+            ? $"{(mbps / 1000).ToString("0.#", c)} Gbps"
+            : $"{Math.Round(mbps).ToString("0", c)} Mbps";
+    }
 
     /// <summary>
     /// Aviso da janela do teste quando o link limita o download; null quando não limita. Vem logo
@@ -75,9 +81,8 @@ public sealed record ConexaoNoTeste(
             return null;
         }
 
-        string plano = $"{planoMbps.ToString("0.##", PtBr)} Mbps";
-        return EhWiFi
-            ? $"Esse link com o roteador é menor que o plano de {plano}: nenhum teste por este Wi-Fi passa dele. Para comparar com o contratado, teste por cabo."
-            : $"Esse link com o roteador é menor que o plano de {plano}: confira o cabo (cabos antigos ficam em 100 Mbps) e a porta do roteador.";
+        // v1.9.0: no idioma da interface (só aparece na janela do teste)
+        string plano = $"{planoMbps.ToString("0.##", Idioma.Cultura)} Mbps";
+        return Textos.Formatar(EhWiFi ? Textos.Conexao_LimiteWiFi : Textos.Conexao_LimiteCabo, plano);
     }
 }

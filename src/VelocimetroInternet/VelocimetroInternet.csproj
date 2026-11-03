@@ -9,9 +9,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Ícone do .exe (recurso 32512): Explorer, Alt+Tab do estúdio e a bandeja (IconeBandeja) -->
     <ApplicationIcon>Recursos/app.ico</ApplicationIcon>
-    <Version>1.8.1</Version>
-    <AssemblyVersion>1.8.1.0</AssemblyVersion>
-    <FileVersion>1.8.1.0</FileVersion>
+    <Version>1.9.0</Version>
+    <AssemblyVersion>1.9.0.0</AssemblyVersion>
+    <FileVersion>1.9.0.0</FileVersion>
     <!-- v0.4.0 (Onda 4): ponto de entrada próprio (Program.cs) — o Velopack precisa rodar ANTES
          do WPF. StartupObject desempata com o Main que o WPF gera para o App.xaml. -->
     <StartupObject>VelocimetroInternet.Program</StartupObject>
@@ -25,6 +25,10 @@
     <Product>Status Monitor</Product>
     <AssemblyTitle>Status Monitor</AssemblyTitle>
     <Description>Status Monitor — CPU, RAM e velocidade de internet na barra de tarefas</Description>
+    <!-- v1.9.0 (acesso amplo): idioma NEUTRO dos recursos = português do Brasil. Recursos\Textos.resx
+         fica embutido no .exe; Textos.en.resx vira o satélite en\StatusMonitor.resources.dll (o SDK
+         compila sozinho). A classe Textos.Designer.cs é gerada por tools\gerar-textos.ps1 e commitada. -->
+    <NeutralLanguage>pt-BR</NeutralLanguage>
   </PropertyGroup>
 
   <!-- Blindagem: o hook de backup automático pode criar "backup\" DENTRO desta pasta quando o

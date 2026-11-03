@@ -198,9 +198,10 @@ public static class CalculoRelatorio
         {
             List<double> links = [.. limitados.Select(t => t.ConexaoCompleta.LinkDownMbps!.Value)];
             double min = links.Min(), max = links.Max();
-            string faixa = ConexaoNoTeste.Link(min) == ConexaoNoTeste.Link(max)
-                ? ConexaoNoTeste.Link(min)
-                : $"entre {ConexaoNoTeste.Link(min)} e {ConexaoNoTeste.Link(max)}";
+            // v1.9.0: pt-BR explícito — o relatório vai para a operadora, em português, qualquer que seja o idioma da interface
+            string faixa = ConexaoNoTeste.Link(min, PtBr) == ConexaoNoTeste.Link(max, PtBr)
+                ? ConexaoNoTeste.Link(min, PtBr)
+                : $"entre {ConexaoNoTeste.Link(min, PtBr)} e {ConexaoNoTeste.Link(max, PtBr)}";
             bool todosWiFi = limitados.All(t => t.ConexaoCompleta.EhWiFi);
             c.Add($"{limitados.Count} de {nTestes} teste(s) foram feitos com o computador ligado ao roteador a {faixa}{(todosWiFi ? " pelo Wi-Fi" : "")}, abaixo do plano de {planoMbps:0} Mbps: nesses, o resultado não podia passar do link, qualquer que fosse a operadora. Para a reclamação valer, repita os testes por cabo.");
         }
@@ -217,9 +218,9 @@ public static class CalculoRelatorio
             {
                 List<double> links = [.. wifi.Select(t => t.ConexaoCompleta.LinkDownMbps!.Value)];
                 double min = links.Min(), max = links.Max();
-                string faixa = ConexaoNoTeste.Link(min) == ConexaoNoTeste.Link(max)
-                    ? $"de {ConexaoNoTeste.Link(min)}"
-                    : $"entre {ConexaoNoTeste.Link(min)} e {ConexaoNoTeste.Link(max)}";
+                string faixa = ConexaoNoTeste.Link(min, PtBr) == ConexaoNoTeste.Link(max, PtBr)
+                    ? $"de {ConexaoNoTeste.Link(min, PtBr)}"
+                    : $"entre {ConexaoNoTeste.Link(min, PtBr)} e {ConexaoNoTeste.Link(max, PtBr)}";
                 c.Add(nWiFi == nTestes
                     ? $"Todos os {nTestes} teste(s) foram por Wi-Fi, com link {faixa}, acima do plano de {planoMbps:0} Mbps: o Wi-Fi não limitou estes testes."
                     : $"{nWiFi} de {nTestes} teste(s) foram por Wi-Fi, com link {faixa}, acima do plano de {planoMbps:0} Mbps: o Wi-Fi não limitou esses testes.");
@@ -342,14 +343,17 @@ public static class CalculoRelatorio
         return nomes.Count <= 1 ? nomes.FirstOrDefault() ?? "" : $"{string.Join(", ", nomes[..^1])} e {nomes[^1]}";
     }
 
-    /// <summary>"novembro de 2026".</summary>
-    public static string NomeMes(int ano, int mes) =>
-        new DateTime(ano, mes, 1).ToString("MMMM 'de' yyyy", PtBr);
+    /// <summary>"novembro de 2026" (pt-BR, o do PDF/CSV). v1.9.0: com cultura, "November 2026" para a janela em inglês.</summary>
+    public static string NomeMes(int ano, int mes, CultureInfo? cultura = null)
+    {
+        CultureInfo c = cultura ?? PtBr;
+        return new DateTime(ano, mes, 1).ToString(c.TwoLetterISOLanguageName == "pt" ? "MMMM 'de' yyyy" : "MMMM yyyy", c);
+    }
 
-    /// <summary>"512 Mbps" / "1,2 Gbps".</summary>
+    /// <summary>"512 Mbps" / "1,2 Gbps" — sempre pt-BR (relatório para a operadora).</summary>
     public static string Mbps(double bps)
     {
-        (string n, string u) = CalculoTeste.FormatarMbps(bps);
+        (string n, string u) = CalculoTeste.FormatarMbps(bps, PtBr);
         return $"{n} {u}";
     }
 

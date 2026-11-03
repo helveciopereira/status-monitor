@@ -1,7 +1,8 @@
 <Window x:Class="VelocimetroInternet.Apresentacao.JanelaConsumoApps"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Status Monitor — consumo por aplicativo"
+        xmlns:r="clr-namespace:VelocimetroInternet.Recursos"
+        Title="{x:Static r:Textos.Consumo_StatusMonitorConsumoPorAplicativo}"
         Width="480" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Tema.Superficie}"
@@ -10,7 +11,7 @@
         FontSize="13"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display"
-        AutomationProperties.Name="Status Monitor — consumo por aplicativo">
+        AutomationProperties.Name="{x:Static r:Textos.Consumo_StatusMonitorConsumoPorAplicativo}">
 
     <!--
         v1.3.0 (Onda 8): "quem está usando a minha internet?". Os números vêm da contabilidade de
@@ -26,22 +27,22 @@
     </Window.Resources>
 
     <StackPanel Margin="20,18,20,20">
-        <TextBlock Text="Consumo por aplicativo" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Text="{x:Static r:Textos.Consumo_ConsumoPorAplicativo}" FontSize="18" FontWeight="SemiBold" />
         <TextBlock Style="{StaticResource Rotulo}" Margin="0,4,0,14"
-                   Text="Quanto cada programa baixou e enviou. Os números são do próprio Windows (os mesmos de Configurações › Rede › Uso de dados) e chegam com cerca de 1 minuto de atraso." />
+                   Text="{x:Static r:Textos.Consumo_QuantoCadaProgramaBaixouE}" />
 
         <!-- Período + total do período -->
         <Grid Margin="0,0,0,10">
             <Border HorizontalAlignment="Left" Background="{DynamicResource Tema.SuperficieRecuada}" CornerRadius="6" Padding="2">
                 <StackPanel Orientation="Horizontal">
                     <RadioButton x:Name="Opcao5Min" GroupName="Periodo" Style="{StaticResource Segmento}" Content="5 min"
-                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Últimos 5 minutos" />
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="{x:Static r:Textos.Consumo_Ultimos5Minutos}" />
                     <RadioButton x:Name="Opcao1h" GroupName="Periodo" Style="{StaticResource Segmento}" Content="1 h"
-                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Última hora" />
-                    <RadioButton x:Name="OpcaoHoje" GroupName="Periodo" Style="{StaticResource Segmento}" Content="Hoje"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="{x:Static r:Textos.Consumo_UltimaHora}" />
+                    <RadioButton x:Name="OpcaoHoje" GroupName="Periodo" Style="{StaticResource Segmento}" Content="{x:Static r:Textos.Consumo_Hoje}"
                                  Checked="AoEscolherPeriodo" AutomationProperties.Name="Hoje" />
-                    <RadioButton x:Name="OpcaoMes" GroupName="Periodo" Style="{StaticResource Segmento}" Content="Este mês"
-                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="Este mês" />
+                    <RadioButton x:Name="OpcaoMes" GroupName="Periodo" Style="{StaticResource Segmento}" Content="{x:Static r:Textos.Comum_EsteMes}"
+                                 Checked="AoEscolherPeriodo" AutomationProperties.Name="{x:Static r:Textos.Comum_EsteMes}" />
                 </StackPanel>
             </Border>
             <TextBlock x:Name="TextoTotal" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
@@ -93,15 +94,15 @@
                     </ItemsControl>
                 <!-- Lendo / vazio / erro -->
                 <TextBlock x:Name="TextoEstado" Style="{StaticResource Rotulo}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                           TextAlignment="Center" Margin="24,0" AutomationProperties.Name="EstadoLista" Text="Lendo…" />
+                           TextAlignment="Center" Margin="24,0" AutomationProperties.Name="EstadoLista" Text="{x:Static r:Textos.Consumo_Lendo}" />
             </Grid>
         </Border>
 
         <Grid Margin="0,14,0,0">
             <TextBlock x:Name="TextoAtualizado" Style="{StaticResource Rotulo}" FontSize="11" VerticalAlignment="Center"
                        TextWrapping="NoWrap" AutomationProperties.Name="Atualizado" />
-            <Button Content="Fechar" Style="{StaticResource BotaoSecundario}" HorizontalAlignment="Right"
-                    Click="AoClicarFechar" IsCancel="True" AutomationProperties.Name="Fechar consumo por aplicativo" />
+            <Button Content="{x:Static r:Textos.Comum_Fechar}" Style="{StaticResource BotaoSecundario}" HorizontalAlignment="Right"
+                    Click="AoClicarFechar" IsCancel="True" AutomationProperties.Name="{x:Static r:Textos.Consumo_FecharConsumoPorAplicativo}" />
         </Grid>
     </StackPanel>
 </Window>

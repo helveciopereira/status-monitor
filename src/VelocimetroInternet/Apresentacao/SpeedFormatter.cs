@@ -1,4 +1,5 @@
 using System.Globalization;
+using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Apresentacao;
 
@@ -15,14 +16,17 @@ public enum ModoUnidadeVelocidade
 
 /// <summary>
 /// Formata velocidades em texto de largura previsível para a barra de tarefas, aplicando:
-/// 1. Vírgula decimal brasileira (pt-BR);
+/// 1. Separador decimal do idioma da interface (v1.9.0: vírgula em português, ponto em inglês —
+///    <see cref="Idioma.Cultura"/>, pt-BR por padrão; os métodos estáticos aceitam a cultura
+///    explícita para o PDF/CSV, que ficam em pt-BR);
 /// 2. Histerese de 2 leituras para descer de escala (evita piscar entre 999 KB/s e 1,00 MB/s);
 /// 3. Sempre até 3 algarismos significativos (ex.: "1,24 MB/s", "38,7 MB/s", "387 KB/s").
 /// Referência: 01-ANALISE.md §5 e 02-ARQUITETURA.md §7.
 /// </summary>
 public sealed class SpeedFormatter
 {
-    private static readonly CultureInfo CulturaPtBr = new("pt-BR");
+    /// <summary>Cultura dos números da interface (v1.9.0: era pt-BR fixo).</summary>
+    private static CultureInfo Cultura => Idioma.Cultura;
 
     private static readonly string[] UnidadesBytes = ["B/s", "KB/s", "MB/s", "GB/s"];
     private static readonly string[] UnidadesBits = ["bps", "Kbps", "Mbps", "Gbps"];
@@ -131,8 +135,10 @@ public sealed class SpeedFormatter
     /// Quantidade transferida para o "Consumo Acumulado" do painel (base 1024, 1 casa):
     /// "0 B", "512 KB", "14,8 GB". Sem histerese — o valor só cresce ao longo do dia.
     /// </summary>
-    public static string FormatarQuantidade(ulong bytes)
+    /// <param name="cultura">v1.9.0: null = a da interface (<see cref="Idioma.Cultura"/>); o PDF/CSV passa pt-BR.</param>
+    public static string FormatarQuantidade(ulong bytes, CultureInfo? cultura = null)
     {
+        CultureInfo c = cultura ?? Cultura;
         string[] unidades = ["B", "KB", "MB", "GB", "TB"];
         double valor = bytes;
         int i = 0;
@@ -143,21 +149,23 @@ public sealed class SpeedFormatter
         }
 
         string numero = i == 0 || valor >= 100
-            ? Math.Round(valor).ToString("0", CulturaPtBr)
-            : valor.ToString("0.0", CulturaPtBr);
+            ? Math.Round(valor).ToString("0", c)
+            : valor.ToString("0.0", c);
         return $"{numero} {unidades[i]}";
     }
 
     /// <summary>Velocidade de link da placa ("300 Mbps", "2,4 Gbps") — sempre em bits, como o Windows mostra.</summary>
-    public static string FormatarLink(ulong bitsPorSegundo)
+    /// <param name="cultura">v1.9.0: null = a da interface.</param>
+    public static string FormatarLink(ulong bitsPorSegundo, CultureInfo? cultura = null)
     {
+        CultureInfo c = cultura ?? Cultura;
         if (bitsPorSegundo >= 1_000_000_000)
         {
             double g = bitsPorSegundo / 1e9;
-            return $"{(g % 1 == 0 ? g.ToString("0", CulturaPtBr) : g.ToString("0.0", CulturaPtBr))} Gbps";
+            return $"{(g % 1 == 0 ? g.ToString("0", c) : g.ToString("0.0", c))} Gbps";
         }
 
-        return $"{Math.Round(bitsPorSegundo / 1e6).ToString("0", CulturaPtBr)} Mbps";
+        return $"{Math.Round(bitsPorSegundo / 1e6).ToString("0", c)} Mbps";
     }
 
     /// <summary>
@@ -204,7 +212,7 @@ public sealed class SpeedFormatter
     }
 
     private static string FormatarRedondo(double v) =>
-        v % 1 == 0 ? v.ToString("0", CulturaPtBr) : v.ToString("0.#", CulturaPtBr);
+        v % 1 == 0 ? v.ToString("0", Cultura) : v.ToString("0.#", Cultura);
 
     /// <summary>
     /// Separa "38,7 MB/s" em ("38,7", "MB/s") — o painel mostra o número grande e a unidade menor.
@@ -219,20 +227,20 @@ public sealed class SpeedFormatter
     {
         if (valor < 0.005)
         {
-            return "0,00";
+            return 0d.ToString("0.00", Cultura); // v1.9.0: "0,00" em português, "0.00" em inglês
         }
 
         if (valor < 9.995)
         {
-            return valor.ToString("0.00", CulturaPtBr);
+            return valor.ToString("0.00", Cultura);
         }
 
         if (valor < 99.95)
         {
-            return valor.ToString("0.0", CulturaPtBr);
+            return valor.ToString("0.0", Cultura);
         }
 
-        return Math.Round(valor).ToString("0", CulturaPtBr);
+        return Math.Round(valor).ToString("0", Cultura);
     }
 }
 

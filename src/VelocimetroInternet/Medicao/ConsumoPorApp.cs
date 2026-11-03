@@ -96,7 +96,7 @@ public static class ConsumoPorApp
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return "Sistema (não identificado)";
+            return Recursos.Textos.Consumo_SistemaNaoIdentificado; // v1.9.0: no idioma da interface
         }
 
         if (id.Contains('\\'))
@@ -161,7 +161,7 @@ public static class ConsumoPorApp
         r.AddRange(ordenada.Take(maximo - 1));
         IEnumerable<UsoApp> resto = ordenada.Skip(maximo - 1);
         int n = ordenada.Count - (maximo - 1);
-        r.Add(new UsoApp("", $"Outros ({n} apps)", null,
+        r.Add(new UsoApp("", Recursos.Textos.Formatar(Recursos.Textos.Consumo_Outros, n), null,
             (ulong)resto.Sum(u => (decimal)u.Recebidos), (ulong)resto.Sum(u => (decimal)u.Enviados)));
         return r;
     }

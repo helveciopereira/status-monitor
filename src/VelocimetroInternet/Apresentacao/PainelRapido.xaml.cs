@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using VelocimetroInternet.Config;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
 using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Apresentacao;
@@ -215,20 +216,20 @@ public partial class PainelRapido : Window
 
         if (semConexao)
         {
-            TextoStatus.Text = "Sem conexão";
+            TextoStatus.Text = Textos.Painel_SemConexao;
             TextoStatus.Foreground = (Brush)FindResource("Tema.TextoSecundario");
             PontoAoVivo.Fill = (Brush)FindResource("Tema.TextoSecundario");
         }
         else if (_semInternet)
         {
             // v1.8.1: a rede local está de pé (o nome da placa continua), a internet não
-            TextoStatus.Text = string.IsNullOrEmpty(h.NomeInterface) ? "Sem internet" : $"Sem internet · {h.NomeInterface}";
+            TextoStatus.Text = string.IsNullOrEmpty(h.NomeInterface) ? Textos.Painel_SemInternet : $"{Textos.Painel_SemInternet} · {h.NomeInterface}";
             TextoStatus.Foreground = (Brush)FindResource("Tema.TextoSecundario");
             PontoAoVivo.Fill = (Brush)FindResource("Tema.TextoSecundario");
         }
         else
         {
-            TextoStatus.Text = string.IsNullOrEmpty(h.NomeInterface) ? "Ao vivo" : $"Ao vivo · {h.NomeInterface}";
+            TextoStatus.Text = string.IsNullOrEmpty(h.NomeInterface) ? Textos.Painel_AoVivo : $"{Textos.Painel_AoVivo} · {h.NomeInterface}";
             TextoStatus.SetResourceReference(TextBlock.ForegroundProperty, "Tema.AoVivo");
             PontoAoVivo.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Tema.AoVivo");
         }
@@ -245,8 +246,8 @@ public partial class PainelRapido : Window
         string sufixo = _janela switch { JanelaGrafico.CincoMinutos => "5 min", JanelaGrafico.Hora => "1 h", _ => "60 s" };
         // Pico sem histerese (formatador novo): é um valor estático, não pisca
         var fPico = new SpeedFormatter(_formatadorUp.ModoUnidade);
-        TextoPicoUpload.Text = $"Pico em {sufixo}: {fPico.FormatarValorEUnidade(serie.PicoUpload)}";
-        TextoPicoDownload.Text = $"Pico em {sufixo}: {new SpeedFormatter(fPico.ModoUnidade).FormatarValorEUnidade(serie.PicoDownload)}";
+        TextoPicoUpload.Text = Textos.Formatar(Textos.Painel_PicoEm, sufixo, fPico.FormatarValorEUnidade(serie.PicoUpload));
+        TextoPicoDownload.Text = Textos.Formatar(Textos.Painel_PicoEm, sufixo, new SpeedFormatter(fPico.ModoUnidade).FormatarValorEUnidade(serie.PicoDownload));
 
         // Barras: fração da velocidade contratada; sem ela, da velocidade de link da placa
         double referenciaBps = _velocidadeContratadaMbps > 0
@@ -256,8 +257,8 @@ public partial class PainelRapido : Window
         AjustarBarra(BarraDownload, TrilhoDownload, h.DownloadAtual, referenciaBps);
 
         TextoLink.Text = _velocidadeContratadaMbps > 0
-            ? $"Plano de {_velocidadeContratadaMbps:0} Mbps"
-            : h.VelocidadeLinkBps > 0 ? $"Link de {SpeedFormatter.FormatarLink(h.VelocidadeLinkBps)}" : string.Empty;
+            ? Textos.Formatar(Textos.Painel_PlanoDe, _velocidadeContratadaMbps.ToString("0", Idioma.Cultura))
+            : h.VelocidadeLinkBps > 0 ? Textos.Formatar(Textos.Painel_LinkDe, SpeedFormatter.FormatarLink(h.VelocidadeLinkBps)) : string.Empty;
 
         ConsumoUpload.Text = $"↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosHoje)}";
         ConsumoDownload.Text = $"↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosHoje)}";
@@ -299,7 +300,8 @@ public partial class PainelRapido : Window
         ColunaFranquiaUsada.Width = new GridLength(usada, GridUnitType.Star);
         ColunaFranquiaResto.Width = new GridLength(1 - usada, GridUnitType.Star);
         BarraFranquia.SetResourceReference(Border.BackgroundProperty, fracao >= 0.8 ? "Painel.Download" : "Tema.Acento");
-        TextoFranquia.Text = $"{SpeedFormatter.FormatarQuantidade(usado)} de {_franquiaGb:0.##} GB da franquia · {DicaWidget.TextoPercentual(fracao)}";
+        TextoFranquia.Text = Textos.Formatar(Textos.Painel_FranquiaUso,
+            SpeedFormatter.FormatarQuantidade(usado), _franquiaGb.ToString("0.##", Idioma.Cultura), DicaWidget.TextoPercentual(fracao));
     }
 
     private double _franquiaGb;
@@ -386,8 +388,9 @@ public partial class PainelRapido : Window
         LinhaUpload.Data = linhaU;
 
         // Formatadores novos (sem histerese): a média é um valor estático
-        TextoEscala.Text = $"Média ↑ {new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaUpload)}" +
-                           $" · ↓ {new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaDownload)}";
+        TextoEscala.Text = Textos.Formatar(Textos.Painel_Medias,
+            new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaUpload),
+            new SpeedFormatter(_formatadorUp.ModoUnidade).FormatarValorEUnidade(h.MediaDownload));
     }
 
     /// <summary>Linha horizontal de ponta a ponta + rótulo encostado à esquerda, logo ACIMA dela.</summary>

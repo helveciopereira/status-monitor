@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using VelocimetroInternet.Recursos;
 
 namespace VelocimetroInternet.Medicao;
 
@@ -12,9 +13,9 @@ public sealed record LatenciaAtual(long? RoteadorMs, long? InternetMs, bool Medi
 {
     public static readonly LatenciaAtual Nenhuma = new(null, null, false);
 
-    /// <summary>"Roteador 3 ms · Internet 18 ms" (sem resposta → "—").</summary>
+    /// <summary>"Roteador 3 ms · Internet 18 ms" (sem resposta → "—"). v1.9.0: no idioma da interface.</summary>
     public string Texto() =>
-        !Medido ? "medindo…" : $"Roteador {Ms(RoteadorMs)} · Internet {Ms(InternetMs)}";
+        !Medido ? Textos.Latencia_Medindo : Textos.Formatar(Textos.Latencia_RoteadorInternet, Ms(RoteadorMs), Ms(InternetMs));
 
     private static string Ms(long? ms) => ms is long v ? $"{v} ms" : "—";
 }

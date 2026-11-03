@@ -447,9 +447,10 @@ public static class CalculoTeste
     /// "94,3" + "Mbps" (1 casa abaixo de 100), "512" + "Mbps", "1,25" + "Gbps" — bits, como o
     /// plano da operadora. Número e unidade separados para a tela destacar o número.
     /// </summary>
-    public static (string Numero, string Unidade) FormatarMbps(double bitsPorSegundo)
+    /// <param name="cultura">v1.9.0: null = a da interface (<see cref="Sistema.Idioma.Cultura"/>); o PDF/CSV passa pt-BR.</param>
+    public static (string Numero, string Unidade) FormatarMbps(double bitsPorSegundo, System.Globalization.CultureInfo? cultura = null)
     {
-        var pt = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+        System.Globalization.CultureInfo pt = cultura ?? Sistema.Idioma.Cultura;
         double bps = double.IsFinite(bitsPorSegundo) ? Math.Max(0, bitsPorSegundo) : 0;
         if (bps >= 1e9)
         {
@@ -475,7 +476,7 @@ public static class CalculoTeste
     /// <summary>
     /// Comparação com o plano contratado (Mbps). A Anatel exige da operadora, no INSTANTE, pelo
     /// menos 40 % do contratado (e 80 % na média do mês) — um teste é uma medida instantânea.
-    /// null = sem plano informado.
+    /// null = sem plano informado. v1.9.0: frase no idioma da interface (só aparece na janela do teste).
     /// </summary>
     public static string? ComparacaoComPlano(double downloadBps, double planoMbps)
     {
@@ -485,11 +486,11 @@ public static class CalculoTeste
         }
 
         double fracao = downloadBps / (planoMbps * 1_000_000);
-        string pct = $"{Math.Floor(fracao * 100):0} %";
-        return fracao >= 0.8
-            ? $"{pct} do plano de {planoMbps:0} Mbps — dentro do esperado."
-            : fracao >= 0.4
-                ? $"{pct} do plano de {planoMbps:0} Mbps — acima do mínimo instantâneo da Anatel (40 %), mas abaixo dos 80 % da média mensal."
-                : $"{pct} do plano de {planoMbps:0} Mbps — ABAIXO do mínimo instantâneo da Anatel (40 %). Repita o teste por cabo para confirmar.";
+        string pct = Apresentacao.DicaWidget.TextoPercentual(fracao);
+        string plano = planoMbps.ToString("0", Sistema.Idioma.Cultura);
+        string modelo = fracao >= 0.8 ? Recursos.Textos.Teste_DentroDoEsperado
+            : fracao >= 0.4 ? Recursos.Textos.Teste_AcimaDoMinimo
+            : Recursos.Textos.Teste_AbaixoDoMinimo;
+        return Recursos.Textos.Formatar(modelo, pct, plano);
     }
 }

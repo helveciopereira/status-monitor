@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
 
 namespace VelocimetroInternet.Apresentacao;
 
@@ -62,7 +63,7 @@ public partial class JanelaConsumoApps : Window
         if (mostrarLendo)
         {
             Lista.ItemsSource = null;
-            MostrarEstado("Lendo…");
+            MostrarEstado(Textos.Consumo_Lendo);
         }
 
         try
@@ -84,7 +85,7 @@ public partial class JanelaConsumoApps : Window
             // Captura ampla justificada: a fonte é uma API do Windows que pode falhar de vários
             // jeitos (serviço parado, política) — a janela explica em vez de derrubar o widget.
             Lista.ItemsSource = null;
-            MostrarEstado("Não foi possível ler o consumo do Windows agora. Tente de novo em instantes.");
+            MostrarEstado(Textos.Consumo_ErroLeitura);
             System.Diagnostics.Debug.WriteLine($"Consumo por app: {ex}");
         }
     }
@@ -100,7 +101,7 @@ public partial class JanelaConsumoApps : Window
         }
 
         TextoTotal.Text = apps.Count == 0 ? "" : $"↓ {SpeedFormatter.FormatarQuantidade(rec)} · ↑ {SpeedFormatter.FormatarQuantidade(env)}";
-        TextoAtualizado.Text = $"Atualizado às {DateTime.Now:HH:mm:ss} · refaz a cada 30 s";
+        TextoAtualizado.Text = Textos.Formatar(Textos.Consumo_AtualizadoAs, DateTime.Now.ToString("HH:mm:ss"));
 
         List<UsoApp> linhas = ConsumoPorApp.Resumir(apps);
         ulong maior = linhas.Count == 0 ? 0 : linhas.Max(l => l.Total);
@@ -108,9 +109,7 @@ public partial class JanelaConsumoApps : Window
 
         if (linhas.Count == 0)
         {
-            MostrarEstado(_periodo == PeriodoConsumoApp.CincoMinutos
-                ? "Nenhum programa usou a internet nos últimos 5 minutos (ou o Windows ainda não contou — ele atualiza a cada minuto)."
-                : "Nenhum programa usou a internet neste período.");
+            MostrarEstado(_periodo == PeriodoConsumoApp.CincoMinutos ? Textos.Consumo_Vazio5Minutos : Textos.Consumo_VazioPeriodo);
         }
         else
         {

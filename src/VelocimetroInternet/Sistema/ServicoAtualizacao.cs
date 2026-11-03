@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net.Http;
 using Velopack;
 using Velopack.Sources;
+using VelocimetroInternet.Recursos;
 
 namespace VelocimetroInternet.Sistema;
 
@@ -95,12 +97,14 @@ public sealed class ServicoAtualizacao
             UpdateInfo? info = await _gerenciador.CheckForUpdatesAsync().ConfigureAwait(false);
             if (info is null)
             {
+                _ultima = new ResultadoConsulta(DateTime.Now, null, null, null);
                 UltimaConsulta = $"{DateTime.Now:dd/MM HH:mm} — em dia";
                 return false;
             }
 
             await _gerenciador.DownloadUpdatesAsync(info, null, ct).ConfigureAwait(false);
             _pendente = info;
+            _ultima = new ResultadoConsulta(DateTime.Now, VersaoPendente, null, null);
             UltimaConsulta = $"{DateTime.Now:dd/MM HH:mm} — versão {VersaoPendente} baixada, instala sozinha";
             return true;
         }
@@ -109,6 +113,7 @@ public sealed class ServicoAtualizacao
             // Captura ampla INTENCIONAL: o Velopack não documenta um conjunto fechado de exceções
             // e esta rotina roda sozinha em segundo plano — qualquer falha só adia a atualização,
             // NUNCA derruba o velocímetro. O motivo vira texto legível em vez de sumir.
+            _ultima = new ResultadoConsulta(DateTime.Now, null, ClassificarMotivo(ex), ex.GetType().Name);
             UltimaConsulta = $"{DateTime.Now:dd/MM HH:mm} — {Classificar(ex)}";
             return false;
         }
@@ -142,16 +147,60 @@ public sealed class ServicoAtualizacao
         }
     }
 
-    /// <summary>Traduz a falha para uma frase curta (vai para o log e para o estúdio).</summary>
-    public static string Classificar(Exception ex) => ex switch
+    /// <summary>Traduz a falha para uma frase curta em português (vai para o log; testes da Onda 4).</summary>
+    public static string Classificar(Exception ex) =>
+        TextoMotivo(ClassificarMotivo(ex), ex.GetType().Name, CultureInfo.GetCultureInfo("pt-BR"));
+
+    // ---------------------------------------------------------------- v1.9.0: a consulta no idioma da interface
+
+    /// <summary>Por que a última consulta falhou (classes de erro que o rodapé do estúdio distingue).</summary>
+    public enum MotivoFalha { NaoPublicada, Limitou, SemInternet, TempoEsgotado, Disco, Outro }
+
+    /// <summary>Última consulta: quando, versão baixada (se houve) ou a falha (motivo + tipo da exceção).</summary>
+    private sealed record ResultadoConsulta(DateTime Quando, string? VersaoBaixada, MotivoFalha? Falha, string? TipoExcecao);
+
+    private ResultadoConsulta? _ultima;
+
+    /// <summary>A mesma classificação de <see cref="Classificar"/>, sem texto — para traduzir depois.</summary>
+    public static MotivoFalha ClassificarMotivo(Exception ex) => ex switch
     {
-        HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound } => "nenhuma versão publicada ainda",
-        HttpRequestException { StatusCode: System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.TooManyRequests } => "o GitHub limitou as consultas",
-        HttpRequestException => "sem internet ou GitHub indisponível",
-        TaskCanceledException or TimeoutException => "tempo esgotado",
-        System.IO.IOException => "falha de disco ao baixar",
-        _ => $"falhou ({ex.GetType().Name})"
+        HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound } => MotivoFalha.NaoPublicada,
+        HttpRequestException { StatusCode: System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.TooManyRequests } => MotivoFalha.Limitou,
+        HttpRequestException => MotivoFalha.SemInternet,
+        TaskCanceledException or TimeoutException => MotivoFalha.TempoEsgotado,
+        System.IO.IOException => MotivoFalha.Disco,
+        _ => MotivoFalha.Outro
     };
+
+    /// <summary>Frase curta do motivo na cultura pedida ("tempo esgotado" / "timed out").</summary>
+    public static string TextoMotivo(MotivoFalha motivo, string? tipoExcecao, CultureInfo cultura) => motivo switch
+    {
+        MotivoFalha.NaoPublicada => Textos.Obter("Atualizacao_NaoPublicada", cultura),
+        MotivoFalha.Limitou => Textos.Obter("Atualizacao_Limitou", cultura),
+        MotivoFalha.SemInternet => Textos.Obter("Atualizacao_SemInternet", cultura),
+        MotivoFalha.TempoEsgotado => Textos.Obter("Atualizacao_TempoEsgotado", cultura),
+        MotivoFalha.Disco => Textos.Obter("Atualizacao_Disco", cultura),
+        _ => string.Format(cultura, Textos.Obter("Atualizacao_Falhou", cultura), tipoExcecao)
+    };
+
+    /// <summary>
+    /// "03/11 18:20 — em dia" / "11/03 18:20 — up to date": a última consulta no idioma da interface, para
+    /// o rodapé do estúdio. null enquanto nenhuma consulta terminou. (<see cref="UltimaConsulta"/> é a
+    /// versão em português, do log.)
+    /// </summary>
+    public string? TextoUltimaConsulta(CultureInfo cultura)
+    {
+        if (_ultima is not { } u)
+        {
+            return null;
+        }
+
+        string quando = u.Quando.ToString(cultura.TwoLetterISOLanguageName == "en" ? "MM/dd HH:mm" : "dd/MM HH:mm", cultura);
+        string estado = u.Falha is { } f ? TextoMotivo(f, u.TipoExcecao, cultura)
+            : u.VersaoBaixada is { } v ? string.Format(cultura, Textos.Obter("Atualizacao_Baixada", cultura), v)
+            : Textos.Obter("Atualizacao_EmDia", cultura);
+        return $"{quando} — {estado}";
+    }
 }
 
 /// <summary>

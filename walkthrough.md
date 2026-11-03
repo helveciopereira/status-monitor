@@ -1,5 +1,68 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.9.0 — 2026-11-03 — Acesso amplo: interface em inglês + manifesto para o winget
+
+### O que mudou
+- **Interface em inglês** (`Recursos/Textos.resx` + `Textos.en.resx`, `Sistema/Idioma.cs`, `Config/Configuracoes.Idioma`).
+  Todo texto visível — widget, dica, painel rápido, menu, estúdio, teste de velocidade, consumo por app,
+  janela do relatório, balões da bandeja e rodapé da atualização — saiu do código e foi para recursos
+  (275 chaves, pt-BR como idioma neutro embutido no .exe e `en\StatusMonitor.resources.dll` como satélite).
+  Novo cartão **"6. Idioma"** no estúdio: **Automático** (segue o idioma do Windows: português → pt-BR,
+  qualquer outro → inglês), **Português** ou **English**; aplica na hora, sem reabrir (o painel rápido
+  aberto é descartado e recriado; o rodapé e os menus são remontados).
+- **Números no idioma certo**: `SpeedFormatter`, `FormatarMbps`, `ConexaoNoTeste.Link/Descricao`,
+  `DicaWidget.TextoPercentual` e `CalculoRelatorio.NomeMes` recebem a cultura (padrão `Idioma.Cultura`):
+  "1,24 MB/s · 82 %" em português, "1.24 MB/s · 82%" em inglês. As amostras das pílulas do estúdio
+  também seguem o idioma.
+- **Manifesto para o winget** (`tools/winget/gerar-manifesto.ps1` → `tools/winget/manifests/h/HelvecioPereira/StatusMonitor/<versão>/`):
+  gera os três YAMLs (version, installer, defaultLocale) com o SHA-256 do `StatusMonitor-Setup.exe`
+  publicado e roda `winget validate`. Id do pacote: **`HelvecioPereira.StatusMonitor`**.
+- **O que fica em português de propósito**: relatório PDF, CSV, conclusões do relatório na janela e o
+  log — são documentos para a operadora/Anatel, que são brasileiras (`PtBr` explícito nesses caminhos).
+
+### Por quê (causa raiz)
+- Item "Inglês" e "winget" do plano (acesso amplo, ordem sugerida 4). Com ~270 strings soltas no código,
+  trocar o idioma exigiria reescrever cada tela; a extração para `.resx` com classe gerada
+  (`tools/gerar-textos.ps1` → `Textos.Designer.cs`, commitada) deixa cada texto num lugar só e com
+  teste de paridade (toda chave pt tem a en, mesmos `{n}`), então uma tradução nunca fica faltando sem
+  o teste acusar.
+- A cultura usada é SEMPRE `Idioma.Cultura` (nunca a da thread): o app roda em máquinas com Windows em
+  inglês e formatação brasileira, e vice-versa; o que manda é a escolha do estúdio.
+- O winget é a parte gratuita da "assinatura do instalador": instalar pelo winget não passa pelo
+  SmartScreen, e o `winget upgrade` reconhece o app pelo `ProductCode` que o Velopack registra
+  (`VelocimetroInternetApp`).
+
+### Como usar
+- Estúdio › **6. Idioma** › English › Aplicar. Para voltar: Português (ou Automático).
+- Winget (quando o PR for aceito): `winget install HelvecioPereira.StatusMonitor`.
+- Nova versão: depois de `tools\publicar-atualizacao.ps1`, rode `pwsh -File tools\winget\gerar-manifesto.ps1`
+  e abra o PR no `microsoft/winget-pkgs` com a pasta gerada.
+- Novo texto na interface: adicione a chave nas duas colunas (pt e en) e rode `tools\gerar-textos.ps1`
+  para regenerar `Textos.Designer.cs` (o teste `V190IdiomaTests` cobra a paridade).
+
+### Arquivos tocados
+- Novos: `Recursos/Textos.resx`, `Textos.en.resx`, `Textos.cs`, `Textos.Designer.cs`, `Sistema/Idioma.cs`,
+  `tools/gerar-textos.ps1`, `tools/winget/gerar-manifesto.ps1` (+ manifestos gerados),
+  `tests/.../V190IdiomaTests.cs` (23 casos: resolução do idioma, paridade e `{n}` das 275 chaves,
+  formatadores pt/en, `Descricao`, `NomeMes`, motivos da atualização).
+- Alterados: `App.xaml.cs`, todos os `Apresentacao/*.xaml` + `.xaml.cs` (x:Static dos recursos),
+  `DicaWidget.cs`, `Paletas.cs`, `SpeedFormatter.cs`, `RelatorioPaginas.cs`, `Config/Configuracoes.cs`,
+  `Medicao/CalculoRelatorio.cs`, `ConexaoNoTeste.cs`, `ConsumoPorApp.cs`, `JanelaAgregada.cs`,
+  `MedidorLatencia.cs`, `TesteVelocidade.cs`, `Sistema/ServicoAtualizacao.cs`, csproj (`NeutralLanguage`),
+  `README.md`, `03-PLANO-DE-ONDAS.md`.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Suíte inteira: **352 aprovados** (329 + 23).
+- Harness `render-estudio.exe --en`: estúdio (com o cartão Idioma), painel rápido, janela do relatório
+  e janela do teste renderizados em inglês e conferidos a olho ("Live · Wi-Fi", "Peak in 60 s",
+  "Report for your provider", "November 2026", "64% of the plan", "Start test"); sem `--en`, tudo
+  igual à v1.8.1 (NBSP em "66 %" preservado — o teste V150 cobra).
+- Limitação conhecida: a conclusão em texto do relatório (janela e PDF) continua em português mesmo
+  com a interface em inglês — decisão, não defeito (ver "O que fica em português").
+- Validação manual recomendada: estúdio › Idioma › English › Aplicar; abrir menu do clique direito,
+  painel rápido, teste de velocidade e relatório; voltar para Português. Depois: `winget validate`
+  passa na pasta dos manifestos (rodado pelo gerador).
+
 ## v1.8.1 — 2026-11-03 — "Sem internet" no widget + Onda 14 (CSV, aviso de volta, Wi-Fi que não limitou)
 
 ### O que mudou

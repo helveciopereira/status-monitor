@@ -132,7 +132,7 @@ public static class RelatorioPaginas
                 // Link abaixo do plano ganha "*" (explicado na nota logo abaixo da tabela)
                 ConexaoNoTeste con = t.ConexaoCompleta;
                 string link = con.LinkDownMbps is double l && l > 0
-                    ? ConexaoNoTeste.Link(l) + (con.LimitaODownload(r.PlanoMbps) ? " *" : "")
+                    ? ConexaoNoTeste.Link(l, PtBr) + (con.LimitaODownload(r.PlanoMbps) ? " *" : "") // v1.9.0: PDF sempre em pt-BR
                     : "—";
                 FrameworkElement linha = LinhaTabela(colTestes, false, i % 2 == 1,
                     t.Quando.ToString("dd/MM/yyyy HH:mm", PtBr), con.Banda is null ? con.Tipo : $"{con.Tipo} {con.Banda}", link,

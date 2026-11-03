@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using VelocimetroInternet.Apresentacao;
 using VelocimetroInternet.Config;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
 using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet;
@@ -138,7 +139,9 @@ public partial class App : Application
         }
 
         Configuracoes cfg = _config.Atual;
-        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} ===");
+        // v1.9.0: idioma da interface ANTES de criar qualquer janela (os {x:Static} dos XAML leem a cultura ao carregar)
+        Idioma.Aplicar(cfg.Idioma);
+        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} | Idioma={cfg.Idioma}→{Idioma.Cultura.Name} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
@@ -379,7 +382,7 @@ public partial class App : Application
     {
         if (_pausado)
         {
-            return "Status Monitor — medição pausada (clique direito › Pausar medição para retomar)";
+            return Textos.App_DicaPausadaLonga;
         }
 
         Configuracoes cfg = _config.Atual;
@@ -406,7 +409,7 @@ public partial class App : Application
 
         _ = Dispatcher.InvokeAsync(() =>
         {
-            bool mostrou = _bandeja?.MostrarAviso("Status Monitor — internet", texto) == true;
+            bool mostrou = _bandeja?.MostrarAviso(Textos.App_TituloInternet, texto) == true;
             RegistrarLog($"Queda terminou: {texto} {(mostrou ? "(aviso mostrado)" : "(ícone oculto, só no log)")}");
         });
     }
@@ -450,12 +453,14 @@ public partial class App : Application
             return;
         }
 
+        // v1.9.0: no idioma da interface (a notificação é para o usuário, não para o log)
+        string gb = franquia.ToString("0.##", Idioma.Cultura);
         string texto = marco >= 100
-            ? $"A franquia de {franquia:0.##} GB deste mês acabou. A operadora pode reduzir a velocidade."
-            : $"Você já usou {marco} % da franquia de {franquia:0.##} GB deste mês.";
+            ? Textos.Formatar(Textos.App_FranquiaAcabou, gb)
+            : Textos.Formatar(Textos.App_FranquiaUsada, marco, gb);
         _ = Dispatcher.InvokeAsync(() =>
         {
-            bool mostrou = _bandeja?.MostrarAviso("Status Monitor — franquia", texto) == true;
+            bool mostrou = _bandeja?.MostrarAviso(Textos.App_TituloFranquia, texto) == true;
             RegistrarLog($"Franquia {marco} %: {(mostrou ? "aviso mostrado" : "ícone oculto, só no painel")}.");
         });
     }
@@ -494,6 +499,32 @@ public partial class App : Application
         if (_widget is null || _host is null)
         {
             return;
+        }
+
+        // v1.9.0: idioma. Vale para as janelas abertas DEPOIS (os {x:Static} do XAML são lidos ao carregar);
+        // o painel rápido é fechado e descartado para renascer no idioma novo; o widget pausado e a
+        // dica da bandeja são refeitos aqui mesmo.
+        string culturaAntes = Idioma.Cultura.Name;
+        Idioma.Aplicar(cfg.Idioma);
+        if (Idioma.Cultura.Name != culturaAntes)
+        {
+            RegistrarLog($"Idioma da interface: {culturaAntes} → {Idioma.Cultura.Name} ({cfg.Idioma}).");
+            if (_painel is not null)
+            {
+                _painel.Fechar();
+                _painel.Close();
+                _painel = null; // AbrirPainel cria outro, já no idioma novo
+            }
+
+            if (_pausado)
+            {
+                foreach (TaskbarWidget w in TodosWidgets())
+                {
+                    w.MostrarPausado();
+                }
+
+                _bandeja?.DefinirDica(Textos.App_DicaPausada);
+            }
         }
 
         // v0.8.0: a fonte/tamanho só são medidos de novo quando mudam
@@ -804,16 +835,17 @@ public partial class App : Application
     /// <summary>Rodapé do estúdio: versão e se/como a atualização automática está agindo.</summary>
     private string TextoVersaoRodape()
     {
+        // v1.9.0: no idioma da interface (a consulta traduzida vem do próprio serviço)
         if (!_atualizacao.EstaInstalado)
         {
-            return $"Versão {VersaoApp} · cópia sem instalador (sem auto update)";
+            return Textos.Formatar(Textos.App_RodapeSemInstalador, VersaoApp);
         }
 
         string estado = _atualizacao.TemPendente
-            ? $"versão {_atualizacao.VersaoPendente} pronta, instala sozinha"
+            ? Textos.Formatar(Textos.App_RodapePendente, _atualizacao.VersaoPendente)
             // v0.4.3 (pedido do dono): o rótulo "atualiza sozinho" virou "auto update", mais curto
-            : _atualizacao.UltimaConsulta is { } u ? $"auto update · consulta {u}" : "auto update";
-        return $"Versão {_atualizacao.VersaoInstalada ?? VersaoApp} · {estado}";
+            : _atualizacao.TextoUltimaConsulta(Idioma.Cultura) is { } u ? Textos.Formatar(Textos.App_RodapeConsulta, u) : Textos.App_RodapeAutoUpdate;
+        return Textos.Formatar(Textos.App_RodapeVersao, _atualizacao.VersaoInstalada ?? VersaoApp, estado);
     }
 
     // ------------------------------------------------------------------ menu
@@ -828,76 +860,77 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         var menu = new ContextMenu { Placement = PlacementMode.MousePoint };
 
-        var itemPainel = new MenuItem { Header = "Abrir painel rápido" };
+        // v1.9.0: rótulos pelo Textos (português ou inglês, conforme o estúdio › Idioma)
+        var itemPainel = new MenuItem { Header = Textos.Menu_AbrirPainel };
         itemPainel.Click += (_, _) => AbrirPainel(veioDaBandeja: false);
         menu.Items.Add(itemPainel);
 
-        var itemEstudio = new MenuItem { Header = "Estúdio de cores e configurações…" };
+        var itemEstudio = new MenuItem { Header = Textos.Menu_Estudio };
         itemEstudio.Click += (_, _) => AbrirEstudio();
         menu.Items.Add(itemEstudio);
 
         // v1.2.0: teste de velocidade sob demanda (a janela explica o gasto antes de começar)
-        var itemTeste = new MenuItem { Header = "Testar velocidade da internet…" };
+        var itemTeste = new MenuItem { Header = Textos.Menu_Testar };
         itemTeste.Click += (_, _) => AbrirTesteVelocidade();
         menu.Items.Add(itemTeste);
 
         // v1.3.0: quem está usando a internet (dados do Windows, sem administrador)
-        var itemApps = new MenuItem { Header = "Consumo por aplicativo…" };
+        var itemApps = new MenuItem { Header = Textos.Menu_ConsumoApps };
         itemApps.Click += (_, _) => AbrirConsumoApps();
         menu.Items.Add(itemApps);
 
         // v1.4.0: testes guardados + quedas do mês → PDF para a reclamação
-        var itemRelatorio = new MenuItem { Header = "Relatório para a operadora…" };
+        var itemRelatorio = new MenuItem { Header = Textos.Menu_Relatorio };
         itemRelatorio.Click += (_, _) => AbrirRelatorio();
         menu.Items.Add(itemRelatorio);
 
         menu.Items.Add(new Separator());
 
-        var itemUnidade = new MenuItem { Header = "Unidade" };
-        var itemBytes = new MenuItem { Header = "MB/s (bytes)", IsChecked = cfg.Unidade != "bits" };
+        var itemUnidade = new MenuItem { Header = Textos.Menu_Unidade };
+        var itemBytes = new MenuItem { Header = Textos.Menu_UnidadeBytes, IsChecked = cfg.Unidade != "bits" };
         itemBytes.Click += (_, _) => _config.Alterar(c => c.Unidade = "bytes");
-        var itemBits = new MenuItem { Header = "Mbps (bits, como a operadora)", IsChecked = cfg.Unidade == "bits" };
+        var itemBits = new MenuItem { Header = Textos.Menu_UnidadeBits, IsChecked = cfg.Unidade == "bits" };
         itemBits.Click += (_, _) => _config.Alterar(c => c.Unidade = "bits");
         itemUnidade.Items.Add(itemBytes);
         itemUnidade.Items.Add(itemBits);
         menu.Items.Add(itemUnidade);
 
-        var itemFixar = new MenuItem { Header = "Fixar na barra", IsChecked = cfg.FixarNaBarra };
+        var itemFixar = new MenuItem { Header = Textos.Painel_FixarNaBarra, IsChecked = cfg.FixarNaBarra };
         itemFixar.Click += (_, _) => _config.Alterar(c => c.FixarNaBarra = !c.FixarNaBarra);
         menu.Items.Add(itemFixar);
 
         // v0.5.0: CPU/RAM (%) à esquerda da internet
-        var itemSistema = new MenuItem { Header = "Mostrar CPU e RAM", IsChecked = cfg.MostrarCpuRam };
+        var itemSistema = new MenuItem { Header = Textos.Menu_MostrarCpuRam, IsChecked = cfg.MostrarCpuRam };
         itemSistema.Click += (_, _) => _config.Alterar(c => c.MostrarCpuRam = !c.MostrarCpuRam);
         menu.Items.Add(itemSistema);
 
         // v0.8.0: desfaz o Ctrl + arrastar (todas as barras voltam à vaga ao lado do '^')
         var itemAutomatica = new MenuItem
         {
-            Header = "Voltar à posição automática",
+            Header = Textos.Menu_PosicaoAutomatica,
             IsEnabled = cfg.PosicoesManuais.Count > 0,
-            ToolTip = "Para mudar o widget de lugar: segure Ctrl e arraste-o pela barra."
+            ToolTip = Textos.Menu_PosicaoAutomaticaDica
         };
         itemAutomatica.Click += (_, _) => _config.Alterar(c => c.PosicoesManuais.Clear());
         menu.Items.Add(itemAutomatica);
 
         // v1.0.0: atalho também pelo menu (o duplo clique não é descobrível sozinho)
-        var itemTaskmgr = new MenuItem { Header = "Abrir Gerenciador de Tarefas" };
+        var itemTaskmgr = new MenuItem { Header = Textos.Menu_Taskmgr };
         itemTaskmgr.Click += (_, _) => AbrirGerenciadorDeTarefas();
         menu.Items.Add(itemTaskmgr);
 
-        var itemPausar = new MenuItem { Header = "Pausar medição", IsChecked = _pausado };
+        var itemPausar = new MenuItem { Header = Textos.Menu_Pausar, IsChecked = _pausado };
         itemPausar.Click += (_, _) => DefinirPausa(!_pausado);
         menu.Items.Add(itemPausar);
 
-        var itemInicio = new MenuItem { Header = "Iniciar com o Windows", IsChecked = _inicio.EstaLigado() };
+        var itemInicio = new MenuItem { Header = Textos.Painel_IniciarComOWindows, IsChecked = _inicio.EstaLigado() };
         itemInicio.Click += (_, _) => DefinirInicioComWindows(!_inicio.EstaLigado());
         menu.Items.Add(itemInicio);
 
         // Desligar a bandeja com o widget desafixado deixaria o app inalcançável → desabilitado
         var itemBandeja = new MenuItem
         {
-            Header = "Mostrar ícone na bandeja",
+            Header = Textos.Estudio_MostrarIconeNaBandeja,
             IsChecked = cfg.MostrarIconeBandeja || !cfg.FixarNaBarra,
             IsEnabled = cfg.FixarNaBarra
         };
@@ -906,7 +939,7 @@ public partial class App : Application
 
         menu.Items.Add(new Separator());
 
-        var itemSair = new MenuItem { Header = "Sair" };
+        var itemSair = new MenuItem { Header = Textos.Menu_Sair };
         itemSair.Click += (_, _) =>
         {
             // Versão nova já baixada: instala depois que o processo fechar, sem reabrir
@@ -950,7 +983,7 @@ public partial class App : Application
                 w.MostrarPausado();
             }
 
-            _bandeja?.DefinirDica("Status Monitor — medição pausada");
+            _bandeja?.DefinirDica(Textos.App_DicaPausada);
         }
         else
         {
@@ -1231,7 +1264,7 @@ public partial class App : Application
                                 w.DefinirSemInternet(false); // v1.8.1: sem placa, o "—" basta (não é "⚠")
                                 w.MostrarSemConexao();
                             });
-                            _bandeja?.DefinirDica("Status Monitor — sem conexão");
+                            _bandeja?.DefinirDica(Textos.App_DicaSemConexao);
                         }
                         else if (vel.AmostraValida)
                         {
@@ -1247,7 +1280,7 @@ public partial class App : Application
                                 ? $"\nCPU {MedidorSistema.Formatar(uso.CpuPercentual)} · RAM {MedidorSistema.Formatar(uso.RamPercentual)}"
                                 : "";
                             // v1.8.1: a 1ª linha da dica da bandeja também avisa
-                            string titulo = semInternet ? "Status Monitor — sem internet" : "Status Monitor";
+                            string titulo = semInternet ? Textos.App_DicaSemInternet : "Status Monitor";
                             _bandeja?.DefinirDica(
                                 $"{titulo}\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
                                 $"{formatador.FormatarComSeta("↓", vel.DownloadBytesPorSegundo)}{linhaSistema}");

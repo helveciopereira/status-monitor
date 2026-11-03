@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Textos da interface em português do Brasil (idioma NEUTRO do app, v1.9.0). Gere Textos.Designer.cs com tools\gerar-textos.ps1 depois de editar. -->
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="App_DicaPausada" xml:space="preserve"><value>Status Monitor — medição pausada</value></data>
+  <data name="App_DicaPausadaLonga" xml:space="preserve"><value>Status Monitor — medição pausada (clique direito › Pausar medição para retomar)</value></data>
+  <data name="App_DicaSemConexao" xml:space="preserve"><value>Status Monitor — sem conexão</value></data>
+  <data name="App_DicaSemInternet" xml:space="preserve"><value>Status Monitor — sem internet</value></data>
+  <data name="App_FranquiaAcabou" xml:space="preserve"><value>A franquia de {0} GB deste mês acabou. A operadora pode reduzir a velocidade.</value></data>
+  <data name="App_FranquiaUsada" xml:space="preserve"><value>Você já usou {0} % da franquia de {1} GB deste mês.</value></data>
+  <data name="App_RodapeAutoUpdate" xml:space="preserve"><value>auto update</value></data>
+  <data name="App_RodapeConsulta" xml:space="preserve"><value>auto update · consulta {0}</value></data>
+  <data name="App_RodapePendente" xml:space="preserve"><value>versão {0} pronta, instala sozinha</value></data>
+  <data name="App_RodapeSemInstalador" xml:space="preserve"><value>Versão {0} · cópia sem instalador (sem auto update)</value></data>
+  <data name="App_RodapeVersao" xml:space="preserve"><value>Versão {0} · {1}</value></data>
+  <data name="App_TituloFranquia" xml:space="preserve"><value>Status Monitor — franquia</value></data>
+  <data name="App_TituloInternet" xml:space="preserve"><value>Status Monitor — internet</value></data>
+  <data name="Atualizacao_Baixada" xml:space="preserve"><value>versão {0} baixada, instala sozinha</value></data>
+  <data name="Atualizacao_Disco" xml:space="preserve"><value>falha de disco ao baixar</value></data>
+  <data name="Atualizacao_EmDia" xml:space="preserve"><value>em dia</value></data>
+  <data name="Atualizacao_Falhou" xml:space="preserve"><value>falhou ({0})</value></data>
+  <data name="Atualizacao_Limitou" xml:space="preserve"><value>o GitHub limitou as consultas</value></data>
+  <data name="Atualizacao_NaoPublicada" xml:space="preserve"><value>nenhuma versão publicada ainda</value></data>
+  <data name="Atualizacao_SemInternet" xml:space="preserve"><value>sem internet ou GitHub indisponível</value></data>
+  <data name="Atualizacao_TempoEsgotado" xml:space="preserve"><value>tempo esgotado</value></data>
+  <data name="Comum_Download" xml:space="preserve"><value>↓ Download</value></data>
+  <data name="Comum_EsteMes" xml:space="preserve"><value>Este mês</value></data>
+  <data name="Comum_ExportarCSV" xml:space="preserve"><value>Exportar CSV…</value></data>
+  <data name="Comum_Fechar" xml:space="preserve"><value>Fechar</value></data>
+  <data name="Comum_FiltroCsv" xml:space="preserve"><value>Planilha CSV (*.csv)|*.csv</value></data>
+  <data name="Comum_Latencia" xml:space="preserve"><value>Latência</value></data>
+  <data name="Conexao_LimiteCabo" xml:space="preserve"><value>Esse link com o roteador é menor que o plano de {0}: confira o cabo (cabos antigos ficam em 100 Mbps) e a porta do roteador.</value></data>
+  <data name="Conexao_LimiteWiFi" xml:space="preserve"><value>Esse link com o roteador é menor que o plano de {0}: nenhum teste por este Wi-Fi passa dele. Para comparar com o contratado, teste por cabo.</value></data>
+  <data name="Conexao_Link" xml:space="preserve"><value>link {0}</value></data>
+  <data name="Conexao_Sinal" xml:space="preserve"><value>sinal {0} %</value></data>
+  <data name="Consumo_AtualizadoAs" xml:space="preserve"><value>Atualizado às {0} · refaz a cada 30 s</value></data>
+  <data name="Consumo_ConsumoPorAplicativo" xml:space="preserve"><value>Consumo por aplicativo</value></data>
+  <data name="Consumo_ErroLeitura" xml:space="preserve"><value>Não foi possível ler o consumo do Windows agora. Tente de novo em instantes.</value></data>
+  <data name="Consumo_FecharConsumoPorAplicativo" xml:space="preserve"><value>Fechar consumo por aplicativo</value></data>
+  <data name="Consumo_Hoje" xml:space="preserve"><value>Hoje</value></data>
+  <data name="Consumo_Lendo" xml:space="preserve"><value>Lendo…</value></data>
+  <data name="Consumo_Outros" xml:space="preserve"><value>Outros ({0} apps)</value></data>
+  <data name="Consumo_QuantoCadaProgramaBaixouE" xml:space="preserve"><value>Quanto cada programa baixou e enviou. Os números são do próprio Windows (os mesmos de Configurações › Rede › Uso de dados) e chegam com cerca de 1 minuto de atraso.</value></data>
+  <data name="Consumo_SistemaNaoIdentificado" xml:space="preserve"><value>Sistema (não identificado)</value></data>
+  <data name="Consumo_StatusMonitorConsumoPorAplicativo" xml:space="preserve"><value>Status Monitor — consumo por aplicativo</value></data>
+  <data name="Consumo_UltimaHora" xml:space="preserve"><value>Última hora</value></data>
+  <data name="Consumo_Ultimos5Minutos" xml:space="preserve"><value>Últimos 5 minutos</value></data>
+  <data name="Consumo_Vazio5Minutos" xml:space="preserve"><value>Nenhum programa usou a internet nos últimos 5 minutos (ou o Windows ainda não contou — ele atualiza a cada minuto).</value></data>
+  <data name="Consumo_VazioPeriodo" xml:space="preserve"><value>Nenhum programa usou a internet neste período.</value></data>
+  <data name="Dica_Atalhos" xml:space="preserve"><value>Duplo clique: Gerenciador de Tarefas · Ctrl + arrastar: mover</value></data>
+  <data name="Dica_DaFranquia" xml:space="preserve"><value> ({0} da franquia)</value></data>
+  <data name="Dica_Hoje" xml:space="preserve"><value>Hoje: ↑ {0} · ↓ {1}</value></data>
+  <data name="Dica_Latencia" xml:space="preserve"><value>Latência: {0}</value></data>
+  <data name="Dica_Mes" xml:space="preserve"><value>Mês: ↑ {0} · ↓ {1}</value></data>
+  <data name="Dica_Pico60s" xml:space="preserve"><value>Pico em 60 s: ↑ {0} · ↓ {1}</value></data>
+  <data name="Dica_Rede" xml:space="preserve"><value>Rede</value></data>
+  <data name="Dica_SemConexaoDeRede" xml:space="preserve"><value>Sem conexão de rede</value></data>
+  <data name="Dica_SemInternet" xml:space="preserve"><value>⚠ Sem internet: o PC está ligado ao roteador, mas a internet não responde</value></data>
+  <data name="Estudio_AjustarACorDeDownload" xml:space="preserve"><value>Ajustar a cor de download</value></data>
+  <data name="Estudio_AjustarACorDeEnvio" xml:space="preserve"><value>Ajustar a cor de envio</value></data>
+  <data name="Estudio_AjustarNoSeletor" xml:space="preserve"><value>Ajustar no seletor</value></data>
+  <data name="Estudio_AlteracoesNaoAplicadas" xml:space="preserve"><value>Alterações não aplicadas</value></data>
+  <data name="Estudio_Aplicar" xml:space="preserve"><value>Aplicar</value></data>
+  <data name="Estudio_AreaDeNotificacao" xml:space="preserve"><value>Área de notificação</value></data>
+  <data name="Estudio_AtualizarACada" xml:space="preserve"><value>Atualizar a cada</value></data>
+  <data name="Estudio_AtualizarACada05" xml:space="preserve"><value>Atualizar a cada 0,5 segundo</value></data>
+  <data name="Estudio_AtualizarACada1Segundo" xml:space="preserve"><value>Atualizar a cada 1 segundo</value></data>
+  <data name="Estudio_AtualizarACada2Segundos" xml:space="preserve"><value>Atualizar a cada 2 segundos</value></data>
+  <data name="Estudio_AtualizarACada5Segundos" xml:space="preserve"><value>Atualizar a cada 5 segundos</value></data>
+  <data name="Estudio_AvisarQuandoAInternetVoltar" xml:space="preserve"><value>Avisar quando a internet voltar</value></data>
+  <data name="Estudio_BarraClara" xml:space="preserve"><value>Barra clara</value></data>
+  <data name="Estudio_BarraEscura" xml:space="preserve"><value>Barra escura</value></data>
+  <data name="Estudio_ComoFicaNaBarra" xml:space="preserve"><value>Como fica na barra</value></data>
+  <data name="Estudio_ConsumoDoMes" xml:space="preserve"><value>Consumo do mês</value></data>
+  <data name="Estudio_ConsumoEFranquia" xml:space="preserve"><value>Consumo e franquia</value></data>
+  <data name="Estudio_Contraste" xml:space="preserve"><value>Contraste {0}:1 ({1})</value></data>
+  <data name="Estudio_CorDeDownloadHexadecimal" xml:space="preserve"><value>Cor de download (hexadecimal)</value></data>
+  <data name="Estudio_CorDeEnvioHexadecimal" xml:space="preserve"><value>Cor de envio (hexadecimal)</value></data>
+  <data name="Estudio_CoresPersonalizadas" xml:space="preserve"><value>Cores personalizadas</value></data>
+  <data name="Estudio_CorInvalida" xml:space="preserve"><value>Cor inválida — use 6 dígitos hexadecimais, ex.: #4CC2FF.</value></data>
+  <data name="Estudio_CorPorIntensidade" xml:space="preserve"><value>Cor por intensidade</value></data>
+  <data name="Estudio_CsvExportado" xml:space="preserve"><value>CSV exportado</value></data>
+  <data name="Estudio_CsvFalhou" xml:space="preserve"><value>Não deu para salvar o CSV: {0}</value></data>
+  <data name="Estudio_DaFranquiaSufixo" xml:space="preserve"><value> · {0} da franquia</value></data>
+  <data name="Estudio_DownloadEmCima" xml:space="preserve"><value>Download em cima</value></data>
+  <data name="Estudio_DuasLinhas" xml:space="preserve"><value>Duas linhas</value></data>
+  <data name="Estudio_Envio" xml:space="preserve"><value>↑ Envio</value></data>
+  <data name="Estudio_EnvioEmCima" xml:space="preserve"><value>Envio em cima</value></data>
+  <data name="Estudio_EsteMesAteAgora" xml:space="preserve"><value>Este mês até agora: {0}</value></data>
+  <data name="Estudio_ExportarConsumoEmCSV" xml:space="preserve"><value>Exportar consumo em CSV</value></data>
+  <data name="Estudio_ExportarConsumoPorDia" xml:space="preserve"><value>Exportar consumo por dia</value></data>
+  <data name="Estudio_FicaSempreVisivelQuandoO" xml:space="preserve"><value>Fica sempre visível quando o widget não está fixado na barra — é o caminho para reabrir o app.</value></data>
+  <data name="Estudio_Fonte" xml:space="preserve"><value>Fonte</value></data>
+  <data name="Estudio_FonteCascadiaMono" xml:space="preserve"><value>Fonte Cascadia Mono</value></data>
+  <data name="Estudio_FonteSegoeUI" xml:space="preserve"><value>Fonte Segoe UI</value></data>
+  <data name="Estudio_FonteSegoeUIVariable" xml:space="preserve"><value>Fonte Segoe UI Variable</value></data>
+  <data name="Estudio_FormatoRRGGBBEx4CC2FFPense" xml:space="preserve"><value>Formato #RRGGBB, ex.: #4CC2FF. Pense na barra escura; a versão clara é ajustada sozinha.</value></data>
+  <data name="Estudio_FranquiaMensal" xml:space="preserve"><value>Franquia mensal</value></data>
+  <data name="Estudio_FranquiaMensalEmGB" xml:space="preserve"><value>Franquia mensal em GB</value></data>
+  <data name="Estudio_GBPorMes" xml:space="preserve"><value>GB por mês</value></data>
+  <data name="Estudio_Grande" xml:space="preserve"><value>Grande</value></data>
+  <data name="Estudio_GuardaOConsumoDeCada" xml:space="preserve"><value>Guarda o consumo de cada dia por 13 meses. Exporta em CSV para abrir no Excel e comparar com a fatura.</value></data>
+  <data name="Estudio_HistoricoPorDia" xml:space="preserve"><value>Histórico por dia</value></data>
+  <data name="Estudio_Idioma" xml:space="preserve"><value>Idioma / Language</value></data>
+  <data name="Estudio_IdiomaAutomatico" xml:space="preserve"><value>Automático</value></data>
+  <data name="Estudio_IdiomaAutomaticoNome" xml:space="preserve"><value>Idioma automático (o do Windows)</value></data>
+  <data name="Estudio_IdiomaIngles" xml:space="preserve"><value>English</value></data>
+  <data name="Estudio_IdiomaInglesNome" xml:space="preserve"><value>Idioma inglês</value></data>
+  <data name="Estudio_IdiomaNota" xml:space="preserve"><value>Automático segue o idioma do Windows. Vale para as janelas abertas a partir de agora; o relatório PDF e o CSV continuam em português.</value></data>
+  <data name="Estudio_IdiomaPortugues" xml:space="preserve"><value>Português</value></data>
+  <data name="Estudio_IdiomaPortuguesNome" xml:space="preserve"><value>Idioma português</value></data>
+  <data name="Estudio_IgnorarInterfacesDeRede" xml:space="preserve"><value>Ignorar interfaces de rede</value></data>
+  <data name="Estudio_Imediata" xml:space="preserve"><value>Imediata</value></data>
+  <data name="Estudio_InterfacesIgnoradas" xml:space="preserve"><value>Interfaces ignoradas</value></data>
+  <data name="Estudio_LinhaDeCima" xml:space="preserve"><value>Linha de cima</value></data>
+  <data name="Estudio_MaisRapidoNumerosMaisVivos" xml:space="preserve"><value>Mais rápido = números mais vivos; mais lento = menos movimento na barra. O gráfico do painel não muda: as janelas de 1 min, 5 min e 1 h valem com qualquer intervalo.</value></data>
+  <data name="Estudio_MaisSuaveNumerosMaisEstaveis" xml:space="preserve"><value>Mais suave = números mais estáveis, reação mais lenta a picos.</value></data>
+  <data name="Estudio_Medicao" xml:space="preserve"><value>Medição</value></data>
+  <data name="Estudio_MedindoAgora" xml:space="preserve"><value>Medindo agora: {0}</value></data>
+  <data name="Estudio_MedirLatencia" xml:space="preserve"><value>Medir latência</value></data>
+  <data name="Estudio_MeioSegundo" xml:space="preserve"><value>0,5 s</value></data>
+  <data name="Estudio_MiniGrafico" xml:space="preserve"><value>Mini gráfico</value></data>
+  <data name="Estudio_ModoDeExibicao" xml:space="preserve"><value>Modo de exibição</value></data>
+  <data name="Estudio_ModoDuasLinhas" xml:space="preserve"><value>Modo duas linhas</value></data>
+  <data name="Estudio_ModoSoDownload" xml:space="preserve"><value>Modo só download</value></data>
+  <data name="Estudio_ModoUmaLinha" xml:space="preserve"><value>Modo uma linha</value></data>
+  <data name="Estudio_MostraOUltimoMinutoAtras" xml:space="preserve"><value>Mostra o último minuto atrás de cada número, para ver se a velocidade está subindo, caindo ou oscilando. Não aparece no modo uma linha.</value></data>
+  <data name="Estudio_MostrarEmTodosOsMonitores" xml:space="preserve"><value>Mostrar em todos os monitores</value></data>
+  <data name="Estudio_MostrarIconeNaBandeja" xml:space="preserve"><value>Mostrar ícone na bandeja</value></data>
+  <data name="Estudio_MostrarIconePertoDoRelogio" xml:space="preserve"><value>Mostrar ícone perto do relógio</value></data>
+  <data name="Estudio_MudarDeLugarSegureCtrl" xml:space="preserve"><value>Mudar de lugar: segure Ctrl e arraste o widget pela barra. Para voltar ao lugar de sempre, clique com o botão direito nele › Voltar à posição automática.</value></data>
+  <data name="Estudio_NaBarraDeTarefas" xml:space="preserve"><value>Na barra de tarefas</value></data>
+  <data name="Estudio_NotificacaoDoWindowsAoFim" xml:space="preserve"><value>Notificação do Windows ao fim de uma queda de 1 minuto ou mais: “A internet voltou após 12 min”. Sai pelo ícone da bandeja (precisa dele visível) e respeita o não perturbe.</value></data>
+  <data name="Estudio_OsNumerosFicamMaisFortes" xml:space="preserve"><value>Os números ficam mais fortes quanto mais perto da velocidade do plano (ou do link da placa, sem plano) — dá para ver de relance se a internet está cheia.</value></data>
+  <data name="Estudio_OWindowsPodeUsarBarra" xml:space="preserve"><value>O Windows pode usar barra escura ou clara. As cores são recalibradas automaticamente para manter o texto legível (contraste mínimo 4,5:1).</value></data>
+  <data name="Estudio_Paleta" xml:space="preserve"><value>Paleta</value></data>
+  <data name="Estudio_PaletaNomeUia" xml:space="preserve"><value>Paleta {0}</value></data>
+  <data name="Estudio_PaletaPersonalizada" xml:space="preserve"><value>Personalizada</value></data>
+  <data name="Estudio_PaletaPersonalizadaDescricao" xml:space="preserve"><value>Escolha as duas cores em hexadecimal.</value></data>
+  <data name="Estudio_ParaInternetComLimite4G" xml:space="preserve"><value>Para internet com limite (4G/5G, satélite). Avisa uma vez aos 80 % e uma vez aos 100 % do mês, somando envio e download. Em branco ou 0 = sem franquia.</value></data>
+  <data name="Estudio_Pequeno" xml:space="preserve"><value>Pequeno</value></data>
+  <data name="Estudio_PoeOWidgetTambemNa" xml:space="preserve"><value>Põe o widget também na barra dos outros monitores. Requer a barra ligada neles (Configurações do Windows › Personalização › Barra de tarefas › Comportamentos).</value></data>
+  <data name="Estudio_RestaurarPadrao" xml:space="preserve"><value>Restaurar padrão</value></data>
+  <data name="Estudio_SetaParaCimaEnvioUpload" xml:space="preserve"><value>Seta para cima = envio (upload). Seta para baixo = download.</value></data>
+  <data name="Estudio_SoDownload" xml:space="preserve"><value>Só download</value></data>
+  <data name="Estudio_StatusMonitorCoresEConfiguracoes" xml:space="preserve"><value>Status Monitor — cores e configurações</value></data>
+  <data name="Estudio_Suave" xml:space="preserve"><value>Suave</value></data>
+  <data name="Estudio_Suavizacao" xml:space="preserve"><value>Suavização</value></data>
+  <data name="Estudio_TamanhoDoTexto" xml:space="preserve"><value>Tamanho do texto</value></data>
+  <data name="Estudio_TextoGrande" xml:space="preserve"><value>Texto grande</value></data>
+  <data name="Estudio_TextoNormal" xml:space="preserve"><value>Texto normal</value></data>
+  <data name="Estudio_TextoPequeno" xml:space="preserve"><value>Texto pequeno</value></data>
+  <data name="Estudio_UmaLinha" xml:space="preserve"><value>Uma linha</value></data>
+  <data name="Estudio_UmPingACada5" xml:space="preserve"><value>Um ping a cada 5 s para o roteador e para 1.1.1.1. Aparece no painel e na dica. Roteador baixo com internet alta indica problema na operadora; roteador alto, no Wi-Fi.</value></data>
+  <data name="Estudio_UmTrechoDeNomePor" xml:space="preserve"><value>Um trecho de nome por linha (ex.: Ethernet 2). VPNs e adaptadores virtuais já são ignorados automaticamente.</value></data>
+  <data name="Estudio_UsadaNasBarrasDeProgresso" xml:space="preserve"><value>Usada nas barras de progresso do painel rápido. Em branco ou 0 = usa a velocidade de link da placa de rede.</value></data>
+  <data name="Estudio_VelocidadeDoPlanoEmMbps" xml:space="preserve"><value>Velocidade do plano em Mbps</value></data>
+  <data name="Estudio_VelocidadeDoSeuPlano" xml:space="preserve"><value>Velocidade do seu plano</value></data>
+  <data name="Grafico_Juntando5s" xml:space="preserve"><value>Juntando dados (1 ponto a cada 5 s)…</value></data>
+  <data name="Grafico_JuntandoMinuto" xml:space="preserve"><value>Juntando dados (1 ponto por minuto)…</value></data>
+  <data name="Latencia_Medindo" xml:space="preserve"><value>medindo…</value></data>
+  <data name="Latencia_RoteadorInternet" xml:space="preserve"><value>Roteador {0} · Internet {1}</value></data>
+  <data name="Menu_AbrirPainel" xml:space="preserve"><value>Abrir painel rápido</value></data>
+  <data name="Menu_ConsumoApps" xml:space="preserve"><value>Consumo por aplicativo…</value></data>
+  <data name="Menu_Estudio" xml:space="preserve"><value>Estúdio de cores e configurações…</value></data>
+  <data name="Menu_MostrarCpuRam" xml:space="preserve"><value>Mostrar CPU e RAM</value></data>
+  <data name="Menu_Pausar" xml:space="preserve"><value>Pausar medição</value></data>
+  <data name="Menu_PosicaoAutomatica" xml:space="preserve"><value>Voltar à posição automática</value></data>
+  <data name="Menu_PosicaoAutomaticaDica" xml:space="preserve"><value>Para mudar o widget de lugar: segure Ctrl e arraste-o pela barra.</value></data>
+  <data name="Menu_Relatorio" xml:space="preserve"><value>Relatório para a operadora…</value></data>
+  <data name="Menu_Sair" xml:space="preserve"><value>Sair</value></data>
+  <data name="Menu_Taskmgr" xml:space="preserve"><value>Abrir Gerenciador de Tarefas</value></data>
+  <data name="Menu_Testar" xml:space="preserve"><value>Testar velocidade da internet…</value></data>
+  <data name="Menu_Unidade" xml:space="preserve"><value>Unidade</value></data>
+  <data name="Menu_UnidadeBits" xml:space="preserve"><value>Mbps (bits, como a operadora)</value></data>
+  <data name="Menu_UnidadeBytes" xml:space="preserve"><value>MB/s (bytes)</value></data>
+  <data name="Painel_AbrirEstudioDeCores" xml:space="preserve"><value>Abrir estúdio de cores</value></data>
+  <data name="Painel_AguardandoAmostras" xml:space="preserve"><value>Aguardando amostras…</value></data>
+  <data name="Painel_AoVivo" xml:space="preserve"><value>Ao vivo</value></data>
+  <data name="Painel_ConsumoDeHoje" xml:space="preserve"><value>Consumo de hoje</value></data>
+  <data name="Painel_CoresEMaisConfiguracoes" xml:space="preserve"><value>Cores e mais configurações</value></data>
+  <data name="Painel_CPUERAMNaBarra" xml:space="preserve"><value>CPU e RAM na barra</value></data>
+  <data name="Painel_DesligadoFicaSoOIcone" xml:space="preserve"><value>Desligado, fica só o ícone perto do relógio.</value></data>
+  <data name="Painel_Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Painel_Envio" xml:space="preserve"><value>Envio</value></data>
+  <data name="Painel_FecharEsc" xml:space="preserve"><value>Fechar (Esc)</value></data>
+  <data name="Painel_FecharPainel" xml:space="preserve"><value>Fechar painel</value></data>
+  <data name="Painel_FixarNaBarra" xml:space="preserve"><value>Fixar na barra</value></data>
+  <data name="Painel_FranquiaUso" xml:space="preserve"><value>{0} de {1} GB da franquia · {2}</value></data>
+  <data name="Painel_GraficoDaUltimaHora" xml:space="preserve"><value>Gráfico da última hora</value></data>
+  <data name="Painel_GraficoDosUltimos5Minutos" xml:space="preserve"><value>Gráfico dos últimos 5 minutos</value></data>
+  <data name="Painel_GraficoDoUltimoMinuto" xml:space="preserve"><value>Gráfico do último minuto</value></data>
+  <data name="Painel_IniciarComOWindows" xml:space="preserve"><value>Iniciar com o Windows</value></data>
+  <data name="Painel_LinkDe" xml:space="preserve"><value>Link de {0}</value></data>
+  <data name="Painel_Medias" xml:space="preserve"><value>Média ↑ {0} · ↓ {1}</value></data>
+  <data name="Painel_Pico0" xml:space="preserve"><value>Pico: 0</value></data>
+  <data name="Painel_PicoEm" xml:space="preserve"><value>Pico em {0}: {1}</value></data>
+  <data name="Painel_PlanoDe" xml:space="preserve"><value>Plano de {0} Mbps</value></data>
+  <data name="Painel_SemConexao" xml:space="preserve"><value>Sem conexão</value></data>
+  <data name="Painel_SemInternet" xml:space="preserve"><value>Sem internet</value></data>
+  <data name="Painel_StatusMonitorPainelRapido" xml:space="preserve"><value>Status Monitor — painel rápido</value></data>
+  <data name="Painel_TestarVelocidade" xml:space="preserve"><value>Testar velocidade</value></data>
+  <data name="Painel_UnidadeDeExibicao" xml:space="preserve"><value>Unidade de exibição</value></data>
+  <data name="Painel_UnidadeMbps" xml:space="preserve"><value>Unidade Mbps</value></data>
+  <data name="Painel_UnidadeMBS" xml:space="preserve"><value>Unidade MB/s</value></data>
+  <data name="Painel_UsoDoComputadorEmA" xml:space="preserve"><value>Uso do computador em %, à esquerda da internet.</value></data>
+  <data name="Painel_VerConsumoPorAplicativo" xml:space="preserve"><value>Ver consumo por aplicativo</value></data>
+  <data name="Painel_VerPorAplicativo" xml:space="preserve"><value>Ver por aplicativo</value></data>
+  <data name="Paleta_AltoContraste_Descricao" xml:space="preserve"><value>Legibilidade extrema para baixa visão (mínimo 7:1).</value></data>
+  <data name="Paleta_AltoContraste_Nome" xml:space="preserve"><value>Alto Contraste WCAG</value></data>
+  <data name="Paleta_Bio_Descricao" xml:space="preserve"><value>Esmeralda e âmbar inspirados em telemetria industrial.</value></data>
+  <data name="Paleta_Bio_Nome" xml:space="preserve"><value>Bio Verde &amp; Âmbar</value></data>
+  <data name="Paleta_Classico_Descricao" xml:space="preserve"><value>Padrão Fluent do Windows 11 com luminosidade equilibrada.</value></data>
+  <data name="Paleta_Classico_Nome" xml:space="preserve"><value>Clássico Acrylic</value></data>
+  <data name="Paleta_Mono_Descricao" xml:space="preserve"><value>Tons neutros para quem prefere a barra sem distração de cor.</value></data>
+  <data name="Paleta_Mono_Nome" xml:space="preserve"><value>Monocromático Minimal</value></data>
+  <data name="Paleta_Neon_Descricao" xml:space="preserve"><value>Ciano elétrico com magenta de alto impacto visual para OLED.</value></data>
+  <data name="Paleta_Neon_Nome" xml:space="preserve"><value>Neon Cyberpunk</value></data>
+  <data name="Paleta_Personalizada_Descricao" xml:space="preserve"><value>Cores escolhidas por você.</value></data>
+  <data name="Relatorio_AbaixoDe40" xml:space="preserve"><value>{0} abaixo de 40 %</value></data>
+  <data name="Relatorio_CsvFalhou" xml:space="preserve"><value>Não foi possível salvar o CSV: {0}</value></data>
+  <data name="Relatorio_CsvSalvoEm" xml:space="preserve"><value>CSV salvo em {0} ({1} teste(s), {2} queda(s)).</value></data>
+  <data name="Relatorio_Disponivel" xml:space="preserve"><value>Disponível</value></data>
+  <data name="Relatorio_DoPlano" xml:space="preserve"><value>{0} do plano</value></data>
+  <data name="Relatorio_Em" xml:space="preserve"><value>em {0}</value></data>
+  <data name="Relatorio_ExportarCSV" xml:space="preserve"><value>Exportar CSV</value></data>
+  <data name="Relatorio_ExportarTestesEQuedas" xml:space="preserve"><value>Exportar testes e quedas</value></data>
+  <data name="Relatorio_FecharRelatorio" xml:space="preserve"><value>Fechar relatório</value></data>
+  <data name="Relatorio_FiltroPdf" xml:space="preserve"><value>PDF (*.pdf)|*.pdf</value></data>
+  <data name="Relatorio_GerarPDF" xml:space="preserve"><value>Gerar PDF…</value></data>
+  <data name="Relatorio_GerarPDF2" xml:space="preserve"><value>Gerar PDF</value></data>
+  <data name="Relatorio_JuntaOsTestesDeVelocidade" xml:space="preserve"><value>Junta os testes de velocidade que você fez e as quedas de internet que o Windows detectou, e compara com as metas da Anatel: 40 % do plano em cada medição e 80 % na média do mês. O app nunca testa sozinho.</value></data>
+  <data name="Relatorio_Media" xml:space="preserve"><value>Média ↓</value></data>
+  <data name="Relatorio_MesAnterior" xml:space="preserve"><value>Mês anterior</value></data>
+  <data name="Relatorio_NomeArquivo" xml:space="preserve"><value>Relatório internet {0}</value></data>
+  <data name="Relatorio_PdfFalhou" xml:space="preserve"><value>Não foi possível salvar/abrir o PDF: {0}</value></data>
+  <data name="Relatorio_PdfSalvoEm" xml:space="preserve"><value>PDF salvo em {0}.</value></data>
+  <data name="Relatorio_PlanoInformado" xml:space="preserve"><value>Plano: {0} Mbps · para mudar: estúdio › Medição</value></data>
+  <data name="Relatorio_PlanoNaoInformado" xml:space="preserve"><value>Plano não informado: estúdio › Medição</value></data>
+  <data name="Relatorio_PorWiFi" xml:space="preserve"><value>{0} por Wi-Fi</value></data>
+  <data name="Relatorio_ProximoMes" xml:space="preserve"><value>Próximo mês</value></data>
+  <data name="Relatorio_Quedas" xml:space="preserve"><value>Quedas</value></data>
+  <data name="Relatorio_RelatorioParaAOperadora" xml:space="preserve"><value>Relatório para a operadora</value></data>
+  <data name="Relatorio_SalvarRelatorio" xml:space="preserve"><value>Salvar relatório</value></data>
+  <data name="Relatorio_SemObservacao" xml:space="preserve"><value>sem observação</value></data>
+  <data name="Relatorio_SemPlano" xml:space="preserve"><value>sem plano</value></data>
+  <data name="Relatorio_SemTestes" xml:space="preserve"><value>sem testes</value></data>
+  <data name="Relatorio_StatusMonitorRelatorioParaA" xml:space="preserve"><value>Status Monitor — relatório para a operadora</value></data>
+  <data name="Relatorio_Testes" xml:space="preserve"><value>Testes</value></data>
+  <data name="Relatorio_TestesEQuedasDoMes" xml:space="preserve"><value>Testes e quedas do mês numa planilha (Excel em português abre direto)</value></data>
+  <data name="Relatorio_Total" xml:space="preserve"><value>total {0}</value></data>
+  <data name="Teste_AbaixoDoMinimo" xml:space="preserve"><value>{0} do plano de {1} Mbps — ABAIXO do mínimo instantâneo da Anatel (40 %). Repita o teste por cabo para confirmar.</value></data>
+  <data name="Teste_AcimaDoMinimo" xml:space="preserve"><value>{0} do plano de {1} Mbps — acima do mínimo instantâneo da Anatel (40 %), mas abaixo dos 80 % da média mensal.</value></data>
+  <data name="Teste_Cancelado" xml:space="preserve"><value>Teste cancelado.</value></data>
+  <data name="Teste_Cancelar" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Teste_ConcluidoAs" xml:space="preserve"><value>Concluído às {0}.</value></data>
+  <data name="Teste_Conexao" xml:space="preserve"><value>Conexão: {0}.</value></data>
+  <data name="Teste_DentroDoEsperado" xml:space="preserve"><value>{0} do plano de {1} Mbps — dentro do esperado.</value></data>
+  <data name="Teste_FecharTeste" xml:space="preserve"><value>Fechar teste</value></data>
+  <data name="Teste_GuardadoNoRelatorio" xml:space="preserve"><value> · guardado no relatório do mês</value></data>
+  <data name="Teste_InformePlano" xml:space="preserve"><value>Informe a velocidade do seu plano no estúdio (Medição) para comparar com o contratado.</value></data>
+  <data name="Teste_IniciarTeste" xml:space="preserve"><value>Iniciar teste</value></data>
+  <data name="Teste_MedeNoServidorDoFast" xml:space="preserve"><value>Mede no servidor do fast.com (Netflix) mais perto de você, em geral dentro da sua operadora; se ele falhar, no da Cloudflare. Leva até ~50 s e usa até ~1 GB da franquia. Para o resultado mais fiel, feche downloads e prefira cabo.</value></data>
+  <data name="Teste_MedindoDownload" xml:space="preserve"><value>Medindo o download…</value></data>
+  <data name="Teste_MedindoLatencia" xml:space="preserve"><value>Medindo a latência…</value></data>
+  <data name="Teste_MedindoUpload" xml:space="preserve"><value>Medindo o upload…</value></data>
+  <data name="Teste_ProntoParaTestar" xml:space="preserve"><value>Pronto para testar.</value></data>
+  <data name="Teste_ServidorDados" xml:space="preserve"><value>Servidor {0} · dados usados: {1}</value></data>
+  <data name="Teste_ServidorInacessivel" xml:space="preserve"><value>Não foi possível falar com o servidor de teste. Confira a conexão e tente de novo.</value></data>
+  <data name="Teste_ServidorRecusou" xml:space="preserve"><value>O servidor de teste recusou o pedido ({0}). Tente de novo em alguns minutos.</value></data>
+  <data name="Teste_StatusMonitorTesteDeVelocidade" xml:space="preserve"><value>Status Monitor — teste de velocidade</value></data>
+  <data name="Teste_TestarDeNovo" xml:space="preserve"><value>Testar de novo</value></data>
+  <data name="Teste_TesteDeVelocidade" xml:space="preserve"><value>Teste de velocidade</value></data>
+  <data name="Teste_Upload" xml:space="preserve"><value>↑ Upload</value></data>
+  <data name="Wcag_AA" xml:space="preserve"><value>AA</value></data>
+  <data name="Wcag_AAA" xml:space="preserve"><value>AAA</value></data>
+  <data name="Wcag_AATextoGrande" xml:space="preserve"><value>AA texto grande</value></data>
+  <data name="Wcag_Insuficiente" xml:space="preserve"><value>Insuficiente</value></data>
+  <data name="Widget_Pausado" xml:space="preserve"><value>pausado</value></data>
+</root>

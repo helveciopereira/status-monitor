@@ -429,10 +429,12 @@ public partial class TaskbarWidget : Window
     /// <summary>Medição pausada pelo menu (v0.3.0): texto explícito em vez de números congelados.</summary>
     public void MostrarPausado()
     {
-        TextoUpload.Text = "pausado";
-        TextoDownload.Text = "pausado";
+        // v1.9.0: "pausado"/"paused" conforme o idioma (o App chama de novo quando o idioma muda)
+        string pausado = Recursos.Textos.Widget_Pausado;
+        TextoUpload.Text = pausado;
+        TextoDownload.Text = pausado;
         TextoCompactoUpload.Text = "↑ —";
-        TextoCompactoDownload.Text = "↓ pausado";
+        TextoCompactoDownload.Text = $"↓ {pausado}";
         AtualizarSistema(null, null); // pausa vale para tudo: nada de CPU/RAM congelados
         // v1.7.0: o tempo pausado não foi medido — apaga o gráfico em vez de ligar os pontos por cima do buraco
         _serieUpload.Limpar();

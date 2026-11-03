@@ -1,15 +1,17 @@
 ﻿using System.Globalization;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
+using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Apresentacao;
 
 /// <summary>
 /// v1.0.0 (Onda 5): textos "puros" das ideias de baixo esforço do 04-IDEIAS.md — a dica ao passar
 /// o mouse no widget e a opacidade da "cor por intensidade". Sem WPF: testável em xUnit comum.
+/// v1.9.0: textos pelo <see cref="Textos"/> (português ou inglês, conforme <see cref="Idioma"/>).
 /// </summary>
 public static class DicaWidget
 {
-    private static readonly CultureInfo PtBr = new("pt-BR");
 
     /// <summary>
     /// Dica do widget: interface + IP, consumo de hoje e do mês (com a franquia, se houver),
@@ -24,25 +26,27 @@ public static class DicaWidget
 
         if (semConexao)
         {
-            linhas.Add("Sem conexão de rede");
+            linhas.Add(Textos.Dica_SemConexaoDeRede);
         }
         else
         {
-            string rede = string.IsNullOrEmpty(h.NomeInterface) ? "Rede" : h.NomeInterface;
+            string rede = string.IsNullOrEmpty(h.NomeInterface) ? Textos.Dica_Rede : h.NomeInterface;
             linhas.Add(string.IsNullOrEmpty(ip) ? rede : $"{rede} · IP {ip}");
             if (semInternet)
             {
                 // v1.8.1: explica o "⚠" do widget — o roteador responde, a internet não
-                linhas.Add("⚠ Sem internet: o PC está ligado ao roteador, mas a internet não responde");
+                linhas.Add(Textos.Dica_SemInternet);
             }
         }
 
-        linhas.Add($"Hoje: ↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosHoje)} · ↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosHoje)}");
+        linhas.Add(Textos.Formatar(Textos.Dica_Hoje,
+            SpeedFormatter.FormatarQuantidade(h.BytesEnviadosHoje), SpeedFormatter.FormatarQuantidade(h.BytesRecebidosHoje)));
 
-        string mes = $"Mês: ↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosMes)} · ↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosMes)}";
+        string mes = Textos.Formatar(Textos.Dica_Mes,
+            SpeedFormatter.FormatarQuantidade(h.BytesEnviadosMes), SpeedFormatter.FormatarQuantidade(h.BytesRecebidosMes));
         if (fracaoFranquia > 0)
         {
-            mes += $" ({TextoPercentual(fracaoFranquia)} da franquia)";
+            mes += Textos.Formatar(Textos.Dica_DaFranquia, TextoPercentual(fracaoFranquia));
         }
 
         linhas.Add(mes);
@@ -52,18 +56,29 @@ public static class DicaWidget
         // v1.1.0: latência só com a medição ligada (e já com ao menos uma rodada concluída)
         if (latencia is { Medido: true })
         {
-            linhas.Add($"Latência: {latencia.Texto()}");
+            linhas.Add(Textos.Formatar(Textos.Dica_Latencia, latencia.Texto()));
         }
 
-        linhas.Add($"Pico em 60 s: ↑ {f.FormatarValorEUnidade(h.PicoUpload)} · ↓ {new SpeedFormatter(unidade).FormatarValorEUnidade(h.PicoDownload)}");
+        linhas.Add(Textos.Formatar(Textos.Dica_Pico60s,
+            f.FormatarValorEUnidade(h.PicoUpload), new SpeedFormatter(unidade).FormatarValorEUnidade(h.PicoDownload)));
         // "Clique abre o painel" é óbvio; a dica ensina só os atalhos escondidos (cabe numa linha)
-        linhas.Add("Duplo clique: Gerenciador de Tarefas · Ctrl + arrastar: mover");
+        linhas.Add(Textos.Dica_Atalhos);
         return string.Join(Environment.NewLine, linhas);
     }
 
-    /// <summary>"82 %" (arredondado para baixo: 99,6 % não pode aparecer como "100 %" antes da hora).</summary>
-    public static string TextoPercentual(double fracao) =>
-        $"{Math.Floor(Math.Max(0, fracao) * 100).ToString("0", PtBr)} %";
+    /// <summary>
+    /// "82 %" (arredondado para baixo: 99,6 % não pode aparecer como "100 %" antes da hora).
+    /// v1.9.0: em inglês sai "82%" (sem o espaço, como se escreve lá); <paramref name="cultura"/> null = a da interface.
+    /// </summary>
+    /// <param name="casas">Casas decimais (0 = inteiro); sempre arredondando PARA BAIXO.</param>
+    public static string TextoPercentual(double fracao, CultureInfo? cultura = null, int casas = 0)
+    {
+        CultureInfo c = cultura ?? Idioma.Cultura;
+        double escala = Math.Pow(10, casas);
+        string formato = casas == 0 ? "0" : "0." + new string('0', casas);
+        string numero = (Math.Floor(Math.Max(0, fracao) * 100 * escala) / escala).ToString(formato, c);
+        return c.TwoLetterISOLanguageName == "en" ? $"{numero}%" : $"{numero} %";
+    }
 
     /// <summary>Opacidade mínima do número parado: ainda legível na barra (não some).</summary>
     public const double OpacidadeMinima = 0.5;

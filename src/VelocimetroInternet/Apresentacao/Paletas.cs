@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Media;
+using VelocimetroInternet.Recursos;
 
 namespace VelocimetroInternet.Apresentacao;
 
@@ -85,6 +86,32 @@ public static class Paletas
 
         return Predefinidas.FirstOrDefault(p => p.Id == id) ?? Predefinidas[0];
     }
+
+    /// <summary>
+    /// v1.9.0: nome da paleta no idioma da interface. O registro guarda o nome em português (os ids e
+    /// o catálogo são fixos); a tradução vem do <see cref="Textos"/> por id — paleta desconhecida
+    /// (personalizada montada pelo estúdio) fica com o nome que o registro traz.
+    /// </summary>
+    public static string NomeExibido(PaletaCores p) => p.Id switch
+    {
+        "classico" => Textos.Paleta_Classico_Nome,
+        "neon" => Textos.Paleta_Neon_Nome,
+        "mono" => Textos.Paleta_Mono_Nome,
+        "alto-contraste" => Textos.Paleta_AltoContraste_Nome,
+        "bio" => Textos.Paleta_Bio_Nome,
+        _ => p.Nome
+    };
+
+    /// <summary>v1.9.0: descrição da paleta no idioma da interface (ver <see cref="NomeExibido"/>).</summary>
+    public static string DescricaoExibida(PaletaCores p) => p.Id switch
+    {
+        "classico" => Textos.Paleta_Classico_Descricao,
+        "neon" => Textos.Paleta_Neon_Descricao,
+        "mono" => Textos.Paleta_Mono_Descricao,
+        "alto-contraste" => Textos.Paleta_AltoContraste_Descricao,
+        "bio" => Textos.Paleta_Bio_Descricao,
+        _ => p.Descricao
+    };
 
     /// <summary>Resolve as cores finais para a barra clara ou escura, garantindo o contraste mínimo.</summary>
     public static CoresResolvidas Resolver(PaletaCores paleta, bool barraClara)
@@ -218,13 +245,13 @@ public static class Paletas
         return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
     }
 
-    /// <summary>Rótulo do design: "AAA" (≥7), "AA" (≥4,5), "AA texto grande" (≥3) ou "Insuficiente".</summary>
+    /// <summary>Rótulo do design: "AAA" (≥7), "AA" (≥4,5), "AA texto grande" (≥3) ou "Insuficiente". v1.9.0: no idioma da interface.</summary>
     public static string NivelWcag(double razao) => razao switch
     {
-        >= 7.0 => "AAA",
-        >= 4.5 => "AA",
-        >= 3.0 => "AA texto grande",
-        _ => "Insuficiente"
+        >= 7.0 => Textos.Wcag_AAA,
+        >= 4.5 => Textos.Wcag_AA,
+        >= 3.0 => Textos.Wcag_AATextoGrande,
+        _ => Textos.Wcag_Insuficiente
     };
 
     /// <summary>Resultado de pintar <paramref name="topo"/> com opacidade <paramref name="alfa"/> sobre <paramref name="fundo"/>.</summary>

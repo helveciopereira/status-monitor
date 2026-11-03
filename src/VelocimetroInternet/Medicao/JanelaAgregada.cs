@@ -30,12 +30,12 @@ public static class JanelasGrafico
         _ => "1min"
     };
 
-    /// <summary>Texto enquanto a janela ainda não tem 2 pontos (as longas demoram a encher).</summary>
+    /// <summary>Texto enquanto a janela ainda não tem 2 pontos (as longas demoram a encher). v1.9.0: no idioma da interface.</summary>
     public static string TextoAguardando(JanelaGrafico janela) => janela switch
     {
-        JanelaGrafico.CincoMinutos => "Juntando dados (1 ponto a cada 5 s)…",
-        JanelaGrafico.Hora => "Juntando dados (1 ponto por minuto)…",
-        _ => "Aguardando amostras…"
+        JanelaGrafico.CincoMinutos => Recursos.Textos.Grafico_Juntando5s,
+        JanelaGrafico.Hora => Recursos.Textos.Grafico_JuntandoMinuto,
+        _ => Recursos.Textos.Painel_AguardandoAmostras
     };
 }
 

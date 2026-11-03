@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
+using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Apresentacao;
 
@@ -50,7 +52,7 @@ public partial class JanelaTesteVelocidade : Window
         }
 
         _cts = new CancellationTokenSource();
-        BotaoIniciar.Content = "Cancelar";
+        BotaoIniciar.Content = Textos.Teste_Cancelar;
         TextoComparacao.Visibility = TextoDetalhe.Visibility = TextoConexao.Visibility = Visibility.Collapsed;
         _conexao = null;
         NumeroDownload.Text = NumeroUpload.Text = NumeroLatencia.Text = "—";
@@ -70,19 +72,19 @@ public partial class JanelaTesteVelocidade : Window
             MostrarResultado(r);
             _aoConcluir?.Invoke(r, _conexao);
             _log?.Invoke($"Teste de velocidade: ↓ {Mbps(r.DownloadBps)} · ↑ {Mbps(r.UploadBps)} · {r.LatenciaMs:0} ms · {SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)} gastos" +
-                (_conexao is null ? "." : $" · {_conexao.Descricao()}."));
+                (_conexao is null ? "." : $" · {_conexao.Descricao(PtBr)}.")); // log sempre em pt-BR
         }
         catch (OperationCanceledException)
         {
-            TextoEtapa.Text = "Teste cancelado.";
+            TextoEtapa.Text = Textos.Teste_Cancelado;
             DefinirFracao(0);
         }
         catch (HttpRequestException ex)
         {
             // Sem internet, servidor fora do ar, limite de pedidos (429): mensagem curta e útil
             TextoEtapa.Text = ex.StatusCode is { } codigo
-                ? $"O servidor de teste recusou o pedido ({(int)codigo}). Tente de novo em alguns minutos."
-                : "Não foi possível falar com o servidor de teste. Confira a conexão e tente de novo.";
+                ? Textos.Formatar(Textos.Teste_ServidorRecusou, (int)codigo)
+                : Textos.Teste_ServidorInacessivel;
             DefinirFracao(0);
             _log?.Invoke($"Teste de velocidade falhou: {ex.Message}");
         }
@@ -90,7 +92,7 @@ public partial class JanelaTesteVelocidade : Window
         {
             _cts.Dispose();
             _cts = null;
-            BotaoIniciar.Content = "Testar de novo";
+            BotaoIniciar.Content = Textos.Teste_TestarDeNovo;
         }
     }
 
@@ -99,11 +101,11 @@ public partial class JanelaTesteVelocidade : Window
         switch (p.Etapa)
         {
             case EtapaTeste.Latencia:
-                TextoEtapa.Text = "Medindo a latência…";
+                TextoEtapa.Text = Textos.Teste_MedindoLatencia;
                 DefinirFracao(0.02);
                 break;
             case EtapaTeste.Download:
-                TextoEtapa.Text = "Medindo o download…";
+                TextoEtapa.Text = Textos.Teste_MedindoDownload;
                 (NumeroDownload.Text, UnidadeDownload.Text) = Partes(p.BitsPorSegundoParcial);
                 DefinirFracao(0.05 + 0.5 * p.Fracao);
                 break;
@@ -111,7 +113,7 @@ public partial class JanelaTesteVelocidade : Window
                 // v1.5.0: o download acabou de puxar o link ao máximo — é a hora certa de ler a taxa
                 // do Wi-Fi (parado, ele economiza energia e mostra menos que o real)
                 _conexao ??= LerConexao();
-                TextoEtapa.Text = "Medindo o upload…";
+                TextoEtapa.Text = Textos.Teste_MedindoUpload;
                 (NumeroUpload.Text, UnidadeUpload.Text) = Partes(p.BitsPorSegundoParcial);
                 DefinirFracao(0.55 + 0.45 * p.Fracao);
                 break;
@@ -122,15 +124,16 @@ public partial class JanelaTesteVelocidade : Window
     {
         (NumeroDownload.Text, UnidadeDownload.Text) = Partes(r.DownloadBps);
         (NumeroUpload.Text, UnidadeUpload.Text) = Partes(r.UploadBps);
-        NumeroLatencia.Text = r.LatenciaMs.ToString("0", PtBr);
-        TextoEtapa.Text = $"Concluído às {DateTime.Now:HH:mm}.";
+        // v1.9.0: textos e números no idioma da interface
+        NumeroLatencia.Text = r.LatenciaMs.ToString("0", Idioma.Cultura);
+        TextoEtapa.Text = Textos.Formatar(Textos.Teste_ConcluidoAs, DateTime.Now.ToString("HH:mm"));
         DefinirFracao(1);
 
         string? comparacao = CalculoTeste.ComparacaoComPlano(r.DownloadBps, _planoMbps());
-        TextoComparacao.Text = comparacao ?? "Informe a velocidade do seu plano no estúdio (Medição) para comparar com o contratado.";
+        TextoComparacao.Text = comparacao ?? Textos.Teste_InformePlano;
         TextoComparacao.Visibility = Visibility.Visible;
-        TextoDetalhe.Text = $"Servidor {r.Servidor} · dados usados: {SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)}" +
-            (_aoConcluir is null ? "" : " · guardado no relatório do mês");
+        TextoDetalhe.Text = Textos.Formatar(Textos.Teste_ServidorDados, r.Servidor, SpeedFormatter.FormatarQuantidade((ulong)r.BytesTotais)) +
+            (_aoConcluir is null ? "" : Textos.Teste_GuardadoNoRelatorio);
         TextoDetalhe.Visibility = Visibility.Visible;
 
         // v1.5.0 (Onda 10): de onde o teste saiu. Se o link é mais lento que o plano, diz com todas as
@@ -138,7 +141,7 @@ public partial class JanelaTesteVelocidade : Window
         if (_conexao is not null)
         {
             string? aviso = _conexao.AvisoDeLimite(_planoMbps());
-            TextoConexao.Text = $"Conexão: {_conexao.Descricao()}." + (aviso is null ? "" : $" {aviso}");
+            TextoConexao.Text = Textos.Formatar(Textos.Teste_Conexao, _conexao.Descricao()) + (aviso is null ? "" : $" {aviso}");
             // Referência dinâmica: troca de tema claro/escuro com a janela aberta continua certa
             TextoConexao.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, aviso is null ? "Tema.TextoSecundario" : "Tema.Texto");
             TextoConexao.Visibility = Visibility.Visible;
@@ -167,11 +170,13 @@ public partial class JanelaTesteVelocidade : Window
         ColunaFalta.Width = new GridLength(1 - f, GridUnitType.Star);
     }
 
+    /// <summary>Para a tela: no idioma da interface.</summary>
     private static (string Numero, string Unidade) Partes(double bps) => CalculoTeste.FormatarMbps(bps);
 
+    /// <summary>Para o log: sempre pt-BR.</summary>
     private static string Mbps(double bps)
     {
-        (string n, string u) = CalculoTeste.FormatarMbps(bps);
+        (string n, string u) = CalculoTeste.FormatarMbps(bps, PtBr);
         return $"{n} {u}";
     }
 

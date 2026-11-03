@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using VelocimetroInternet.Config;
 using VelocimetroInternet.Medicao;
+using VelocimetroInternet.Recursos;
 using VelocimetroInternet.Sistema;
 
 namespace VelocimetroInternet.Apresentacao;
@@ -15,7 +16,8 @@ namespace VelocimetroInternet.Apresentacao;
 /// </summary>
 public partial class EstudioCores : Window
 {
-    private static readonly CultureInfo PtBr = new("pt-BR");
+    /// <summary>v1.9.0: números digitados/mostrados no idioma da interface (antes era pt-BR fixo).</summary>
+    private static CultureInfo Cultura => Idioma.Cultura;
 
     private readonly ServicoConfiguracoes _servico;
     private Configuracoes _rascunho;
@@ -47,16 +49,17 @@ public partial class EstudioCores : Window
     private void MontarGaleria()
     {
         IEnumerable<PaletaCores> todas = Paletas.Predefinidas.Append(
-            new PaletaCores(Paletas.IdPersonalizada, "Personalizada", "Escolha as duas cores em hexadecimal.",
+            new PaletaCores(Paletas.IdPersonalizada, Textos.Estudio_PaletaPersonalizada, Textos.Estudio_PaletaPersonalizadaDescricao,
                 Paletas.Hex(_rascunho.CorUploadPersonalizada), Paletas.Hex(_rascunho.CorDownloadPersonalizada)));
 
         foreach (PaletaCores p in todas)
         {
+            // v1.9.0: nome/descrição exibidos no idioma da interface (o Id continua sendo o que se grava)
             var conteudo = new StackPanel();
-            conteudo.Children.Add(new TextBlock { Text = p.Nome, FontWeight = FontWeights.SemiBold });
+            conteudo.Children.Add(new TextBlock { Text = Paletas.NomeExibido(p), FontWeight = FontWeights.SemiBold });
             conteudo.Children.Add(new TextBlock
             {
-                Text = p.Descricao,
+                Text = Paletas.DescricaoExibida(p),
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 2, 0, 8),
@@ -75,7 +78,7 @@ public partial class EstudioCores : Window
                 Content = conteudo,
                 Tag = p.Id
             };
-            System.Windows.Automation.AutomationProperties.SetName(cartao, $"Paleta {p.Nome}");
+            System.Windows.Automation.AutomationProperties.SetName(cartao, Textos.Formatar(Textos.Estudio_PaletaNomeUia, Paletas.NomeExibido(p)));
             cartao.Checked += AoEscolherPaleta;
             _cartoes[p.Id] = cartao;
             Galeria.Children.Add(cartao);
@@ -116,7 +119,7 @@ public partial class EstudioCores : Window
             CampoCorDownload.Text = _rascunho.CorDownloadPersonalizada;
             ControleSuavizacao.Value = _rascunho.Suavizacao;
             CampoPlano.Text = _rascunho.VelocidadeContratadaMbps > 0
-                ? _rascunho.VelocidadeContratadaMbps.ToString("0.##", PtBr)
+                ? _rascunho.VelocidadeContratadaMbps.ToString("0.##", Cultura)
                 : string.Empty;
             CampoExcluir.Text = string.Join(Environment.NewLine, _rascunho.InterfacesExcluir);
             ChaveBandeja.IsChecked = _rascunho.MostrarIconeBandeja || !_rascunho.FixarNaBarra;
@@ -128,6 +131,7 @@ public partial class EstudioCores : Window
             MarcarSegmento(GrupoOrdem, _rascunho.DownloadEmCima ? "download" : "envio");
             MarcarSegmento(GrupoModo, _rascunho.ModoExibicao); // v1.2.0
             MarcarSegmento(GrupoIntervalo, _rascunho.IntervaloSegundos.ToString(CultureInfo.InvariantCulture));
+            MarcarSegmento(GrupoIdioma, _rascunho.Idioma); // v1.9.0
             ChaveMonitores.IsChecked = _rascunho.MostrarEmTodasAsBarras;
             ChaveMiniGrafico.IsChecked = _rascunho.MiniGrafico; // v1.7.0
 
@@ -136,7 +140,7 @@ public partial class EstudioCores : Window
             ChaveLatencia.IsChecked = _rascunho.MedirLatencia; // v1.1.0
             ChaveAvisoVolta.IsChecked = _rascunho.AvisarQuandoInternetVoltar; // v1.8.1
             CampoFranquia.Text = _rascunho.FranquiaMensalGb > 0
-                ? _rascunho.FranquiaMensalGb.ToString("0.##", PtBr)
+                ? _rascunho.FranquiaMensalGb.ToString("0.##", Cultura)
                 : string.Empty;
         }
         finally
@@ -163,10 +167,10 @@ public partial class EstudioCores : Window
 
         InstantaneoHistorico h = _historico.Capturar();
         ulong total = h.BytesEnviadosMes + h.BytesRecebidosMes;
-        string texto = $"Este mês até agora: {SpeedFormatter.FormatarQuantidade(total)}";
+        string texto = Textos.Formatar(Textos.Estudio_EsteMesAteAgora, SpeedFormatter.FormatarQuantidade(total));
         if (_rascunho.FranquiaMensalGb > 0)
         {
-            texto += $" · {DicaWidget.TextoPercentual(total / (_rascunho.FranquiaMensalGb * 1_000_000_000d))} da franquia";
+            texto += Textos.Formatar(Textos.Estudio_DaFranquiaSufixo, DicaWidget.TextoPercentual(total / (_rascunho.FranquiaMensalGb * 1_000_000_000d)));
         }
 
         TextoConsumoMes.Text = texto;
@@ -185,7 +189,7 @@ public partial class EstudioCores : Window
         {
             _rascunho.FranquiaMensalGb = 0;
         }
-        else if (double.TryParse(t, NumberStyles.Number, PtBr, out double v) && v >= 0)
+        else if (double.TryParse(t, NumberStyles.Number, Cultura, out double v) && v >= 0)
         {
             _rascunho.FranquiaMensalGb = Math.Min(v, 100_000);
         }
@@ -235,10 +239,10 @@ public partial class EstudioCores : Window
 
         var dialogo = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Exportar consumo por dia",
+            Title = Textos.Estudio_ExportarConsumoPorDia,
             FileName = $"status-monitor-consumo-{DateTime.Now:yyyy-MM-dd}.csv",
             DefaultExt = ".csv",
-            Filter = "Planilha CSV (*.csv)|*.csv",
+            Filter = Textos.Comum_FiltroCsv,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         };
         if (dialogo.ShowDialog(this) != true)
@@ -249,11 +253,11 @@ public partial class EstudioCores : Window
         try
         {
             System.IO.File.WriteAllText(dialogo.FileName, _historico.ExportarCsv(), new System.Text.UTF8Encoding(true));
-            TextoEstadoSalvo.Text = "CSV exportado";
+            TextoEstadoSalvo.Text = Textos.Estudio_CsvExportado;
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
-            TextoEstadoSalvo.Text = $"Não deu para salvar o CSV: {ex.Message}";
+            TextoEstadoSalvo.Text = Textos.Formatar(Textos.Estudio_CsvFalhou, ex.Message);
         }
     }
 
@@ -287,6 +291,10 @@ public partial class EstudioCores : Window
         PreencherSelo(SeloClaro, TextoSeloClaro, Math.Min(clara.ContrasteUpload, clara.ContrasteDownload));
     }
 
+    /// <summary>v1.9.0: números de exemplo das amostras no idioma da interface ("1,24" / "1.24").</summary>
+    private static string ExemploUp => 1.24.ToString("0.00", Cultura);
+    private static string ExemploDown => 38.7.ToString("0.0", Cultura);
+
     /// <summary>Réplica do widget (2 pílulas) com as cores resolvidas — mesmo desenho da barra.</summary>
     private static UIElement MiniWidget(CoresResolvidas c, AparenciaWidget a, ModoExibicaoWidget modo, bool grafico)
     {
@@ -298,7 +306,7 @@ public partial class EstudioCores : Window
         // v1.2.0: amostra de cada modo, com o mesmo desenho da barra
         if (modo == ModoExibicaoWidget.SoDownload)
         {
-            pilha.Children.Add(Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
+            pilha.Children.Add(Pilula("↓", $"{ExemploDown} MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
                 grafico ? c.MascaraGrafico : null, ExemploDownload));
             return pilha;
         }
@@ -308,9 +316,9 @@ public partial class EstudioCores : Window
             return LinhaUnica(c, a, familia, tamanho - 0.5);
         }
 
-        Border envio = Pilula("↑", "1,24 MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho,
+        Border envio = Pilula("↑", $"{ExemploUp} MB/s", c.Upload, c.FundoPilulaUpload, c.BordaPilulaUpload, familia, tamanho,
             grafico ? c.MascaraGrafico : null, ExemploUpload);
-        Border download = Pilula("↓", "38,7 MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
+        Border download = Pilula("↓", $"{ExemploDown} MB/s", c.Download, c.FundoPilulaDownload, c.BordaPilulaDownload, familia, tamanho,
             grafico ? c.MascaraGrafico : null, ExemploDownload);
         pilha.Children.Add(a.DownloadEmCima ? download : envio);
         pilha.Children.Add(new Border { Height = 2 });
@@ -332,8 +340,8 @@ public partial class EstudioCores : Window
         };
 
         var linha = new StackPanel { Orientation = Orientation.Horizontal };
-        TextBlock envio = Texto(a.DownloadEmCima ? "↑ 1,24 MB/s" : "↑ 1,24", c.Upload);
-        TextBlock download = Texto(a.DownloadEmCima ? "↓ 38,7" : "↓ 38,7 MB/s", c.Download);
+        TextBlock envio = Texto(a.DownloadEmCima ? $"↑ {ExemploUp} MB/s" : $"↑ {ExemploUp}", c.Upload);
+        TextBlock download = Texto(a.DownloadEmCima ? $"↓ {ExemploDown}" : $"↓ {ExemploDown} MB/s", c.Download);
         linha.Children.Add(a.DownloadEmCima ? download : envio);
         linha.Children.Add(Texto("  |  ", c.Separador));
         linha.Children.Add(a.DownloadEmCima ? envio : download);
@@ -407,7 +415,7 @@ public partial class EstudioCores : Window
     private static void PreencherSelo(Border selo, TextBlock texto, double razao)
     {
         string nivel = Paletas.NivelWcag(razao);
-        texto.Text = $"Contraste {razao.ToString("0.0", PtBr)}:1 ({nivel})";
+        texto.Text = Textos.Formatar(Textos.Estudio_Contraste, razao.ToString("0.0", Cultura), nivel);
         bool ok = razao >= 4.5;
         // O selo fica sobre a superfície do APP (segue o tema dos apps, não a amostra da barra)
         Color cor = ServicoTema.ClaroAtivo
@@ -418,12 +426,12 @@ public partial class EstudioCores : Window
     }
 
     private void AtualizarTextoSuavizacao() =>
-        TextoSuavizacao.Text = ControleSuavizacao.Value.ToString("0.0", PtBr);
+        TextoSuavizacao.Text = ControleSuavizacao.Value.ToString("0.0", Cultura);
 
     private void AtualizarInterfacesAtivas()
     {
         LeituraAcumuladaRede l = new NetworkSampler(_rascunho.InterfacesIncluir, _rascunho.InterfacesExcluir).LerContadoresAtuais();
-        TextoInterfacesAtivas.Text = $"Medindo agora: {l.ResumoInterfacesAtivas}";
+        TextoInterfacesAtivas.Text = Textos.Formatar(Textos.Estudio_MedindoAgora, l.ResumoInterfacesAtivas);
     }
 
     /// <summary>"Alterações não aplicadas" quando o rascunho difere do que está valendo.</summary>
@@ -431,7 +439,7 @@ public partial class EstudioCores : Window
     {
         bool diferente = System.Text.Json.JsonSerializer.Serialize(_rascunho)
                          != System.Text.Json.JsonSerializer.Serialize(_servico.Atual);
-        TextoEstadoSalvo.Text = diferente ? "Alterações não aplicadas" : string.Empty;
+        TextoEstadoSalvo.Text = diferente ? Textos.Estudio_AlteracoesNaoAplicadas : string.Empty;
         BotaoAplicar.IsEnabled = diferente;
     }
 
@@ -462,7 +470,7 @@ public partial class EstudioCores : Window
         {
             _rascunho.CorUploadPersonalizada = Paletas.ParaHex(up);
             _rascunho.CorDownloadPersonalizada = Paletas.ParaHex(down);
-            AvisoCor.Text = "Formato #RRGGBB, ex.: #4CC2FF. Pense na barra escura; a versão clara é ajustada sozinha.";
+            AvisoCor.Text = Textos.Estudio_FormatoRRGGBBEx4CC2FFPense;
             AvisoCor.SetResourceReference(TextBlock.ForegroundProperty, "Tema.TextoSecundario");
             AtualizarPreVisualizacao();
             SincronizarSeletor(); // digitou um hex válido: o seletor e as amostras acompanham
@@ -470,7 +478,7 @@ public partial class EstudioCores : Window
         }
         else
         {
-            AvisoCor.Text = "Cor inválida — use 6 dígitos hexadecimais, ex.: #4CC2FF.";
+            AvisoCor.Text = Textos.Estudio_CorInvalida;
             AvisoCor.Foreground = new SolidColorBrush(ServicoTema.ClaroAtivo ? Color.FromRgb(0xC4, 0x2B, 0x1C) : Color.FromRgb(0xFF, 0x99, 0xA4));
         }
     }
@@ -541,7 +549,7 @@ public partial class EstudioCores : Window
         {
             _rascunho.VelocidadeContratadaMbps = 0;
         }
-        else if (double.TryParse(t, NumberStyles.Number, PtBr, out double v) && v >= 0)
+        else if (double.TryParse(t, NumberStyles.Number, Cultura, out double v) && v >= 0)
         {
             _rascunho.VelocidadeContratadaMbps = v;
         }
@@ -597,6 +605,9 @@ public partial class EstudioCores : Window
             case "Intervalo":
                 _rascunho.IntervaloSegundos = double.Parse(valor, CultureInfo.InvariantCulture);
                 break;
+            case "Idioma": // v1.9.0: "auto" / "pt-BR" / "en" — vale ao Aplicar, para as janelas abertas depois
+                _rascunho.Idioma = valor;
+                break;
         }
 
         AtualizarPreVisualizacao();
@@ -620,7 +631,9 @@ public partial class EstudioCores : Window
             // Sem isto, o próximo início religaria o "Iniciar com o Windows" que o usuário desligou
             InicioAutomaticoJaConfigurado = _rascunho.InicioAutomaticoJaConfigurado,
             // v0.8.0: o lugar escolhido arrastando tem botão próprio no menu ("Voltar à posição automática")
-            PosicoesManuais = new Dictionary<string, int>(_rascunho.PosicoesManuais)
+            PosicoesManuais = new Dictionary<string, int>(_rascunho.PosicoesManuais),
+            // v1.9.0: idioma não é "aparência" — restaurar o padrão não troca a língua de quem lê
+            Idioma = _rascunho.Idioma
         };
         _rascunho = padrao;
         CarregarNosControles();

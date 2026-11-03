@@ -334,17 +334,17 @@ clara · 🟢 ideia.
 
 ### Acesso amplo (outras pessoas instalando)
 
-- 🟡 **Assinatura do instalador.** Setup sem assinatura = tela azul do SmartScreen ("impediu o
-  início de um aplicativo não reconhecido") para todo mundo que baixar; é o maior obstáculo real
-  para "acesso amplo". Caminhos: Azure Trusted Signing (assinatura por mês, pessoa física
-  precisa de validação), SignPath (gratuito para código aberto no GitHub) ou publicar no
-  **winget** (`winget install StatusMonitor` não passa pelo SmartScreen e o manifesto é um PR
-  no repositório `microsoft/winget-pkgs`). O winget é o mais barato: esforço baixo, sem custo.
-- 🟡 **Inglês.** Todos os textos estão fixos em PT-BR no XAML e no C# (≈120 `Text="…"` nos .xaml e
-  ≈100 frases em `App.xaml.cs`/estúdio/relatório; grep "Idioma": 0). Um dicionário de recursos
-  (`.resx` pt-BR/en-US, idioma do Windows com opção de trocar no estúdio) abre o app para quem não
-  lê português. Esforço médio-alto (muitos textos), risco baixo. O relatório PDF fica em PT-BR
-  (é para operadora brasileira).
+- ✅ **v1.9.0** (2026-11-03) — **winget** (a parte sem custo da "assinatura do instalador").
+  Manifestos em `tools/winget/manifests/h/HelvecioPereira/StatusMonitor/<versão>/` (gerados por
+  `tools/winget/gerar-manifesto.ps1` com o SHA-256 do Setup publicado; `winget validate` ok). O envio é
+  um PR ao `microsoft/winget-pkgs` — ação externa, feita só com o aval do dono (ver walkthrough v1.9.0).
+  Continua 🟡 a assinatura de código em si (Azure Trusted Signing / SignPath): o Setup baixado do
+  GitHub ainda passa pelo SmartScreen; pelo winget, não.
+- ✅ **v1.9.0** (2026-11-03) — **Inglês.** 274 textos em `Recursos/Textos.resx` (pt-BR, neutro) +
+  `Textos.en.resx`; XAML por `{x:Static r:Textos.Chave}`, C# por `Textos.Chave`/`Textos.Formatar`;
+  `Sistema/Idioma.cs` decide (auto = idioma do Windows; estúdio › Idioma força). Fora do idioma, por
+  decisão: relatório PDF, CSV, log e as frases de conclusão do relatório (são o documento para a
+  operadora). Vale para as janelas abertas depois de "Aplicar" (o painel rápido renasce sozinho).
 - 🟢 **Atalho de teclado global** para abrir o painel (ex.: Ctrl+Alt+S; conferir se está livre com
   `RegisterHotKey` antes, erro 1409 = ocupado) — quem usa teclado ou leitor de tela não precisa achar
   o widget com o mouse. Os `AutomationProperties.Name` já estão nos controles.
@@ -366,7 +366,7 @@ clara · 🟢 ideia.
 1. ✅ **v1.7.2** (2026-11-03) — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
 2. ✅ **v1.8.0** (2026-11-03) — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área). Pendente: confirmar com 24 h de log.
 3. ✅ **v1.8.1** (2026-11-03) — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
-4. **v1.9.0** — winget + inglês (acesso amplo).
+4. ✅ **v1.9.0** (2026-11-03) — winget + inglês (acesso amplo). Pendente do dono: autorizar o PR ao `microsoft/winget-pkgs`.
 5. Ideias 🟢 conforme o gosto do dono.
 
 ## Dívida técnica anotada (sem onda própria)
