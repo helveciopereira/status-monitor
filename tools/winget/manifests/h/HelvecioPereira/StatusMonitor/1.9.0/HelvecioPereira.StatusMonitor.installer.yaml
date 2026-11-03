@@ -1,0 +1,23 @@
+# Created by tools/winget/gerar-manifesto.ps1 (Status Monitor)
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: HelvecioPereira.StatusMonitor
+PackageVersion: 1.9.0
+InstallerType: exe
+Scope: user
+InstallModes:
+- silent
+InstallerSwitches:
+  Silent: --silent
+  SilentWithProgress: --silent
+UpgradeBehavior: install
+ReleaseDate: 2026-11-03
+AppsAndFeaturesEntries:
+- DisplayName: Status Monitor
+  Publisher: Helvécio
+  ProductCode: VelocimetroInternetApp
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/helveciopereira/status-monitor/releases/download/v1.9.0/StatusMonitor-Setup.exe
+  InstallerSha256: EFB654FA894D46574B6F797C9C55AD07532DA5002CA2388EE195D96659FD1C06
+ManifestType: installer
+ManifestVersion: 1.6.0

@@ -1,0 +1,32 @@
+# Created by tools/winget/gerar-manifesto.ps1 (Status Monitor)
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: HelvecioPereira.StatusMonitor
+PackageVersion: 1.9.0
+PackageLocale: en-US
+Publisher: Helvécio Pereira
+PublisherUrl: https://github.com/helveciopereira
+PublisherSupportUrl: https://github.com/helveciopereira/status-monitor/issues
+PackageName: Status Monitor
+PackageUrl: https://github.com/helveciopereira/status-monitor
+License: Proprietary
+ShortDescription: CPU, RAM and internet speed on the Windows 11 taskbar, with a quality report for your ISP.
+Description: |-
+  Status Monitor is a tiny widget that sits on the Windows 11 taskbar, next to the system tray, and
+  shows upload and download speed in real time, plus CPU and RAM usage. It also keeps a daily and
+  monthly data-usage history, runs on-demand speed tests, detects internet outages and builds a monthly
+  quality report (PDF/CSV) you can send to your internet provider. Installs per user, no administrator
+  needed, and updates itself silently. Interface in English and Brazilian Portuguese.
+Moniker: statusmonitor
+Tags:
+- bandwidth
+- cpu
+- internet
+- monitor
+- network
+- ram
+- speed
+- taskbar
+- widget
+ReleaseNotesUrl: https://github.com/helveciopereira/status-monitor/releases/tag/v1.9.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

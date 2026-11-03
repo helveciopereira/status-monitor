@@ -37,8 +37,9 @@
 - Winget (quando o PR for aceito): `winget install HelvecioPereira.StatusMonitor`.
 - Nova versão: depois de `tools\publicar-atualizacao.ps1`, rode `pwsh -File tools\winget\gerar-manifesto.ps1`
   e abra o PR no `microsoft/winget-pkgs` com a pasta gerada.
-- Novo texto na interface: adicione a chave nas duas colunas (pt e en) e rode `tools\gerar-textos.ps1`
-  para regenerar `Textos.Designer.cs` (o teste `V190IdiomaTests` cobra a paridade).
+- Novo texto na interface: adicione o `<data>` com a mesma chave em `Textos.resx` (pt) **e** em
+  `Textos.en.resx` (en) e rode `tools\gerar-textos.ps1` para regenerar `Textos.Designer.cs` (o teste
+  `V190IdiomaTests` cobra a paridade das chaves e dos `{n}`).
 
 ### Arquivos tocados
 - Novos: `Recursos/Textos.resx`, `Textos.en.resx`, `Textos.cs`, `Textos.Designer.cs`, `Sistema/Idioma.cs`,
