@@ -1,5 +1,45 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.7.2 — 2026-11-03 — Estabilidade: exceções não tratadas, loop fora da UI, consulta de hora em hora
+
+### O que mudou
+- **Rede de proteção contra exceção não tratada** (`App.xaml.cs`, `InstalarTratadoresDeExcecao`, nova
+  classe `Sistema/PoliticaFalhas.cs`). Um erro num clique, num binding ou num `async void` de janela
+  secundária agora vai para o `velocimetro.log` com a pilha e **o app segue** (o widget continua
+  medindo). Só encerra se forem **mais de 5 erros em 1 minuto** (tempestade = algo quebrado de verdade;
+  antes de sair, salva o consumo do dia e a queda em andamento). Tasks esquecidas que falham vão para o
+  log sem derrubar nada; falha fatal fora da interface grava a pilha e salva os dados antes de cair.
+- **Loop de medição no pool de threads** (`Task.Run` em `OnStartup`). A leitura dos contadores, o COM do
+  NLM, a soma da franquia e a gravação do log saíram da thread que desenha; a UI só recebe o
+  `InvokeAsync` que já existia. O log ganhou uma trava (duas threads gravam agora).
+- **Consulta de atualização a cada 1 h** (era 5 min desde a v0.4.2). Continua consultando 45 s após abrir
+  e 30 s após acordar do suspender. ⚠️ Isso reverte um pedido do dono (v0.4.2); motivo abaixo.
+
+### Por quê (causa raiz)
+- Varredura de 2026-11-03 (`03-PLANO-DE-ONDAS.md`): grep em `src/` achava 0 tratadores — "o widget
+  sumiu" sem uma linha de log era o desfecho de qualquer exceção numa janela.
+- `ExecutarLoopMedicaoAsync` era chamado direto de `OnStartup` sem `ConfigureAwait(false)`: todo tick
+  voltava à thread da interface. O comentário de `HistoricoRede.cs:37` ("thread do pool") descrevia a
+  intenção, não o que acontecia.
+- Medido no harness (`render-estudio.exe vazamento http 30`): cada consulta do Velopack cria um
+  `HttpClient` novo e deixa ~0,5 handle e ~0,3 MB para trás depois do GC. 288 consultas/dia era parte
+  do crescimento de memória do app (v1.8.0 corrige a causa; 1 h já reduz 12× enquanto isso).
+
+### Como usar
+- Nada muda na tela. Se algo falhar numa janela, procure "Exceção não tratada" no
+  `%LOCALAPPDATA%\VelocimetroInternet\velocimetro.log`.
+
+### Arquivos tocados
+- `src/VelocimetroInternet/App.xaml.cs`, `Sistema/PoliticaFalhas.cs` (novo), `Medicao/HistoricoRede.cs`
+  (comentário), `tests/.../V172EstabilidadeTests.cs` (novo, 5 testes), `tools/publicar-atualizacao.ps1`
+  (comentário), `README.md`, `03-PLANO-DE-ONDAS.md`, csproj.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Suíte inteira: **314 aprovados** (309 + 5 novos).
+- Entrega ao vivo: ver o registro de publicação no commit seguinte / `sq.version` = 1.7.2.
+- Validação manual recomendada: abrir o estúdio e o teste de velocidade e conferir que o widget
+  continua medindo durante os dois; com a internet caindo, conferir "sem conexão" no widget.
+
 ## v1.7.1 — 2026-11-02 — CPU e RAM vermelhos a partir de 80 %
 
 ### O que mudou

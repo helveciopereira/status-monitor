@@ -23,8 +23,12 @@ namespace VelocimetroInternet;
 /// - 2ª execução do .exe não abre outra cópia: avisa a 1ª, que reexibe o widget/abre o painel.
 ///
 /// v0.4.0 (Onda 4) — instalador (Velopack) e atualização automática SILENCIOSA: consulta o
-/// GitHub 45 s após abrir e depois a cada 5 min (v0.4.2), baixa em segundo plano e reinicia sozinho
-/// num momento tranquilo (ver <see cref="ServicoAtualizacao"/> e <see cref="RegraMomentoTranquilo"/>).
+/// GitHub 45 s após abrir e depois a cada 1 h (5 min entre a v0.4.2 e a v1.7.1), baixa em segundo
+/// plano e reinicia sozinho num momento tranquilo (ver <see cref="ServicoAtualizacao"/> e
+/// <see cref="RegraMomentoTranquilo"/>).
+///
+/// v1.7.2 — estabilidade: tratadores globais de exceção (<see cref="PoliticaFalhas"/>), loop de
+/// medição no pool de threads (antes rodava na thread da interface) e log com trava.
 /// </summary>
 public partial class App : Application
 {
@@ -69,7 +73,7 @@ public partial class App : Application
     /// <summary>Atualização automática (v0.4.0). Só age na cópia instalada pelo Setup.</summary>
     private readonly ServicoAtualizacao _atualizacao = new();
 
-    /// <summary>Relógio da atualização: consulta (45 s, depois 5 min) e, com versão baixada, procura o momento tranquilo (1 min).</summary>
+    /// <summary>Relógio da atualização: consulta (45 s, depois 1 h) e, com versão baixada, procura o momento tranquilo (1 min).</summary>
     private DispatcherTimer? _timerAtualizacao;
 
     /// <summary>Menu do clique direito aberto — não reiniciar por baixo do usuário.</summary>
@@ -77,11 +81,15 @@ public partial class App : Application
 
     private static readonly TimeSpan PrimeiraConsulta = TimeSpan.FromSeconds(45);
     /// <summary>
-    /// v0.4.2 (pedido do dono): 1 h → 5 min, para a versão nova chegar logo. Barato: o feed
-    /// direto (releases/latest/download) não tem o limite de 60 consultas/h da API do GitHub e
-    /// cada consulta baixa só o releases.win.json (~1 KB) — 12 por hora é desprezível.
+    /// v0.4.2 (pedido do dono): 1 h → 5 min, para a versão nova chegar logo.
+    /// v1.7.2: de volta a 1 h (varredura de 2026-11-03). Motivos: (1) medido no harness, cada
+    /// consulta do Velopack cria um HttpClient novo e deixa ~0,5 handle e dezenas de KB para trás
+    /// — 288 consultas/dia era parte do crescimento de memória do app; (2) 288 pedidos/dia por PC
+    /// ao GitHub é ruído num app que se vende como silencioso. A versão nova continua chegando no
+    /// mesmo dia; quem quiser antes reabre o app (consulta 45 s depois de abrir) — e a retomada
+    /// da suspensão também consulta em 30 s.
     /// </summary>
-    private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromHours(1);
     private static readonly TimeSpan IntervaloMomentoTranquilo = TimeSpan.FromMinutes(1);
     /// <summary>Após acordar da suspensão: espera o Wi-Fi voltar antes de consultar.</summary>
     private static readonly TimeSpan ConsultaAposRetomada = TimeSpan.FromSeconds(30);
@@ -98,6 +106,11 @@ public partial class App : Application
         Directory.CreateDirectory(pastaDados);
         _caminhoLog = Path.Combine(pastaDados, "velocimetro.log");
         LimitarTamanhoLog();
+
+        // v1.7.2: rede de proteção contra exceção não tratada — ANTES de qualquer janela existir.
+        // Até a v1.7.1 não havia tratador nenhum: um erro num botão de janela secundária fechava o
+        // app sem deixar uma linha no log ("o widget sumiu"). Ver PoliticaFalhas.
+        InstalarTratadoresDeExcecao();
 
         _msgAtivar = NativeMethods.RegisterWindowMessageW(NomeMensagemAtivar);
 
@@ -214,7 +227,15 @@ public partial class App : Application
 
         RecriarMedidor(cfg);
         _ctsMedicao = new CancellationTokenSource();
-        _ = ExecutarLoopMedicaoAsync(textoFixoPoC, _ctsMedicao.Token);
+        // v1.7.2: o loop roda no POOL de threads, não na thread da interface. Até a v1.7.1 ele era
+        // chamado direto daqui e, como nenhum await tinha ConfigureAwait(false), cada tick voltava
+        // para a UI: GetIfTable2, o COM do NLM, a soma da franquia e o AppendAllText do log
+        // executavam na thread que desenha — um disco ocupado congelava o widget por aquele
+        // instante. A UI só recebe o InvokeAsync que já existia. O que o loop lê de fora é seguro
+        // entre threads: _config.Atual (a referência é trocada inteira a cada Salvar), _medidor
+        // (volatile), _historico e _qualidade (lock próprio), _pausado (volatile).
+        CancellationToken ctMedicao = _ctsMedicao.Token;
+        _ = Task.Run(() => ExecutarLoopMedicaoAsync(textoFixoPoC, ctMedicao), ctMedicao);
 
         if (abrirPainel)
         {
@@ -964,7 +985,7 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Sem versão baixada: consulta/baixa e volta em 5 min. Com versão baixada: a cada minuto
+    /// Sem versão baixada: consulta/baixa e volta em 1 h. Com versão baixada: a cada minuto
     /// confere o momento tranquilo e, se for, salva e reinicia na versão nova.
     /// </summary>
     private async Task AoTickAtualizacaoAsync()
@@ -1220,16 +1241,76 @@ public partial class App : Application
 
     // ------------------------------------------------------------------ log
 
+    /// <summary>v1.7.2: o loop (pool) e a interface gravam ao mesmo tempo; sem trava, um AppendAllText concorrente dava IOException e a linha sumia em silêncio.</summary>
+    private readonly object _travaLog = new();
+
     private void RegistrarLog(string mensagem)
     {
         try
         {
             string linha = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {mensagem}{Environment.NewLine}";
-            File.AppendAllText(_caminhoLog, linha);
+            lock (_travaLog)
+            {
+                File.AppendAllText(_caminhoLog, linha);
+            }
         }
         catch
         {
             // Nunca exibir popup de erro — aplicativo 100% silencioso (01-ANALISE.md §6)
+        }
+    }
+
+    // ------------------------------------------------------------------ v1.7.2: exceções não tratadas
+
+    private readonly PoliticaFalhas _falhas = new();
+
+    /// <summary>
+    /// Os três caminhos por onde uma exceção não tratada pode sair:
+    /// 1) thread da interface (cliques, bindings, <c>async void</c> das janelas) — o WPF pergunta se
+    ///    tratamos: tratamos e o app segue, salvo tempestade de erros (<see cref="PoliticaFalhas"/>);
+    /// 2) Task esquecida (fire-and-forget) — só vai para o log; nunca derruba o processo;
+    /// 3) qualquer outra thread (pool, finalizador) — o processo VAI terminar: grava a pilha e salva
+    ///    o que dá, para a próxima abertura contar o que houve.
+    /// </summary>
+    private void InstalarTratadoresDeExcecao()
+    {
+        DispatcherUnhandledException += (_, e) =>
+        {
+            bool continuar = _falhas.RegistrarEContinuar(DateTime.Now);
+            RegistrarLog(continuar
+                ? $"Exceção não tratada na interface ({_falhas.ErrosNaJanela}ª em 1 min) — o app segue: {e.Exception}"
+                : $"Exceção não tratada na interface — {PoliticaFalhas.MaximoPorJanela} em 1 min, encerrando: {e.Exception}");
+            e.Handled = continuar;
+            if (!continuar)
+            {
+                SalvarAntesDeEncerrarPorFalha();
+            }
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            RegistrarLog($"Exceção não observada numa Task (ignorada): {e.Exception}");
+            e.SetObserved();
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            RegistrarLog($"Exceção fatal fora da interface — o app vai fechar: {e.ExceptionObject}");
+            SalvarAntesDeEncerrarPorFalha();
+        };
+    }
+
+    /// <summary>O OnExit não roda num encerramento por falha: salva consumo e queda em andamento agora.</summary>
+    private void SalvarAntesDeEncerrarPorFalha()
+    {
+        try
+        {
+            _historico.SalvarConsumo();
+            _qualidade.Encerrar();
+        }
+        catch (Exception ex)
+        {
+            RegistrarLog($"Falha ao salvar antes de encerrar: {ex.Message}");
         }
     }
 

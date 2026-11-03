@@ -1,6 +1,6 @@
 # publicar-atualizacao.ps1 — v0.4.0 (Onda 4)
 # Publica uma versão nova do Status Monitor (ex-Velocímetro de Internet) nas Releases do GitHub. Todo velocímetro
-# instalado pelo Setup encontra a versão em até ~5 minutos, baixa em segundo plano (só a
+# instalado pelo Setup encontra a versão em até ~1 hora (v1.7.2; era 5 min), baixa em segundo plano (só a
 # diferença) e se reinicia sozinho num momento tranquilo — sem aviso, sem clique
 # (ver src\VelocimetroInternet\Sistema\ServicoAtualizacao.cs e App.xaml.cs).
 #

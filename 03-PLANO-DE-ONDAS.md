@@ -262,13 +262,13 @@ clara · 🟢 ideia.
   tick (`IconeBandeja.cs:58-69`). Método: `dotnet-gcdump` em dois momentos (heap gerenciado) +
   contagem de handles por tipo; depois cortar o culpado e provar com 24 h de log. Candidata a
   **v1.8.0**, esforço médio.
-- 🔴 **Sem rede de proteção contra exceção não tratada.** Não existe `DispatcherUnhandledException`,
+- ✅ **v1.7.2 (2026-11-03)** — 🔴 **Sem rede de proteção contra exceção não tratada.** Não existe `DispatcherUnhandledException`,
   `AppDomain.UnhandledException` nem `TaskScheduler.UnobservedTaskException` (grep em `src/`, 0
   resultados). Um clique num botão que lance exceção (ex.: `JanelaTesteVelocidade.xaml.cs:43`,
   `async void`) fecha o app sem deixar NENHUMA linha no log: para o usuário "o widget sumiu".
   Correção: registrar os três em `App.OnStartup`, gravar a pilha no log, manter o app vivo quando
   for erro de janela secundária, e só encerrar quando a falha for no widget. Esforço baixo.
-- 🟡 **O loop de medição roda na thread da interface.** `ExecutarLoopMedicaoAsync` é chamado de
+- ✅ **v1.7.2 (2026-11-03)** — 🟡 **O loop de medição roda na thread da interface.** `ExecutarLoopMedicaoAsync` é chamado de
   `OnStartup` (`App.xaml.cs:217`) e nenhum `await` dele tem `ConfigureAwait(false)` (grep: 0 no
   arquivo): `GetIfTable2` (com um `PtrToStructure` de ~1,3 KB por interface, `NetworkSampler.cs:68-70`),
   o COM do NLM a cada 5 s, a soma da franquia a cada 30 s e o `File.AppendAllText` do log
@@ -281,9 +281,9 @@ clara · 🟢 ideia.
   candidato: UIA a cada 1,5 s e `SHQueryUserNotificationState`. Meta razoável: < 0,3 %. Método:
   `dotnet-trace` por 60 s, ou build de teste com o vigia a 5 s para comparar. Junto com o item da
   memória (mesma causa provável).
-- 🟡 **Consulta de atualização a cada 5 min** (`App.xaml.cs:84`): a skill do Velopack recomenda
+- ✅ **v1.7.2 (2026-11-03)** — 🟡 **Consulta de atualização a cada 5 min** (`App.xaml.cs:84`): a skill do Velopack recomenda
   1 h + 30 s após acordar do suspender. 288 pedidos/dia por PC é ruído de rede num app que se
-  vende como silencioso. Esforço mínimo.
+  vende como silencioso. Esforço mínimo. (Feito: 1 h; o 30 s após acordar já existia.)
 
 ### Fluidez e responsividade (depois dos itens acima)
 
@@ -357,7 +357,7 @@ clara · 🟢 ideia.
 
 ### Ordem sugerida
 
-1. **v1.7.2** — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
+1. ✅ **v1.7.2** (2026-11-03) — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
 2. **v1.8.0** — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área).
 3. **v1.8.1** — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
 4. **v1.9.0** — winget + inglês (acesso amplo).

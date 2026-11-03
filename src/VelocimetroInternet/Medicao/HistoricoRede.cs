@@ -34,7 +34,8 @@ public sealed record InstantaneoHistorico(
 ///   franquia e exportação CSV (ver <see cref="RegistroConsumo"/>). O consumo.json antigo (só o
 ///   dia em que foi gravado) é migrado na 1ª leitura.
 ///
-/// Escrito pelo loop de medição (thread do pool) e lido pela UI → tudo sob <c>lock</c>;
+/// Escrito pelo loop de medição (thread do pool — de fato só a partir da v1.7.2: até a v1.7.1 o
+/// loop rodava na thread da interface) e lido pela UI → tudo sob <c>lock</c>;
 /// a UI recebe um <see cref="InstantaneoHistorico"/> copiado.
 /// </summary>
 public sealed class HistoricoRede
