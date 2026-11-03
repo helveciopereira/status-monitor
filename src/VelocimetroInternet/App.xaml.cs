@@ -203,6 +203,7 @@ public partial class App : Application
         _widget.CliqueDireito += AbrirMenu;
 
         _config.Alteradas += AoAlterarConfiguracoes;
+        _qualidade.QuedaTerminou += AoTerminarQueda; // v1.8.1 (Onda 14): aviso opcional ao fim de uma queda
 
         // 1º uso: liga o início com o Windows (o pedido é "iniciar com o sistema"). Só uma vez —
         // se o usuário desligar depois, o marcador impede religar.
@@ -370,6 +371,9 @@ public partial class App : Application
     /// <summary>Última leitura do loop: sem interface física conectada (a dica diz "Sem conexão").</summary>
     private volatile bool _semConexao;
 
+    /// <summary>v1.8.1: última leitura do loop: placa conectada, mas o Windows diz "sem internet" (a dica explica o "⚠").</summary>
+    private volatile bool _semInternet;
+
     /// <summary>Texto da dica do widget, montado só quando ela vai abrir (IP lido na hora).</summary>
     private string? MontarDicaWidget()
     {
@@ -382,7 +386,29 @@ public partial class App : Application
         InstantaneoHistorico h = _historico.Capturar();
         return DicaWidget.Montar(h, _semConexao ? null : InfoRede.IpLocal(h.NomeInterface), UnidadeDe(cfg),
             _historico.FracaoFranquia(cfg.FranquiaMensalGb), _semConexao,
-            _latencia is { Ligado: true } l ? l.Atual : null);
+            _latencia is { Ligado: true } l ? l.Atual : null,
+            semInternet: _semInternet); // v1.8.1
+    }
+
+    /// <summary>
+    /// v1.8.1 (Onda 14): uma queda de 1 min ou mais terminou agora. Com a opção ligada, notificação do
+    /// Windows pelo ícone da bandeja ("A internet voltou após 12 min"); sem ícone (oculto) ou com a
+    /// opção desligada, fica só no log. Chega na thread do loop de medição.
+    /// </summary>
+    private void AoTerminarQueda(Queda q)
+    {
+        string texto = CalculoRelatorio.TextoVolta(q);
+        if (!_config.Atual.AvisarQuandoInternetVoltar)
+        {
+            RegistrarLog($"Queda terminou: {texto} (aviso desligado)");
+            return;
+        }
+
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            bool mostrou = _bandeja?.MostrarAviso("Status Monitor — internet", texto) == true;
+            RegistrarLog($"Queda terminou: {texto} {(mostrou ? "(aviso mostrado)" : "(ícone oculto, só no log)")}");
+        });
     }
 
     /// <summary>
@@ -1089,6 +1115,10 @@ public partial class App : Application
         TimeSpan proximaConferenciaFranquia = TimeSpan.Zero;
         // v1.4.0: estado da internet observado a cada 5 s (independe do intervalo de medição)
         TimeSpan proximaObservacaoQualidade = TimeSpan.Zero;
+        // v1.8.1: a última observação vale para os ticks entre uma consulta e outra (o widget mostra
+        // "sem internet" sem consultar o NLM a cada tick); a troca de estado vai para o log uma vez
+        EstadoInternet estadoObservado = EstadoInternet.Online;
+        bool ultimoSemInternet = false;
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
@@ -1163,6 +1193,19 @@ public partial class App : Application
                         : _conectividade.TemInternet() == false ? EstadoInternet.SemInternet
                         : EstadoInternet.Online;
                     _qualidade.Observar(estadoInternet);
+                    estadoObservado = estadoInternet;
+                }
+
+                // v1.8.1: "sem internet" (placa conectada, Windows sem internet) chega ao widget, ao painel
+                // e à dica — antes só o relatório sabia, e a barra mostrava "↓ 0 B/s" como se fosse silêncio
+                bool semInternet = !semConexao && estadoObservado == EstadoInternet.SemInternet;
+                _semInternet = semInternet;
+                if (semInternet != ultimoSemInternet)
+                {
+                    ultimoSemInternet = semInternet;
+                    RegistrarLog(semInternet
+                        ? "Internet: o Windows diz \"sem internet\" com a placa conectada — widget em alerta."
+                        : "Internet: voltou — widget normal.");
                 }
 
                 // v1.0.0: franquia conferida a cada 30 s (soma o mês inteiro — não precisa ser por tick)
@@ -1183,7 +1226,11 @@ public partial class App : Application
                         bool mostrarSistema = _config.Atual.MostrarCpuRam;
                         if (semConexao)
                         {
-                            widgets.ForEach(w => w.MostrarSemConexao());
+                            widgets.ForEach(w =>
+                            {
+                                w.DefinirSemInternet(false); // v1.8.1: sem placa, o "—" basta (não é "⚠")
+                                w.MostrarSemConexao();
+                            });
                             _bandeja?.DefinirDica("Status Monitor — sem conexão");
                         }
                         else if (vel.AmostraValida)
@@ -1191,6 +1238,7 @@ public partial class App : Application
                             widgets.ForEach(w =>
                             {
                                 w.DefinirReferenciaIntensidade(referencia); // v1.0.0: 0 = desligada
+                                w.DefinirSemInternet(semInternet); // v1.8.1: antes dos números (apaga e põe o ⚠)
                                 w.AtualizarVelocidades(vel.UploadBytesPorSegundo, vel.DownloadBytesPorSegundo);
                             });
                             formatador.ModoUnidade = UnidadeDe(_config.Atual);
@@ -1198,8 +1246,10 @@ public partial class App : Application
                             string linhaSistema = mostrarSistema
                                 ? $"\nCPU {MedidorSistema.Formatar(uso.CpuPercentual)} · RAM {MedidorSistema.Formatar(uso.RamPercentual)}"
                                 : "";
+                            // v1.8.1: a 1ª linha da dica da bandeja também avisa
+                            string titulo = semInternet ? "Status Monitor — sem internet" : "Status Monitor";
                             _bandeja?.DefinirDica(
-                                $"Status Monitor\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
+                                $"{titulo}\n{formatador.FormatarComSeta("↑", vel.UploadBytesPorSegundo)}   " +
                                 $"{formatador.FormatarComSeta("↓", vel.DownloadBytesPorSegundo)}{linhaSistema}");
                         }
 
@@ -1209,7 +1259,7 @@ public partial class App : Application
                             widgets.ForEach(w => w.AtualizarSistema(uso.CpuPercentual, uso.RamPercentual));
                         }
 
-                        _painel?.AtualizarAoVivo(semConexao);
+                        _painel?.AtualizarAoVivo(semConexao, semInternet); // v1.8.1: "Sem internet · Wi-Fi"
                     });
                 }
 

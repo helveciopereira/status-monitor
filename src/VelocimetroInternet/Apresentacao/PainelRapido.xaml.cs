@@ -193,9 +193,11 @@ public partial class PainelRapido : Window
     // ------------------------------------------------------------------ dados ao vivo
 
     /// <summary>Chamado a cada tick (thread de UI). Só trabalha com o painel aberto.</summary>
-    public void AtualizarAoVivo(bool semConexao)
+    /// <param name="semInternet">v1.8.1: placa conectada, mas o Windows diz "sem internet".</param>
+    public void AtualizarAoVivo(bool semConexao, bool semInternet = false)
     {
         _semConexao = semConexao;
+        _semInternet = semInternet;
         if (IsVisible)
         {
             Preencher();
@@ -203,6 +205,7 @@ public partial class PainelRapido : Window
     }
 
     private bool _semConexao;
+    private bool _semInternet;
 
     /// <summary>Preenche todos os textos/barras/gráfico com o instantâneo atual do histórico.</summary>
     private void Preencher()
@@ -213,6 +216,13 @@ public partial class PainelRapido : Window
         if (semConexao)
         {
             TextoStatus.Text = "Sem conexão";
+            TextoStatus.Foreground = (Brush)FindResource("Tema.TextoSecundario");
+            PontoAoVivo.Fill = (Brush)FindResource("Tema.TextoSecundario");
+        }
+        else if (_semInternet)
+        {
+            // v1.8.1: a rede local está de pé (o nome da placa continua), a internet não
+            TextoStatus.Text = string.IsNullOrEmpty(h.NomeInterface) ? "Sem internet" : $"Sem internet · {h.NomeInterface}";
             TextoStatus.Foreground = (Brush)FindResource("Tema.TextoSecundario");
             PontoAoVivo.Fill = (Brush)FindResource("Tema.TextoSecundario");
         }

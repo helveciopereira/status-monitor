@@ -355,6 +355,19 @@
                                           Style="{StaticResource Interruptor}" Click="AoAlternarLatencia"
                                           AutomationProperties.Name="Medir latência" />
                         </Grid>
+
+                        <!-- v1.8.1 (Onda 14): aviso quando uma queda termina — desligado por padrão
+                             (o app é silencioso por regra; notificação só como opção) -->
+                        <Grid Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="Avisar quando a internet voltar" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}"
+                                           Text="Notificação do Windows ao fim de uma queda de 1 minuto ou mais: “A internet voltou após 12 min”. Sai pelo ícone da bandeja (precisa dele visível) e respeita o não perturbe." />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveAvisoVolta" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarAvisoVolta"
+                                          AutomationProperties.Name="Avisar quando a internet voltar" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

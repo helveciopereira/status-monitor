@@ -122,6 +122,46 @@ public partial class JanelaRelatorio : Window
         }
     }
 
+    /// <summary>
+    /// v1.8.1 (Onda 14): testes e quedas do mês em CSV (";" e vírgula decimal, como o CSV de consumo).
+    /// UTF-8 COM BOM: sem ele o Excel abre "Latência"/"Início" com os acentos quebrados.
+    /// </summary>
+    private void AoClicarCsv(object sender, RoutedEventArgs e)
+    {
+        if (_atual is null)
+        {
+            return;
+        }
+
+        var dialogo = new SaveFileDialog
+        {
+            Title = "Exportar testes e quedas",
+            Filter = "Planilha CSV (*.csv)|*.csv",
+            FileName = $"Relatório internet {_atual.Ano}-{_atual.Mes:00}.csv",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+        if (dialogo.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            File.WriteAllText(dialogo.FileName, CalculoRelatorio.ParaCsv(_atual), new System.Text.UTF8Encoding(true));
+            TextoEstado.Text = $"CSV salvo em {dialogo.FileName} ({_atual.Testes.Count} teste(s), {_atual.QuedasInternet.Count + _atual.QuedasRede.Count} queda(s)).";
+            TextoEstado.Visibility = Visibility.Visible;
+            _log?.Invoke($"CSV do relatório gerado: {dialogo.FileName}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            TextoEstado.Text = $"Não foi possível salvar o CSV: {ex.Message}";
+            TextoEstado.Visibility = Visibility.Visible;
+            _log?.Invoke($"CSV do relatório falhou: {ex.Message}");
+        }
+    }
+
     private void AoClicarAnterior(object sender, RoutedEventArgs e)
     {
         if (_indice < _meses.Count - 1)

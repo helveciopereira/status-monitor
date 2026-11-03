@@ -134,6 +134,7 @@ public partial class EstudioCores : Window
             // v1.0.0 (Onda 5)
             ChaveIntensidade.IsChecked = _rascunho.CorPorIntensidade;
             ChaveLatencia.IsChecked = _rascunho.MedirLatencia; // v1.1.0
+            ChaveAvisoVolta.IsChecked = _rascunho.AvisarQuandoInternetVoltar; // v1.8.1
             CampoFranquia.Text = _rascunho.FranquiaMensalGb > 0
                 ? _rascunho.FranquiaMensalGb.ToString("0.##", PtBr)
                 : string.Empty;
@@ -211,6 +212,13 @@ public partial class EstudioCores : Window
     private void AoAlternarLatencia(object sender, RoutedEventArgs e)
     {
         _rascunho.MedirLatencia = ChaveLatencia.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.8.1 (Onda 14): notificação ao fim de uma queda (vale ao salvar).</summary>
+    private void AoAlternarAvisoVolta(object sender, RoutedEventArgs e)
+    {
+        _rascunho.AvisarQuandoInternetVoltar = ChaveAvisoVolta.IsChecked == true;
         AtualizarEstadoSalvo();
     }
 

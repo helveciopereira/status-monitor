@@ -223,6 +223,14 @@ public sealed class ServicoQualidade
     private RegistroQualidade _registro = new();
     private DateTime _ultimaGravacao;
 
+    /// <summary>
+    /// v1.8.1 (Onda 14): uma queda de 1 min ou mais acabou de TERMINAR — a internet (ou a rede) voltou
+    /// neste instante. Não dispara para a queda fechada por buraco de observação (PC suspenso, medição
+    /// pausada): aí ninguém sabe quando voltou, e "voltou após X" seria mentira. Disparado FORA da
+    /// trava, na thread do loop de medição; quem mostra algo na tela passa pelo Dispatcher.
+    /// </summary>
+    public event Action<Queda>? QuedaTerminou;
+
     /// <param name="caminho">Arquivo (sobrescrito nos testes).</param>
     /// <param name="agora">Relógio injetável (testes).</param>
     public ServicoQualidade(string? caminho = null, Func<DateTime>? agora = null)
@@ -250,6 +258,7 @@ public sealed class ServicoQualidade
     /// <summary>Chamado pelo loop de medição a cada poucos segundos.</summary>
     public void Observar(EstadoInternet estado)
     {
+        Queda? terminada = null;
         lock (_trava)
         {
             DateTime agora = _agora();
@@ -258,6 +267,18 @@ public sealed class ServicoQualidade
             {
                 GravarSemTrava(agora);
             }
+
+            // v1.8.1: a queda recém-guardada é a última da lista; só conta como "voltou agora" se o
+            // fim dela é este instante (a fechada por buraco termina no último instante VISTO, antes)
+            if (fechouQueda && _registro.Quedas.Count > 0 && _registro.Quedas[^1].Fim == agora)
+            {
+                terminada = _registro.Quedas[^1];
+            }
+        }
+
+        if (terminada is not null)
+        {
+            QuedaTerminou?.Invoke(terminada);
         }
     }
 

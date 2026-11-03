@@ -1,5 +1,63 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.8.1 — 2026-11-03 — "Sem internet" no widget + Onda 14 (CSV, aviso de volta, Wi-Fi que não limitou)
+
+### O que mudou
+- **"Sem internet" no widget** (`TaskbarWidget.xaml/.cs`, `App.xaml.cs`, `DicaWidget.cs`, `PainelRapido.xaml.cs`).
+  Quando a placa está conectada mas o Windows (Network List Manager) diz que a internet não responde, a
+  seta ↓ vira **⚠** na cor de alerta da v1.7.1 (`SistemaAlertaBrush`) e os números ficam a 50 % de
+  opacidade (continuam mostrando o tráfego da rede local). No modo de uma linha o ⚠ vai na frente do
+  número. A dica do widget ganha a linha "⚠ Sem internet: o PC está ligado ao roteador, mas a internet
+  não responde", o painel rápido mostra "Sem internet · <interface>" e o título da bandeja vira
+  "Status Monitor — sem internet". Ao voltar, tudo retorna sozinho (opacidade 1, seta ↓).
+- **Exportar CSV** (`JanelaRelatorio.xaml/.cs`, `CalculoRelatorio.ParaCsv`): botão "Exportar CSV…" ao lado
+  de "Gerar PDF…". Um arquivo com dois blocos — testes (data, hora, download, upload, latência, conexão,
+  link, servidor, faixa Anatel) e quedas (início, fim, duração, tipo) — no mesmo padrão do CSV de
+  consumo da v1.0.0: ";" como separador, vírgula decimal, UTF-8 **com BOM** (o Excel em português abre
+  direto com os acentos certos).
+- **Aviso "A internet voltou"** (`Configuracoes.AvisarQuandoInternetVoltar`, `ServicoQualidade.QuedaTerminou`,
+  `EstudioCores` chave "Avisar quando a internet voltar", `App.AoTerminarQueda`): quando uma queda
+  registrada (≥ 60 s) termina, o app monta "A internet voltou após X min (sem internet com o roteador
+  conectado)". **Desligado por padrão**: com a chave desligada só o log registra; ligada, sai como balão
+  do ícone da bandeja (respeita o horário silencioso; ícone oculto → só no log).
+- **"O Wi-Fi não limitou"** (`CalculoRelatorio.ConcluirConexao`): se todos os testes por Wi-Fi do mês
+  tinham link ≥ plano, a frase genérica "a operadora pode atribuir ao Wi-Fi" dá lugar a "Todos os N
+  teste(s) foram por Wi-Fi, com link de 2,4 Gbps, acima do plano de 700 Mbps: o Wi-Fi não limitou estes
+  testes." (achado do teste real de 2026-11-02).
+
+### Por quê (causa raiz)
+- O loop já calculava `EstadoInternet.SemInternet` para o relatório desde a v1.4.0, mas o widget só
+  recebia `MostrarSemConexao()` quando não havia placa. A internet caía, o Wi-Fi ficava ligado, e a barra
+  mostrava "↓ 0 B/s" como se fosse só silêncio — a informação mais útil que faltava (item 🟡 do plano).
+- O estado "sem internet" vem da observação NLM que o loop já faz a cada 5 s (`estadoObservado`), sem
+  chamada COM extra por tick.
+- `QuedaTerminou` só dispara quando a queda fecha "agora" (`Fim == agora`): quedas fechadas por lacuna
+  de log (PC dormiu) não geram aviso falso.
+- O CSV não substitui o PDF: é o anexo em planilha que a operadora/Anatel pede quando quer os dados crus.
+
+### Como usar
+- Widget: nada a configurar. Com a internet fora e o roteador ligado, aparece ⚠ vermelho no lugar da ↓.
+- Relatório (menu › Relatório para a operadora) › **Exportar CSV…** › escolher a pasta.
+- Estúdio › chave **"Avisar quando a internet voltar"** (desligada por padrão).
+
+### Arquivos tocados
+- `App.xaml.cs`, `Apresentacao/TaskbarWidget.xaml` + `.cs`, `Apresentacao/DicaWidget.cs`,
+  `Apresentacao/PainelRapido.xaml.cs`, `Apresentacao/EstudioCores.xaml` + `.cs`,
+  `Apresentacao/JanelaRelatorio.xaml` + `.cs`, `Config/Configuracoes.cs`, `Medicao/CalculoRelatorio.cs`,
+  `Medicao/RegistroQualidade.cs`, `tests/.../V181QuedasEAnexosTests.cs` (novo: 11 testes — evento
+  `QuedaTerminou` com relógio injetado, texto da volta, CSV com dois blocos/BOM/vírgula decimal, frase
+  "Wi-Fi não limitou" nos três casos), `README.md`, `03-PLANO-DE-ONDAS.md`, csproj.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Suíte inteira: **329 aprovados** (318 + 11).
+- Harness `render-estudio.exe sem-internet` (60 PNGs: fases normal / sem internet / voltou × paleta × tema ×
+  layout) conferidos a olho: ⚠ vermelho legível na barra clara e na escura, nos dois layouts; a fase
+  "voltou" restaura a seta ↓ e a opacidade. `render-estudio.exe relatorio 14`: janela com o botão
+  "Exportar CSV…" e `v181-relatorio-14.csv` com cabeçalho, 14 linhas de teste e 3 de queda no formato pt-BR.
+- Validação manual recomendada: desligar a internet no roteador (ou puxar o cabo da operadora) com o
+  Wi-Fi do PC ligado e ver o ⚠ aparecer em ~5–10 s; religar e ver a ↓ voltar; com a chave do estúdio
+  ligada, conferir o balão "A internet voltou após X min" (só para quedas de 60 s ou mais).
+
 ## v1.8.0 — 2026-11-03 — Vigia da barra por evento, um só HttpClient na atualização, coleta por crescimento
 
 ### O que mudou

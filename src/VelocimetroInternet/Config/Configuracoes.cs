@@ -127,6 +127,16 @@ public sealed class Configuracoes
     /// </summary>
     public bool MiniGrafico { get; set; }
 
+    // ---------------------------------------------------------------- v1.8.1 (Onda 14)
+
+    /// <summary>
+    /// Notificação do Windows (saindo do ícone da bandeja) quando uma queda de 1 min ou mais termina:
+    /// "A internet voltou após 12 min". Padrão DESLIGADO: o app é silencioso por regra (04-IDEIAS:
+    /// notificação só como opção). Com o ícone da bandeja oculto não há de onde a notificação sair —
+    /// fica só no log.
+    /// </summary>
+    public bool AvisarQuandoInternetVoltar { get; set; }
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 

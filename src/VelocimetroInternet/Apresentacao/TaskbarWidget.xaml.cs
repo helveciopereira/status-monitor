@@ -115,8 +115,15 @@ public partial class TaskbarWidget : Window
             TextoCompactoDownload.Text = $"↓ {downCompleto}";
         }
 
+        // v1.8.1: sem internet (rede local ok) — o número continua (é o tráfego real da rede local),
+        // mas apagado, e a linha única ganha o "⚠" na frente do ↓ (lá não há seta separada para trocar)
+        if (_semInternet)
+        {
+            TextoCompactoDownload.Text = "⚠ " + TextoCompactoDownload.Text;
+            AplicarOpacidade(DicaWidget.OpacidadeMinima, DicaWidget.OpacidadeMinima);
+        }
         // v1.0.0: cor por intensidade (opcional) — mais forte quanto mais perto da referência
-        if (_referenciaIntensidade > 0)
+        else if (_referenciaIntensidade > 0)
         {
             AplicarOpacidade(
                 DicaWidget.OpacidadePorIntensidade(uploadBytesPorSegundo, _referenciaIntensidade),
@@ -125,6 +132,36 @@ public partial class TaskbarWidget : Window
 
         RegistrarNoGrafico(uploadBytesPorSegundo, downloadBytesPorSegundo); // v1.7.0
     }
+
+    // ------------------------------------------------------------------ v1.8.1: sem internet
+
+    private bool _semInternet;
+
+    /// <summary>
+    /// v1.8.1 (varredura 2026-11-03): "sem internet" é diferente de "sem rede". A placa está ligada ao
+    /// roteador, mas o Windows diz que não alcança a internet (o mesmo aviso do ícone de rede). O
+    /// widget mostra a seta ↓ como "⚠" na cor de alerta (a mesma do CPU/RAM ≥ 80 %, já calibrada
+    /// pelo motor de contraste) e os números apagados — eles seguem valendo para a rede local.
+    /// Idempotente: só mexe na tela quando o estado muda. Chamado antes de <see cref="AtualizarVelocidades"/>.
+    /// </summary>
+    public void DefinirSemInternet(bool semInternet)
+    {
+        if (semInternet == _semInternet)
+        {
+            return;
+        }
+
+        _semInternet = semInternet;
+        SetaDownload.Text = semInternet ? "⚠" : "↓";
+        SetaDownload.SetResourceReference(TextBlock.ForegroundProperty, semInternet ? "SistemaAlertaBrush" : "DownloadTextBrush");
+        if (!semInternet)
+        {
+            AplicarOpacidade(1, 1); // voltou: opacidade normal já (a intensidade, se ligada, refaz no próximo tick)
+        }
+    }
+
+    /// <summary>Estado atual do aviso (para quem monta a dica e para as provas).</summary>
+    public bool SemInternet => _semInternet;
 
     // ------------------------------------------------------------------ v1.7.0: mini gráfico
 

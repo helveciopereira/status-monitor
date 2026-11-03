@@ -16,10 +16,11 @@ public static class DicaWidget
     /// picos dos últimos 60 s e os atalhos de mouse. Linhas sem dado somem (ex.: IP desconhecido).
     /// </summary>
     /// <param name="fracaoFranquia">0 = sem franquia definida.</param>
+    /// <param name="semInternet">v1.8.1: placa conectada, mas o Windows diz "sem internet" (ignorado se <paramref name="semConexao"/>).</param>
     public static string Montar(InstantaneoHistorico h, string? ip, ModoUnidadeVelocidade unidade,
-        double fracaoFranquia, bool semConexao, LatenciaAtual? latencia = null)
+        double fracaoFranquia, bool semConexao, LatenciaAtual? latencia = null, bool semInternet = false)
     {
-        var linhas = new List<string>(6);
+        var linhas = new List<string>(7);
 
         if (semConexao)
         {
@@ -29,6 +30,11 @@ public static class DicaWidget
         {
             string rede = string.IsNullOrEmpty(h.NomeInterface) ? "Rede" : h.NomeInterface;
             linhas.Add(string.IsNullOrEmpty(ip) ? rede : $"{rede} · IP {ip}");
+            if (semInternet)
+            {
+                // v1.8.1: explica o "⚠" do widget — o roteador responde, a internet não
+                linhas.Add("⚠ Sem internet: o PC está ligado ao roteador, mas a internet não responde");
+            }
         }
 
         linhas.Add($"Hoje: ↑ {SpeedFormatter.FormatarQuantidade(h.BytesEnviadosHoje)} · ↓ {SpeedFormatter.FormatarQuantidade(h.BytesRecebidosHoje)}");

@@ -214,13 +214,14 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] v1.6.1 (pedido do dono): ~500 MB de download e ~500 MB de upload por teste, até 20 s por etapa
       (o teste vai a ~1 GB e ~40 s); upload de 3 rodadas no fast.com: 168–195 Mbps (antes 31–184)
 
-## Onda 14 — Anexos e aviso de queda ⬜ (era a Onda 11 · candidata a v1.7.2 · valor médio, esforço baixo)
+## Onda 14 — Anexos e aviso de queda ✅ v1.8.1 (2026-11-03) (era a Onda 11 · valor médio, esforço baixo)
 
-- [ ] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
-      CSV de consumo da v1.0.0)
-- [ ] **Aviso opcional** "A internet voltou após 12 min" quando uma queda ≥ 1 min termina —
+- [x] **Exportar CSV** dos testes e das quedas do mês (anexo da reclamação; mesmo formato pt-BR do
+      CSV de consumo da v1.0.0) — botão "Exportar CSV…" na janela do relatório, um arquivo com dois blocos
+- [x] **Aviso opcional** "A internet voltou após 12 min" quando uma queda ≥ 1 min termina —
       **desligado por padrão** (04-IDEIAS: notificação só como opção), sai pelo ícone da bandeja
-- [ ] **Wi-Fi que NÃO limitou:** se todos os testes por Wi-Fi do mês tinham link acima do plano, trocar a
+      (estúdio › chave "Avisar quando a internet voltar"; sem a chave, só o log registra)
+- [x] **Wi-Fi que NÃO limitou:** se todos os testes por Wi-Fi do mês tinham link acima do plano, trocar a
       frase genérica "a operadora pode atribuir a lentidão ao Wi-Fi" por "o link do Wi-Fi era de
       2,4 Gbps, acima do plano: ele não limitou estes testes" (achado no teste real de 2026-11-02)
 
@@ -311,7 +312,7 @@ clara · 🟢 ideia.
 
 ### Informação (o que o widget poderia dizer e ainda não diz)
 
-- 🟡 **"Sem internet" é diferente de "sem rede" — e o widget não distingue.** O loop já calcula
+- ✅ v1.8.1 (2026-11-03) **"Sem internet" é diferente de "sem rede" — e o widget não distinguia.** O loop já calcula
   `EstadoInternet.SemInternet` (placa conectada, Windows diz sem internet) para o relatório
   (`App.xaml.cs:1140-1143`), mas o widget só recebe `MostrarSemConexao()` quando NÃO há placa
   (`App.xaml.cs:1097`; `TaskbarWidget.xaml.cs`: 0 referências a `SemInternet`). Resultado: a
@@ -364,7 +365,7 @@ clara · 🟢 ideia.
 
 1. ✅ **v1.7.2** (2026-11-03) — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
 2. ✅ **v1.8.0** (2026-11-03) — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área). Pendente: confirmar com 24 h de log.
-3. **v1.8.1** — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
+3. ✅ **v1.8.1** (2026-11-03) — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
 4. **v1.9.0** — winget + inglês (acesso amplo).
 5. Ideias 🟢 conforme o gosto do dono.
 

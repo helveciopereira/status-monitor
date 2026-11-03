@@ -182,7 +182,8 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
+                        <!-- v1.8.1: nomeada — vira "⚠" na cor de alerta quando há rede mas não há internet -->
+                        <TextBlock x:Name="SetaDownload" Grid.Column="0"
                                    Text="↓"
                                    Foreground="{DynamicResource DownloadTextBrush}"
                                    FontFamily="{DynamicResource Widget.Fonte}"

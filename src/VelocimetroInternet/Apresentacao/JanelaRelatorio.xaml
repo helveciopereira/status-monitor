@@ -129,6 +129,10 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Fechar" Style="{StaticResource BotaoSecundario}" Margin="0,0,8,0" IsCancel="True"
                         Click="AoClicarFechar" AutomationProperties.Name="Fechar relatório" />
+                <!-- v1.8.1 (Onda 14): testes e quedas do mês em planilha, para anexar à reclamação -->
+                <Button x:Name="BotaoCsv" Content="Exportar CSV…" Style="{StaticResource BotaoSecundario}" Margin="0,0,8,0"
+                        Click="AoClicarCsv" AutomationProperties.Name="Exportar CSV"
+                        ToolTip="Testes e quedas do mês numa planilha (Excel em português abre direto)" />
                 <Button x:Name="BotaoGerar" Content="Gerar PDF…" Style="{StaticResource BotaoPrincipal}" IsDefault="True"
                         Click="AoClicarGerar" AutomationProperties.Name="Gerar PDF" />
             </StackPanel>
