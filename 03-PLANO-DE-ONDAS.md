@@ -243,6 +243,126 @@ Wi-Fi 7). A taxa do link VARIA muito; por isso a v1.5.0 a lê DURANTE cada teste
 - [x] Custo: < 0,1 ms por atualização na thread da interface (600 atualizações medidas, com e sem
       o gráfico, dentro do ruído); sem timer nem animação próprios
 
+## Varredura de 2026-11-03 — fluidez, estabilidade, utilidade e alcance (⬜, aguardam escolha do dono)
+
+Pedido do dono: "melhore fluidez, estabilidade, responsividade; ideias visuais, de informação, algo
+mais útil e de acesso amplo". Tudo abaixo tem evidência medida no app VIVO (PID 111848, aberto em
+02/11 15:46) ou lida no código (arquivo:linha). Prioridade: 🔴 corrige algo real · 🟡 melhora
+clara · 🟢 ideia.
+
+### Problemas reais encontrados (entram antes de qualquer ideia nova)
+
+- 🔴 **Memória cresce sem parar.** `velocimetro.log` (ticks de 10 em 10 min): memória privada
+  **73 MB → 230 MB em 18 h** (+5,5 MB/h, uniforme, madrugada inclusive) e um salto de +117 MB entre
+  12:23 e 13:23 de 03/11 sem nada no log além de dois "tela cheia". Medido ao vivo: 339 MB privados
+  e **2 769 handles** (um widget costuma ter 400–800). Em 90 s de observação não cresceu: é lento.
+  Suspeitos, pelo que roda em ciclo: a busca UIA na barra a cada 1,5 s (`TaskbarHost.cs:280-284`,
+  `MedirLimitesBarraPorUia` 602-693 → 57 600 `FindAll` por dia), a consulta de atualização a cada
+  **5 min** (`App.xaml.cs:84`, 288 pedidos/dia ao GitHub) e o `Shell_NotifyIcon` da dica a cada
+  tick (`IconeBandeja.cs:58-69`). Método: `dotnet-gcdump` em dois momentos (heap gerenciado) +
+  contagem de handles por tipo; depois cortar o culpado e provar com 24 h de log. Candidata a
+  **v1.8.0**, esforço médio.
+- 🔴 **Sem rede de proteção contra exceção não tratada.** Não existe `DispatcherUnhandledException`,
+  `AppDomain.UnhandledException` nem `TaskScheduler.UnobservedTaskException` (grep em `src/`, 0
+  resultados). Um clique num botão que lance exceção (ex.: `JanelaTesteVelocidade.xaml.cs:43`,
+  `async void`) fecha o app sem deixar NENHUMA linha no log: para o usuário "o widget sumiu".
+  Correção: registrar os três em `App.OnStartup`, gravar a pilha no log, manter o app vivo quando
+  for erro de janela secundária, e só encerrar quando a falha for no widget. Esforço baixo.
+- 🟡 **O loop de medição roda na thread da interface.** `ExecutarLoopMedicaoAsync` é chamado de
+  `OnStartup` (`App.xaml.cs:217`) e nenhum `await` dele tem `ConfigureAwait(false)` (grep: 0 no
+  arquivo): `GetIfTable2` (com um `PtrToStructure` de ~1,3 KB por interface, `NetworkSampler.cs:68-70`),
+  o COM do NLM a cada 5 s, a soma da franquia a cada 30 s e o `File.AppendAllText` do log
+  (`App.xaml.cs:1228`) executam na thread que desenha. Um disco ocupado ou uma tabela de interfaces
+  grande congela o widget por aquele instante. O comentário de `HistoricoRede.cs:37` ("thread do
+  pool") descreve o que se pretendia, não o que acontece. Correção: `Task.Run` para o loop, UI só
+  no `InvokeAsync` que já existe. Esforço baixo; risco baixo (o `lock` do histórico já está lá).
+- 🟡 **1,7 % de um núcleo em repouso** (1 031 ms de CPU em 60 s, medido com `TotalProcessorTime`).
+  O desenho do widget custa < 0,1 ms por atualização (harness `grafico-cpu`, v1.7.0); o resto é
+  candidato: UIA a cada 1,5 s e `SHQueryUserNotificationState`. Meta razoável: < 0,3 %. Método:
+  `dotnet-trace` por 60 s, ou build de teste com o vigia a 5 s para comparar. Junto com o item da
+  memória (mesma causa provável).
+- 🟡 **Consulta de atualização a cada 5 min** (`App.xaml.cs:84`): a skill do Velopack recomenda
+  1 h + 30 s após acordar do suspender. 288 pedidos/dia por PC é ruído de rede num app que se
+  vende como silencioso. Esforço mínimo.
+
+### Fluidez e responsividade (depois dos itens acima)
+
+- 🟡 **Vigia da barra por evento, não por relógio.** Hoje é `DispatcherTimer` de 1,5 s que refaz a
+  busca UIA mesmo com a barra parada. `SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE / REORDER)` no
+  processo do Explorer, com um "debounce" de 300 ms e um relógio de segurança de 10 s, reage mais
+  rápido quando um app abre na barra E gasta ~0 quando nada muda. Esforço médio (o hook de
+  primeiro plano já existe em `TaskbarHost`).
+- 🟢 **Transição suave dos números** (interpolar o valor mostrado em ~250 ms entre ticks, só quando
+  `SystemParameters.ClientAreaAnimation` estiver ligado): os números deixam de "pular". Custo:
+  redesenhar ~15 vezes por tick em vez de 1 — medir com o `grafico-cpu` antes de aceitar.
+
+### Estabilidade e dados
+
+- 🟡 **Teste de fumaça automatizado do .exe** no fluxo de validação: abrir, achar o HWND, fotografar
+  a barra, fechar (skill `provar-app-desktop-wpf-por-uia`). Hoje é passo manual (item 3 da
+  "Validação padrão") e por isso é pulado quando a mudança parece pequena.
+- 🟢 **Botão "Enviar diagnóstico"** no estúdio: zipa `velocimetro.log`, `settings.json` (sem nada
+  sensível) e a versão, e abre a pasta — quem for pedir ajuda manda um arquivo em vez de descrever.
+
+### Informação (o que o widget poderia dizer e ainda não diz)
+
+- 🟡 **"Sem internet" é diferente de "sem rede" — e o widget não distingue.** O loop já calcula
+  `EstadoInternet.SemInternet` (placa conectada, Windows diz sem internet) para o relatório
+  (`App.xaml.cs:1140-1143`), mas o widget só recebe `MostrarSemConexao()` quando NÃO há placa
+  (`App.xaml.cs:1097`; `TaskbarWidget.xaml.cs`: 0 referências a `SemInternet`). Resultado: a
+  internet cai, o Wi-Fi fica ligado, e o widget mostra "↓ 0 B/s" como se fosse só silêncio. Mostrar
+  "sem internet" (número apagado + ⚠, cor de alerta da v1.7.1) é a informação mais útil que falta.
+  Esforço baixo; combina com a Onda 14 (aviso de queda).
+- 🟢 **GPU %** ao lado de CPU/RAM, via contadores de desempenho "GPU Engine" (sem administrador;
+  medir custo, porque PDH é pesado) — opcional e desligado por padrão.
+- 🟢 **Quedas de hoje no painel rápido** (quantas e a mais longa), lidas do `RegistroQualidade` que
+  já existe; hoje só aparecem no relatório PDF.
+- 🟢 **Latência no widget** como terceira pílula opcional (ms ao roteador), para quem joga/chama.
+
+### Visual
+
+- 🟢 **Modo "só setas com intensidade"**: no modo uma linha, trocar o número por barras de 3
+  segmentos (como o sinal de celular) para barras muito cheias — menor que "só download".
+- 🟢 **Cor da pílula pelo estado** no painel (sem internet = cinza; alerta de franquia = âmbar),
+  reaproveitando o motor de contraste. Nada muda no padrão.
+
+### Acesso amplo (outras pessoas instalando)
+
+- 🟡 **Assinatura do instalador.** Setup sem assinatura = tela azul do SmartScreen ("impediu o
+  início de um aplicativo não reconhecido") para todo mundo que baixar; é o maior obstáculo real
+  para "acesso amplo". Caminhos: Azure Trusted Signing (assinatura por mês, pessoa física
+  precisa de validação), SignPath (gratuito para código aberto no GitHub) ou publicar no
+  **winget** (`winget install StatusMonitor` não passa pelo SmartScreen e o manifesto é um PR
+  no repositório `microsoft/winget-pkgs`). O winget é o mais barato: esforço baixo, sem custo.
+- 🟡 **Inglês.** Todos os textos estão fixos em PT-BR no XAML e no C# (≈120 `Text="…"` nos .xaml e
+  ≈100 frases em `App.xaml.cs`/estúdio/relatório; grep "Idioma": 0). Um dicionário de recursos
+  (`.resx` pt-BR/en-US, idioma do Windows com opção de trocar no estúdio) abre o app para quem não
+  lê português. Esforço médio-alto (muitos textos), risco baixo. O relatório PDF fica em PT-BR
+  (é para operadora brasileira).
+- 🟢 **Atalho de teclado global** para abrir o painel (ex.: Ctrl+Alt+S; conferir se está livre com
+  `RegisterHotKey` antes, erro 1409 = ocupado) — quem usa teclado ou leitor de tela não precisa achar
+  o widget com o mouse. Os `AutomationProperties.Name` já estão nos controles.
+- 🟢 **Pacote leve** (framework-dependent, ~3 MB) ao lado do Setup de 78 MB, para quem já tem o
+  .NET 10 Desktop Runtime; o Setup atual continua sendo o padrão.
+
+### O que JÁ está bom — não mexer
+
+- Consumo do dia gravado a cada 60 s com arquivo temporário + `Move` atômico (`HistoricoRede.cs`
+  44, 290-291); quedas gravadas ao fechar cada queda e a cada 5 min (`RegistroQualidade.cs:218,257`).
+- Instância única com mensagem direta à janela (não `HWND_BROADCAST`), `App.xaml.cs:104-113, 234-246`.
+- Medição sem administrador, sem telemetria, sem rede além do teste sob demanda e da atualização.
+- Motor de contraste WCAG para todas as cores, inclusive o alerta da v1.7.1 e o gráfico da v1.7.0.
+- Busca UIA com `CacheRequest` (uma ida ao Explorer por ciclo, não uma por propriedade).
+- Rodízio do log em 1 MB, `GC`+`EmptyWorkingSet` após fechar janelas pesadas (decisão medida).
+
+### Ordem sugerida
+
+1. **v1.7.2** — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
+2. **v1.8.0** — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área).
+3. **v1.8.1** — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
+4. **v1.9.0** — winget + inglês (acesso amplo).
+5. Ideias 🟢 conforme o gosto do dono.
+
 ## Dívida técnica anotada (sem onda própria)
 
 - `App.xaml.cs` tem 1.259 linhas (menu, franquia, relatório, atualização, loop): dividir em
