@@ -49,8 +49,14 @@
 ### Validação executada
 - Build Release: 0 avisos, 0 erros. Suíte inteira: **318 aprovados** (314 + 4).
 - Harness (`render-estudio.exe vazamento http2 30`, `vigia app 30`, `vazamento uia 200`): números acima.
-- Entrega e CPU ao vivo: ver o relato da sessão (medição de `TotalProcessorTime` por 60 s na instância
-  nova contra os 1 031 ms/60 s da v1.7.1).
+- Entrega ao vivo (2026-11-03): release v1.8.0 publicada às 17:43; a instância 1.7.2 reaberta consultou o
+  feed aos 45 s, baixou e aplicou sozinha às 17:46:16 (log do Velopack "Package version 1.8.0 applied
+  successfully"; app: "Reaberto pelo atualizador: agora na versão 1.8.0"; `sq.version` = 1.8.0).
+- CPU ao vivo na instância nova (`TotalProcessorTime` por 60 s): 2 516 ms no 1º minuto (aquecimento +
+  consulta de atualização) e **734 ms/60 s** em repouso depois — contra 1 031–1 141 ms/60 s das v1.7.1/1.7.2.
+  Harness `vigia app 60` ao mesmo tempo: 1 evento em 60 s (o Notepad de teste), 0 ruído.
+- Memória nos primeiros 4 min: privada 76 → 103 MB, handles 1 508 → 1 673 (patamar estrutural ~1 700);
+  **pendente**: 24 h de log para ler as linhas "Coleta completa" e confirmar a tese do lixo nativo.
 - Validação manual recomendada: abrir e fechar um app com janela e ver o widget se reposicionar em
   menos de 1 s; abrir um app que coloca ícone na bandeja e conferir que em até 10 s o widget se ajusta.
 
@@ -90,7 +96,8 @@
 
 ### Validação executada
 - Build Release: 0 avisos, 0 erros. Suíte inteira: **314 aprovados** (309 + 5 novos).
-- Entrega ao vivo: ver o registro de publicação no commit seguinte / `sq.version` = 1.7.2.
+- Entrega ao vivo (2026-11-03): release v1.7.2 publicada às 15:47 e aplicada no PC às 15:51:08
+  (`sq.version` = 1.7.2); 9 min depois: 1 681 handles, CPU 1 141 ms/60 s (com o build da v1.8.0 rodando ao lado).
 - Validação manual recomendada: abrir o estúdio e o teste de velocidade e conferir que o widget
   continua medindo durante os dois; com a internet caindo, conferir "sem conexão" no widget.
 
