@@ -32,13 +32,23 @@ public enum ModoEncaixeBarra
 /// 2. Mede a "vaga do Clima" (entre o último botão de app e o '^' da bandeja) via UI Automation;
 /// 3. Aplica o Modo A (SetParent) ou Modo B (Topmost);
 /// 4. Escuta a mensagem global "TaskbarCreated" para reencaixar automaticamente quando o Explorer reinicia;
-/// 5. Vigia a lista de botões de aplicativos a cada 1,5 s para reposicionar ou compactar sem travar a UI.
+/// 5. Vigia a lista de botões de aplicativos para reposicionar ou compactar sem travar a UI —
+///    v1.8.0: por EVENTO (janela com botão mostrada/oculta/destruída, primeiro plano trocado), com
+///    medição 300 ms depois do primeiro aviso e uma confirmação 1,5 s depois do último (a animação
+///    da barra ainda está correndo nos primeiros instantes); o relógio de 1,5 s virou rede de
+///    segurança a cada 10 s (ícones da bandeja que chegam/saem não geram evento de janela).
 /// </summary>
 public sealed class TaskbarHost : IDisposable
 {
     private readonly TaskbarWidget _widget;
     private readonly Action<string>? _logger;
     private readonly DispatcherTimer _timerVigiaLayout;
+
+    // v1.8.0: vigia por evento (ver VigiaJanelasBarra) + dois relógios de UM disparo
+    private readonly VigiaJanelasBarra _vigiaJanelas = new();
+    private readonly DispatcherTimer _timerMedicaoRapida;   // 300 ms após o 1º aviso de uma rajada
+    private readonly DispatcherTimer _timerConfirmacao;     // 1,5 s após o ÚLTIMO aviso
+    private static readonly TimeSpan IntervaloSeguranca = TimeSpan.FromSeconds(10);
 
     private nint _hwndWidget;
     private nint _hwndTaskbar;
@@ -277,11 +287,48 @@ public sealed class TaskbarHost : IDisposable
         _widget.ArrasteMovido += AoMoverArraste;
         _widget.ArrasteConcluido += AoConcluirArraste;
 
+        // v1.8.0: era 1,5 s (57 600 buscas UIA por dia, ~35 ms cada); agora 10 s, só rede de segurança
         _timerVigiaLayout = new DispatcherTimer(DispatcherPriority.Background)
         {
-            Interval = TimeSpan.FromMilliseconds(1500)
+            Interval = IntervaloSeguranca
         };
         _timerVigiaLayout.Tick += async (_, _) => await AtualizarPosicaoAsync(forcarReencaixe: false);
+
+        _timerMedicaoRapida = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(300) };
+        _timerMedicaoRapida.Tick += async (_, _) =>
+        {
+            _timerMedicaoRapida.Stop();
+            await AtualizarPosicaoAsync(forcarReencaixe: false);
+        };
+        _timerConfirmacao = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(1500) };
+        _timerConfirmacao.Tick += async (_, _) =>
+        {
+            _timerConfirmacao.Stop();
+            await AtualizarPosicaoAsync(forcarReencaixe: false);
+        };
+        _vigiaJanelas.JanelaMudou += (_, _) => AgendarMedicao();
+    }
+
+    /// <summary>
+    /// v1.8.0: "algo mudou na barra" — mede 300 ms depois do PRIMEIRO aviso (uma rajada de janelas
+    /// abrindo vira uma medição só) e confirma 1,5 s depois do ÚLTIMO (o botão novo ainda está
+    /// animando aos 300 ms; a largura final vem depois). O relógio de segurança recomeça do zero:
+    /// não faz sentido medir de novo 1 s depois de uma medição por evento.
+    /// </summary>
+    private void AgendarMedicao()
+    {
+        if (!_timerMedicaoRapida.IsEnabled)
+        {
+            _timerMedicaoRapida.Start();
+        }
+
+        _timerConfirmacao.Stop();
+        _timerConfirmacao.Start();
+        if (_timerVigiaLayout.IsEnabled)
+        {
+            _timerVigiaLayout.Stop();
+            _timerVigiaLayout.Start();
+        }
     }
 
     public async Task InicializarAsync()
@@ -301,10 +348,17 @@ public sealed class TaskbarHost : IDisposable
         AplicarEstilosExJanela();
         await AtualizarPosicaoAsync(forcarReencaixe: true);
         _timerVigiaLayout.Start();
+        _vigiaJanelas.Iniciar(); // v1.8.0: janelas com botão mostradas/ocultas/destruídas
 
         // Reafirma o topo sempre que outra janela vem para a frente (ex.: clique na barra ou no
         // Iniciar). WINEVENT_OUTOFCONTEXT entrega o evento na fila de mensagens desta thread (UI).
-        _callbackForeground = (_, _, _, _, _, _, _) => ReafirmarTopoOuOcultar();
+        // v1.8.0: a troca de primeiro plano também agenda uma medição (barato, e cobre o que o
+        // vigia de janelas não vê, como uma janela que troca de monitor).
+        _callbackForeground = (_, _, _, _, _, _, _) =>
+        {
+            ReafirmarTopoOuOcultar();
+            AgendarMedicao();
+        };
         _hookForeground = NativeMethods.SetWinEventHook(
             NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND,
             nint.Zero, _callbackForeground, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
@@ -314,7 +368,7 @@ public sealed class TaskbarHost : IDisposable
     /// Só no Modo B: (1) se houver app em tela cheia, esconde o widget para não cobrir jogo/vídeo;
     /// (2) caso contrário, coloca o widget de volta acima da barra (que também é topmost).
     /// Chamado pelo aviso do shell (ABN_FULLSCREENAPP, instantâneo), pela troca de janela em
-    /// primeiro plano e pelo vigia de 1,5 s (rede de segurança).
+    /// primeiro plano e pelo vigia de 10 s (rede de segurança; era 1,5 s até a v1.7.2).
     /// </summary>
     private void ReafirmarTopoOuOcultar()
     {
@@ -355,8 +409,8 @@ public sealed class TaskbarHost : IDisposable
 
     public async Task AtualizarPosicaoAsync(bool forcarReencaixe)
     {
-        // v0.8.0: durante o Ctrl + arrastar quem manda na posição é o usuário — o vigia de 1,5 s
-        // não pode puxar o widget de volta no meio do movimento
+        // v0.8.0: durante o Ctrl + arrastar quem manda na posição é o usuário — o vigia (relógio
+        // ou evento) não pode puxar o widget de volta no meio do movimento
         if (_atualizandoGeometria || _hwndWidget == nint.Zero || _widget.Arrastando)
         {
             return;
@@ -455,7 +509,7 @@ public sealed class TaskbarHost : IDisposable
                 }
                 else if (!_manualIndisponivelNoLog)
                 {
-                    _manualIndisponivelNoLog = true; // loga uma vez, não a cada 1,5 s
+                    _manualIndisponivelNoLog = true; // loga uma vez, não a cada medição
                     _logger?.Invoke($"Posição manual ({xManual} lógicos) cobriria botões da barra — usando a automática até liberar.");
                 }
             }
@@ -819,6 +873,9 @@ public sealed class TaskbarHost : IDisposable
     public void Dispose()
     {
         _timerVigiaLayout.Stop();
+        _timerMedicaoRapida.Stop();
+        _timerConfirmacao.Stop();
+        _vigiaJanelas.Dispose();
         _widget.ArrasteIniciado -= AoIniciarArraste;
         _widget.ArrasteMovido -= AoMoverArraste;
         _widget.ArrasteConcluido -= AoConcluirArraste;

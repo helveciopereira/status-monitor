@@ -1,5 +1,59 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.8.0 — 2026-11-03 — Vigia da barra por evento, um só HttpClient na atualização, coleta por crescimento
+
+### O que mudou
+- **Vigia da barra por EVENTO** (`Apresentacao/VigiaJanelasBarra.cs`, novo; `TaskbarHost.cs`). Um gancho
+  de sistema (`SetWinEventHook`, SHOW/HIDE/DESTROY de janela de topo que ganha botão: sem dono ou
+  `WS_EX_APPWINDOW`, sem `WS_EX_TOOLWINDOW`) e a troca de primeiro plano (gancho que já existia)
+  agendam a medição UIA: **300 ms** depois do primeiro aviso de uma rajada e uma **confirmação 1,5 s**
+  depois do último (a animação do botão novo ainda corre aos 300 ms). O relógio de 1,5 s virou rede
+  de segurança a cada **10 s** (ícones da bandeja e processos mortos não geram evento de janela).
+- **`BaixadorHttp`** (`Sistema/BaixadorHttp.cs`, novo): `IFileDownloader` do Velopack com UM
+  `HttpClient` para o processo (SocketsHttpHandler, conexão reciclada em 5 min, ociosa some em 1 min).
+  O padrão do Velopack criava um `HttpClient` + handler por pedido.
+- **`GuardaMemoria`** (`Sistema/GuardaMemoria.cs`, novo): no tick de log (10 min), se a memória privada
+  subiu **16 MB** desde a última coleta completa (ou da primeira medição), roda gen2 + finalizadores e
+  grava "Privada X → Y MB, handles A → B" no log. O tick de log agora também traz `handles=`.
+
+### Por quê (causa raiz, com o que foi medido em 2026-11-03)
+- **CPU em repouso (1,7 % de um núcleo):** a busca UIA na barra custa **35 ms** (harness, 200 buscas na
+  `Shell_TrayWnd` real) e rodava a cada 1,5 s = 57 600 por dia. Por evento, em repouso ela roda a cada
+  10 s (6,7× menos) e, quando um app abre, responde em 300 ms em vez de até 1,5 s.
+- **Handles da consulta de atualização:** harness `vazamento http 30` → **+13 handles ficam** (Event +7,
+  Thread +5, File +1) com o baixador padrão; **+1** com o `BaixadorHttp`. Memória: igual nos dois e igual
+  à calibração sem trabalho (`nada`): a consulta NÃO explica o crescimento de memória.
+- **Memória privada:** `dotnet-gcdump` da v1.7.1 após 26 h: heap gerenciado de **6 MB** com 283–339 MB
+  privados e 2 769 handles; a coleta completa forçada pelo gcdump derrubou ~1 000 handles. Ou seja: lixo
+  que segura recurso nativo esperando uma gen2 que não vem (o coletor só olha o heap gerenciado, que
+  não cresce). Amostragem de 16 min da v1.7.1 em repouso (handles por tipo a cada 1 min): 285,8 → 286,4 MB,
+  handles 1 746–1 777 oscilando com as threads do pool, **sem salto** nas 4 consultas de atualização do
+  período. O crescimento vem em degraus com uso (dia 03: +117 MB entre 12:23 e 13:23), não por tick.
+  A `GuardaMemoria` é correção E instrumento: o log dirá quanto cai a cada coleta.
+- **Becos sem saída (harness `vigia`):** WinEvents de objeto só do processo do Explorer: **0 eventos
+  dentro da Shell_TrayWnd** ao abrir/fechar o Bloco de Notas (a barra XAML não emite por botão).
+  CREATE/DESTROY de topo sem filtro: janelas COM ocultas (`OleMainThreadWndClass`) nascem e morrem a
+  cada ~2,5 s em repouso. Com o vigia real: **2 avisos em 30 s** (1 ruído + o Notepad mostrado);
+  processo **morto** (`Kill`) não gera DESTROY — por isso a rede de segurança de 10 s.
+
+### Como usar
+- Nada muda na tela. No log: `handles=` em cada tick de 10 min e linhas "Coleta completa (...)".
+
+### Arquivos tocados
+- `Apresentacao/VigiaJanelasBarra.cs` (novo), `Apresentacao/TaskbarHost.cs`, `Sistema/BaixadorHttp.cs`
+  (novo), `Sistema/GuardaMemoria.cs` (novo), `Sistema/ServicoAtualizacao.cs`, `Sistema/NativeMethods.cs`,
+  `App.xaml.cs`, `tests/.../V180EstabilidadeTests.cs` (novo: 4 testes, com servidor HTTP local para o
+  baixador: texto, bytes, arquivo com progresso, 302 e 404 → `Classificar`), `README.md`,
+  `03-PLANO-DE-ONDAS.md`, csproj.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Suíte inteira: **318 aprovados** (314 + 4).
+- Harness (`render-estudio.exe vazamento http2 30`, `vigia app 30`, `vazamento uia 200`): números acima.
+- Entrega e CPU ao vivo: ver o relato da sessão (medição de `TotalProcessorTime` por 60 s na instância
+  nova contra os 1 031 ms/60 s da v1.7.1).
+- Validação manual recomendada: abrir e fechar um app com janela e ver o widget se reposicionar em
+  menos de 1 s; abrir um app que coloca ícone na bandeja e conferir que em até 10 s o widget se ajusta.
+
 ## v1.7.2 — 2026-11-03 — Estabilidade: exceções não tratadas, loop fora da UI, consulta de hora em hora
 
 ### O que mudou

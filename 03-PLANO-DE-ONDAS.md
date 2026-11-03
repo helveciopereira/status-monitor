@@ -252,7 +252,10 @@ clara · 🟢 ideia.
 
 ### Problemas reais encontrados (entram antes de qualquer ideia nova)
 
-- 🔴 **Memória cresce sem parar.** `velocimetro.log` (ticks de 10 em 10 min): memória privada
+- ✅ **v1.8.0 (2026-11-03)** — diagnóstico no `walkthrough.md` (heap gerenciado 6 MB; lixo com recurso nativo
+  esperando gen2; consulta de atualização deixava handles, não memória); correção: `GuardaMemoria` (coleta
+  completa a cada +16 MB, com antes/depois no log) + `BaixadorHttp` + vigia por evento. **Confirmar com 24 h
+  de log** (linhas "Coleta completa"). 🔴 **Memória cresce sem parar.** `velocimetro.log` (ticks de 10 em 10 min): memória privada
   **73 MB → 230 MB em 18 h** (+5,5 MB/h, uniforme, madrugada inclusive) e um salto de +117 MB entre
   12:23 e 13:23 de 03/11 sem nada no log além de dois "tela cheia". Medido ao vivo: 339 MB privados
   e **2 769 handles** (um widget costuma ter 400–800). Em 90 s de observação não cresceu: é lento.
@@ -276,7 +279,7 @@ clara · 🟢 ideia.
   grande congela o widget por aquele instante. O comentário de `HistoricoRede.cs:37` ("thread do
   pool") descreve o que se pretendia, não o que acontece. Correção: `Task.Run` para o loop, UI só
   no `InvokeAsync` que já existe. Esforço baixo; risco baixo (o `lock` do histórico já está lá).
-- 🟡 **1,7 % de um núcleo em repouso** (1 031 ms de CPU em 60 s, medido com `TotalProcessorTime`).
+- ✅ **v1.8.0 (2026-11-03)** — causa medida: busca UIA de 35 ms a cada 1,5 s; agora por evento + 10 s. 🟡 **1,7 % de um núcleo em repouso** (1 031 ms de CPU em 60 s, medido com `TotalProcessorTime`).
   O desenho do widget custa < 0,1 ms por atualização (harness `grafico-cpu`, v1.7.0); o resto é
   candidato: UIA a cada 1,5 s e `SHQueryUserNotificationState`. Meta razoável: < 0,3 %. Método:
   `dotnet-trace` por 60 s, ou build de teste com o vigia a 5 s para comparar. Junto com o item da
@@ -287,7 +290,9 @@ clara · 🟢 ideia.
 
 ### Fluidez e responsividade (depois dos itens acima)
 
-- 🟡 **Vigia da barra por evento, não por relógio.** Hoje é `DispatcherTimer` de 1,5 s que refaz a
+- ✅ **v1.8.0 (2026-11-03)** — feito com SHOW/HIDE/DESTROY de janela de topo do sistema inteiro (o
+  Explorer não emite WinEvent por botão da barra XAML) + primeiro plano; 300 ms + confirmação 1,5 s; segurança 10 s.
+  🟡 **Vigia da barra por evento, não por relógio.** Hoje é `DispatcherTimer` de 1,5 s que refaz a
   busca UIA mesmo com a barra parada. `SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE / REORDER)` no
   processo do Explorer, com um "debounce" de 300 ms e um relógio de segurança de 10 s, reage mais
   rápido quando um app abre na barra E gasta ~0 quando nada muda. Esforço médio (o hook de
@@ -358,7 +363,7 @@ clara · 🟢 ideia.
 ### Ordem sugerida
 
 1. ✅ **v1.7.2** (2026-11-03) — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
-2. **v1.8.0** — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área).
+2. ✅ **v1.8.0** (2026-11-03) — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área). Pendente: confirmar com 24 h de log.
 3. **v1.8.1** — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
 4. **v1.9.0** — winget + inglês (acesso amplo).
 5. Ideias 🟢 conforme o gosto do dono.

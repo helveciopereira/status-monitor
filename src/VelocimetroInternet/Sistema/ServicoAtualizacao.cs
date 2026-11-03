@@ -51,8 +51,11 @@ public sealed class ServicoAtualizacao
     public ServicoAtualizacao()
     {
         string? origemTeste = Environment.GetEnvironmentVariable(VariavelOrigemTeste);
+        // v1.8.0: BaixadorHttp = um HttpClient para o processo inteiro. O baixador padrão do Velopack
+        // criava um por pedido e deixava handles para trás (medido: +13 handles em 30 consultas,
+        // contra +1 fixo com o nosso). Ver BaixadorHttp.
         _gerenciador = string.IsNullOrWhiteSpace(origemTeste)
-            ? new UpdateManager(new SimpleWebSource(EnderecoFeed))
+            ? new UpdateManager(new SimpleWebSource(EnderecoFeed, new BaixadorHttp()))
             : new UpdateManager(origemTeste);
     }
 

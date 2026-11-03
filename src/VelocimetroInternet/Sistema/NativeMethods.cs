@@ -47,6 +47,30 @@ public static class NativeMethods
     public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
     public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
 
+    // v1.8.0: vigia da barra por EVENTO (VigiaJanelasBarra). Uma janela de topo mostrada, oculta
+    // ou destruída é o que faz um botão aparecer/sumir na barra. OBJID_WINDOW = o próprio hwnd
+    // (idObject 0); os demais idObject são partes internas (menu, cursor, caret…) e não interessam.
+    public const uint EVENT_OBJECT_DESTROY = 0x8001;
+    public const uint EVENT_OBJECT_SHOW = 0x8002;
+    public const uint EVENT_OBJECT_HIDE = 0x8003;
+    public const int OBJID_WINDOW = 0;
+
+    /// <summary>WS_EX_APPWINDOW (0x40000): força botão na barra mesmo em janela com dono.</summary>
+    public static readonly nint WS_EX_APPWINDOW = 0x00040000;
+
+    /// <summary>GetWindow(hwnd, GW_OWNER = 4): a janela dona (0 = sem dono → candidata a botão na barra).</summary>
+    public const uint GW_OWNER = 4;
+
+    [DllImport("user32.dll")]
+    public static extern nint GetWindow(nint hWnd, uint uCmd);
+
+    public delegate bool EnumWindowsProc(nint hWnd, nint lParam);
+
+    /// <summary>Lista as janelas de topo (semente do VigiaJanelasBarra: as que já estavam abertas).</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, nint lParam);
+
     /// <summary>Assinatura do callback de <see cref="SetWinEventHook"/>.</summary>
     public delegate void WinEventDelegate(
         nint hWinEventHook, uint eventType, nint hwnd, int idObject, int idChild, uint idEventThread, uint dwmsEventTime);

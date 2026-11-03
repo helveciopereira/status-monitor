@@ -1078,6 +1078,7 @@ public partial class App : Application
         // v0.5.0: CPU/RAM do Windows. Lido em TODO tick (custo: 2 chamadas de kernel, sem
         // alocação) — assim, ao ligar a opção, a base da CPU já é a do segundo anterior.
         var medidorSistema = new MedidorSistema();
+        var guardaMemoria = new GuardaMemoria(); // v1.8.0
 
         // v0.8.0: intervalo configurável (0,5 / 1 / 2 / 5 s). PeriodicTimer.Period aceita troca em
         // pleno funcionamento — a mudança no estúdio vale a partir do próximo tick, sem recriar o loop.
@@ -1222,10 +1223,29 @@ public partial class App : Application
                 if (tick <= 10 || logLongo)
                 {
                     using var proc = Process.GetCurrentProcess();
+                    // v1.8.0: handles no log (a v1.7.1 chegou a 2 769; é o sinal do lixo com recurso nativo)
                     RegistrarLog(
                         $"[Tick #{tick}] ↑{vel.UploadBytesPorSegundo:F0} B/s ↓{vel.DownloadBytesPorSegundo:F0} B/s | " +
                         $"CPU {MedidorSistema.Formatar(uso.CpuPercentual)} RAM {MedidorSistema.Formatar(uso.RamPercentual)} | " +
-                        $"RAM WorkingSet={proc.WorkingSet64 / 1048576.0:F1} MB (Privada={proc.PrivateMemorySize64 / 1048576.0:F1} MB)");
+                        $"RAM WorkingSet={proc.WorkingSet64 / 1048576.0:F1} MB (Privada={proc.PrivateMemorySize64 / 1048576.0:F1} MB) | handles={proc.HandleCount}");
+
+                    // v1.8.0: coleta completa quando a memória privada subiu 16 MB desde a última
+                    // (ver GuardaMemoria). Estamos na thread do pool: a coleta para as threads por
+                    // alguns ms, o widget não sente. Antes/depois vão para o log: é a prova no campo.
+                    if (logLongo && guardaMemoria.DeveColetar(proc.PrivateMemorySize64))
+                    {
+                        long privAntes = proc.PrivateMemorySize64;
+                        long subiu = privAntes - (guardaMemoria.Base ?? privAntes);
+                        int handlesAntes = proc.HandleCount;
+                        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                        proc.Refresh();
+                        guardaMemoria.RegistrarAposColeta(proc.PrivateMemorySize64);
+                        RegistrarLog(
+                            $"Coleta completa (memória subiu {subiu / 1048576.0:F1} MB desde a última): " +
+                            $"Privada {privAntes / 1048576.0:F1} → {proc.PrivateMemorySize64 / 1048576.0:F1} MB, handles {handlesAntes} → {proc.HandleCount}.");
+                    }
                 }
             }
         }
