@@ -338,6 +338,8 @@ clara · 🟢 ideia.
   Manifestos em `tools/winget/manifests/h/HelvecioPereira/StatusMonitor/<versão>/` (gerados por
   `tools/winget/gerar-manifesto.ps1` com o SHA-256 do Setup publicado; `winget validate` ok). O envio é
   um PR ao `microsoft/winget-pkgs` — ação externa, feita só com o aval do dono (ver walkthrough v1.9.0).
+  **Decisão do dono (2026-11-03): o PR fica para o FINAL do projeto** — hoje o app é de uso próprio e
+  entrar no catálogo não traz ganho nenhum. Não sugerir de novo até acabarem os outros itens.
   Continua 🟡 a assinatura de código em si (Azure Trusted Signing / SignPath): o Setup baixado do
   GitHub ainda passa pelo SmartScreen; pelo winget, não.
 - ✅ **v1.9.0** (2026-11-03) — **Inglês.** 274 textos em `Recursos/Textos.resx` (pt-BR, neutro) +
@@ -366,8 +368,9 @@ clara · 🟢 ideia.
 1. ✅ **v1.7.2** (2026-11-03) — exceções não tratadas + loop fora da UI + atualização de hora em hora (três itens de esforço baixo).
 2. ✅ **v1.8.0** (2026-11-03) — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área). Pendente: confirmar com 24 h de log.
 3. ✅ **v1.8.1** (2026-11-03) — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
-4. ✅ **v1.9.0** (2026-11-03) — winget + inglês (acesso amplo). Pendente do dono: autorizar o PR ao `microsoft/winget-pkgs`.
+4. ✅ **v1.9.0** (2026-11-03) — winget + inglês (acesso amplo). Manifestos prontos e validados.
 5. Ideias 🟢 conforme o gosto do dono.
+6. **Por último, só se o dono quiser distribuir:** PR ao `microsoft/winget-pkgs` (decisão de 2026-11-03: sem ganho para uso próprio).
 
 ## Dívida técnica anotada (sem onda própria)
 
