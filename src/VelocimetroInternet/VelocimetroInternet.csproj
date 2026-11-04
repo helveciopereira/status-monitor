@@ -9,9 +9,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Ícone do .exe (recurso 32512): Explorer, Alt+Tab do estúdio e a bandeja (IconeBandeja) -->
     <ApplicationIcon>Recursos/app.ico</ApplicationIcon>
-    <Version>1.9.0</Version>
-    <AssemblyVersion>1.9.0.0</AssemblyVersion>
-    <FileVersion>1.9.0.0</FileVersion>
+    <Version>1.9.1</Version>
+    <AssemblyVersion>1.9.1.0</AssemblyVersion>
+    <FileVersion>1.9.1.0</FileVersion>
     <!-- v0.4.0 (Onda 4): ponto de entrada próprio (Program.cs) — o Velopack precisa rodar ANTES
          do WPF. StartupObject desempata com o Main que o WPF gera para o App.xaml. -->
     <StartupObject>VelocimetroInternet.Program</StartupObject>
@@ -35,12 +35,15 @@
        diretório de trabalho do agente está aqui — o SDK incluiria as cópias e a compilação
        quebraria com "definição duplicada" (aconteceu em 2026-10-31).
        v0.3.0: "**\backup\**" cobre QUALQUER subpasta — o hook também criou Apresentacao\backup\
-       quando o diretório de trabalho era Apresentacao (o padrão antigo só cobria a raiz). -->
+       quando o diretório de trabalho era Apresentacao (o padrão antigo só cobria a raiz).
+       v1.9.1: também EmbeddedResource — com os .resx (v1.9.0) a cópia em backup\Recursos\ gerava
+       MSB3577 "dois nomes de arquivo de saída resolvidos para o mesmo caminho" (2026-11-04). -->
   <ItemGroup>
     <Compile Remove="**\backup\**" />
     <Page Remove="**\backup\**" />
     <None Remove="**\backup\**" />
     <Content Remove="**\backup\**" />
+    <EmbeddedResource Remove="**\backup\**" />
   </ItemGroup>
   <!-- Único pacote externo: Velopack (instalador sem administrador + atualização automática
        silenciosa pelas Releases do GitHub). A ferramenta "vpk" tem de estar na MESMA versão. -->

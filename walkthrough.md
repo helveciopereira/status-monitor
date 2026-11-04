@@ -1,5 +1,88 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v1.9.1 — 2026-11-04 — Memória: desenho pela CPU (sem o driver de vídeo) + reinício automático por teto
+
+### O que mudou
+- **Desenho pela CPU** (`Configuracoes.RenderizarPorSoftware`, padrão LIGADO): o `App.OnStartup` põe
+  `RenderOptions.ProcessRenderMode = SoftwareOnly` antes de criar qualquer janela. O driver da GPU continua
+  carregado no processo (o WPF o inicializa de qualquer forma), mas **não aloca mais os buffers** de
+  leitura das janelas transparentes nem os ~1 000 handles que vinham com eles. Novo cartão **"7. Memória"**
+  no estúdio, com a chave e a nota do ganho medido; a troca em pleno voo vale para as janelas novas e o
+  ganho pleno vem ao reabrir (o driver já carregado não devolve o que alocou — a nota diz isso).
+- **Reinício automático por teto** (`Configuracoes.ReinicioAutomatico` padrão LIGADO, `ReinicioTetoMb`
+  padrão **200**, faixa 100–4 000, campo no mesmo cartão): a cada 10 min, no tick longo do loop de
+  medição, `ReinicioMemoria.DevePedir` compara a memória privada com o teto — só com a opção ligada e
+  **depois de 1 h aberto** (o aquecimento inicial, 75 → 125 MB nos primeiros minutos, não é crescimento).
+  Pedido feito, um relógio de 1 min na UI (`IniciarVigiaReinicio` → `AoTickReinicio`) espera o
+  **momento tranquilo** (mesma `RegraMomentoTranquilo` da atualização: nada aberto, mouse longe, sem tela
+  cheia, sem atualização baixada pendente) e chama `ReiniciarProcesso`: abre a cópia nova com
+  `--aguardar-pid <PID> --reiniciado-memoria` e encerra esta pelo `Shutdown` normal (o `OnExit` salva o
+  consumo do dia, a queda em andamento e tira a bandeja). A cópia nova **espera o PID antigo sair** (até
+  30 s) ANTES de disputar o mutex de instância única — senão se veria como 2ª cópia e sairia. Desligar a
+  chave no estúdio depois do pedido cancela o relógio (linha no log). Tudo fica no log: "acima do teto",
+  "Momento tranquilo: reiniciando…", "a cópia anterior encerrou", "Reaberto pelo reinício automático".
+- Linha `===` do log ganhou `Desenho=cpu|gpu` e `Reinicio=<teto>MB|off`.
+- `VelocimetroInternet.csproj`: a blindagem contra `backup\` passou a remover também `EmbeddedResource`
+  (com os `.resx` da v1.9.0, a cópia do hook em `src\VelocimetroInternet\backup\Recursos\` quebrava o
+  build com MSB3577 "dois nomes de arquivo de saída resolvidos para o mesmo caminho").
+
+### Por quê (causa raiz)
+- Diagnóstico de 2026-11-03/04 (memória `saude-medida-2026-11-03`): depois da v1.8.x o crescimento caiu de
+  ~9 MB/h para ~0,7 MB/h, mas a **coleta forçada devolvia só ~5 MB de 160** — o heap gerenciado tem 15 MB.
+  O mapa do espaço de endereços (VirtualQueryEx) mostrou **75,6 MB em páginas "write-combine"** (RW +
+  WRITECOMBINE, a assinatura de buffers de driver de vídeo, `AMDXN64.DLL` da Radeon 890M) e ~56 MB de
+  heaps nativos do WPF. O degrau de memória que aparecia ao acordar da suspensão é o dispositivo D3D
+  perdido e as superfícies recriadas. Nada disso é alcançável pelo GC: ou o driver sai do caminho (item 1)
+  ou o processo reabre (item 2).
+- **Medido lado a lado no harness** (`render-estudio.exe render hw|sw 20 [painel]`: widget 238×63 com mini
+  gráfico, 10 atualizações/s por 20 s, mesmo código, só o `ProcessRenderMode` muda):
+
+  | Cenário | Privada | Write-combine | Handles | CPU |
+  |---|---|---|---|---|
+  | Widget, GPU (padrão WPF) | 75,4 MB | 9,7 MB | 1 430 | 6,5 % |
+  | Widget, CPU (SoftwareOnly) | **27,4 MB** | **0** | **397** | 5,4 % |
+  | Widget + painel rápido, GPU | 86,5 MB | 14,1 MB | 1 432 | 5,6 % |
+  | Widget + painel rápido, CPU | **40,1 MB** | **0** | **399** | 5,1 % |
+
+  O widget tem 238×63 px: desenhar pela CPU custa menos do que mandar para a GPU e ler de volta (as
+  janelas `AllowsTransparency` exigem a leitura). `AMDXN64.DLL` continua carregada em modo software,
+  mas sem alocar nada.
+- O reinício é rede de segurança para **qualquer** origem que ainda cresça (heaps nativos do WPF,
+  driver, algo novo) — o histórico já fica em disco a cada 60 s, então reabrir não perde nada; o widget
+  pisca por ~1 s.
+
+### Como usar
+- Estúdio › **7. Memória** › "Desenhar pela CPU, sem o driver de vídeo" (ligado por padrão; desligue
+  se algum dia a placa de vídeo fizer falta) e "Reiniciar sozinho quando a memória passar do teto" +
+  campo do teto em MB (desligar a chave apaga o campo). Aplicar. A chave do desenho vale por completo ao
+  reabrir o app.
+- No log, grep por `acima do teto`, `reiniciando para liberar`, `Reaberto pelo reinício`.
+- Harness: `render-estudio.exe render hw 20 painel` / `render sw 20 painel` imprime privada, WC, RW,
+  heap do GC, handles, CPU % e as DLLs de vídeo carregadas; `render-estudio.exe estudio <settings.json>
+  <pasta> [nome.png]` grava só o estúdio (com `--en` em inglês).
+
+### Arquivos tocados
+- Novos: `Sistema/ReinicioMemoria.cs` (regra pura, argumentos, espera do PID),
+  `tests/.../V191MemoriaTests.cs` (26 casos: padrões, `Normalizar` do teto, `Clonar`, `DevePedir` com
+  ligado/teto/1 h, `PidAguardar`, `FoiReiniciado`, `AguardarSaida` com PID inexistente e com processo vivo).
+- Alterados: `Config/Configuracoes.cs` (3 campos + constantes + `Normalizar`), `App.xaml.cs` (espera do
+  PID antes do mutex, `ProcessRenderMode`, linha `===`, pedido no tick longo, `_timerReinicio`,
+  `ReiniciarProcesso`, troca do modo em `AoAlterarConfiguracoes`, `OnExit`), `Apresentacao/EstudioCores.xaml`
+  + `.xaml.cs` (cartão 7, 3 tratadores, sincronização e `IsEnabled` do campo), `Recursos/Textos.resx` +
+  `Textos.en.resx` (+7 chaves → 282) + `Textos.Designer.cs`, `VelocimetroInternet.csproj` (versão +
+  `EmbeddedResource Remove`), `README.md`, `03-PLANO-DE-ONDAS.md`.
+
+### Validação executada
+- Build Release: 0 avisos, 0 erros. Suíte inteira: **378 aprovados** (352 + 26).
+- Harness lado a lado (tabela acima) nos dois modos, com e sem painel.
+- Estúdio renderizado pelo harness em pt-BR e em inglês: cartão "Memória" com as duas chaves ligadas, a
+  nota do ganho e o campo "Teto de memória privada 200 MB" conferidos a olho.
+- **Validação manual recomendada:** (1) depois de 1 h aberto, pôr o teto em 100 MB no estúdio e esperar
+  o próximo tick de 10 min com nada aberto: o log deve mostrar "acima do teto" → "Momento tranquilo:
+  reiniciando" → "a cópia anterior encerrou" → "Reaberto pelo reinício automático", e o widget deve
+  voltar na mesma posição; depois devolver o teto a 200. (2) Conferir no Gerenciador de Tarefas que a
+  privada do app instalado fica na casa dos 30–50 MB (era 75+ na abertura).
+
 ## v1.9.0 — 2026-11-03 — Acesso amplo: interface em inglês + manifesto para o winget
 
 ### O que mudou

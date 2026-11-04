@@ -248,6 +248,12 @@ public static partial class Textos
     /// <summary> · {0} da franquia</summary>
     public static string Estudio_DaFranquiaSufixo => Obter("Estudio_DaFranquiaSufixo");
 
+    /// <summary>Desenhar pela CPU, sem o driver de vídeo</summary>
+    public static string Estudio_DesenharPelaCpu => Obter("Estudio_DesenharPelaCpu");
+
+    /// <summary>O widget é pequeno demais para precisar da placa de vídeo. Com o driver fora do processo a memória c…</summary>
+    public static string Estudio_DesenharPelaCpuNota => Obter("Estudio_DesenharPelaCpuNota");
+
     /// <summary>Download em cima</summary>
     public static string Estudio_DownloadEmCima => Obter("Estudio_DownloadEmCima");
 
@@ -347,6 +353,9 @@ public static partial class Textos
     /// <summary>Mais suave = números mais estáveis, reação mais lenta a picos.</summary>
     public static string Estudio_MaisSuaveNumerosMaisEstaveis => Obter("Estudio_MaisSuaveNumerosMaisEstaveis");
 
+    /// <summary>MB</summary>
+    public static string Estudio_MBUnidade => Obter("Estudio_MBUnidade");
+
     /// <summary>Medição</summary>
     public static string Estudio_Medicao => Obter("Estudio_Medicao");
 
@@ -358,6 +367,9 @@ public static partial class Textos
 
     /// <summary>0,5 s</summary>
     public static string Estudio_MeioSegundo => Obter("Estudio_MeioSegundo");
+
+    /// <summary>Memória</summary>
+    public static string Estudio_Memoria => Obter("Estudio_Memoria");
 
     /// <summary>Mini gráfico</summary>
     public static string Estudio_MiniGrafico => Obter("Estudio_MiniGrafico");
@@ -422,6 +434,12 @@ public static partial class Textos
     /// <summary>Põe o widget também na barra dos outros monitores. Requer a barra ligada neles (Configurações do Win…</summary>
     public static string Estudio_PoeOWidgetTambemNa => Obter("Estudio_PoeOWidgetTambemNa");
 
+    /// <summary>Reiniciar sozinho quando a memória passar do teto</summary>
+    public static string Estudio_ReiniciarSozinho => Obter("Estudio_ReiniciarSozinho");
+
+    /// <summary>Só num momento tranquilo (nada aberto, mouse longe do widget, sem tela cheia) e depois de 1 h aberto…</summary>
+    public static string Estudio_ReiniciarSozinhoNota => Obter("Estudio_ReiniciarSozinhoNota");
+
     /// <summary>Restaurar padrão</summary>
     public static string Estudio_RestaurarPadrao => Obter("Estudio_RestaurarPadrao");
 
@@ -442,6 +460,9 @@ public static partial class Textos
 
     /// <summary>Tamanho do texto</summary>
     public static string Estudio_TamanhoDoTexto => Obter("Estudio_TamanhoDoTexto");
+
+    /// <summary>Teto de memória privada</summary>
+    public static string Estudio_TetoDeMemoria => Obter("Estudio_TetoDeMemoria");
 
     /// <summary>Texto grande</summary>
     public static string Estudio_TextoGrande => Obter("Estudio_TextoGrande");

@@ -253,6 +253,15 @@ clara · 🟢 ideia.
 
 ### Problemas reais encontrados (entram antes de qualquer ideia nova)
 
+- ✅ **v1.9.1 (2026-11-04)** — 🔴 **O que sobrou do consumo de memória não era lixo gerenciado.** Com a v1.8.x o
+  crescimento caiu para ~0,7 MB/h, mas a coleta forçada devolvia ~5 MB de 160: 75,6 MB eram páginas
+  "write-combine" do driver de vídeo (`AMDXN64.DLL`, buffers de leitura das janelas transparentes) e ~56 MB
+  heaps nativos do WPF; o degrau ao acordar da suspensão é o dispositivo D3D recriado. Correção em dois
+  itens, medidos lado a lado no harness: (1) **desenho pela CPU** (`ProcessRenderMode = SoftwareOnly`,
+  padrão ligado) — widget 75 → 27 MB, handles 1 430 → 397, write-combine 9,7 → 0 MB, CPU igual;
+  (2) **reinício automático** num momento tranquilo quando a privada passa do teto (200 MB, estúdio ›
+  Memória, 100–4 000, desligável), só depois de 1 h aberto, com a cópia nova esperando o PID antigo sair
+  antes do mutex. Pendente: ler o log depois de 24 h com a v1.9.1 (privada estável? algum reinício?).
 - ✅ **v1.8.0 (2026-11-03)** — diagnóstico no `walkthrough.md` (heap gerenciado 6 MB; lixo com recurso nativo
   esperando gen2; consulta de atualização deixava handles, não memória); correção: `GuardaMemoria` (coleta
   completa a cada +16 MB, com antes/depois no log) + `BaixadorHttp` + vigia por evento. **Confirmar com 24 h
@@ -369,6 +378,7 @@ clara · 🟢 ideia.
 2. ✅ **v1.8.0** (2026-11-03) — diagnóstico e correção do vazamento de memória/CPU + vigia por evento (mesma área). Pendente: confirmar com 24 h de log.
 3. ✅ **v1.8.1** (2026-11-03) — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
 4. ✅ **v1.9.0** (2026-11-03) — winget + inglês (acesso amplo). Manifestos prontos e validados.
+4b. ✅ **v1.9.1** (2026-11-04) — memória: desenho pela CPU (sem driver de vídeo) + reinício automático por teto. Pendente: 24 h de log.
 5. Ideias 🟢 conforme o gosto do dono.
 6. **Por último, só se o dono quiser distribuir:** PR ao `microsoft/winget-pkgs` (decisão de 2026-11-03: sem ganho para uso próprio).
 

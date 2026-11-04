@@ -435,6 +435,39 @@
                         <TextBlock Style="{StaticResource Rotulo}" Text="{x:Static r:Textos.Estudio_IdiomaNota}" />
                     </StackPanel>
                 </Border>
+
+                <!-- 7. v1.9.1: memória — desenho pela CPU (sem o driver de vídeo no processo) e reinício
+                     automático por teto, num momento tranquilo. As duas chaves vêm ligadas por padrão. -->
+                <TextBlock Text="{x:Static r:Textos.Estudio_Memoria}" Style="{StaticResource Titulo}" />
+                <Border Style="{StaticResource Cartao}">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="{x:Static r:Textos.Estudio_DesenharPelaCpu}" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}" Text="{x:Static r:Textos.Estudio_DesenharPelaCpuNota}" />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveRenderSoftware" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarRenderSoftware"
+                                          AutomationProperties.Name="{x:Static r:Textos.Estudio_DesenharPelaCpu}" />
+                        </Grid>
+
+                        <Grid Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,56,0">
+                                <TextBlock Text="{x:Static r:Textos.Estudio_ReiniciarSozinho}" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Rotulo}" Text="{x:Static r:Textos.Estudio_ReiniciarSozinhoNota}" />
+                            </StackPanel>
+                            <ToggleButton x:Name="ChaveReinicio" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Style="{StaticResource Interruptor}" Click="AoAlternarReinicio"
+                                          AutomationProperties.Name="{x:Static r:Textos.Estudio_ReiniciarSozinho}" />
+                        </Grid>
+                        <StackPanel x:Name="LinhaTeto" Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{x:Static r:Textos.Estudio_TetoDeMemoria}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBox x:Name="CampoTetoMemoria" Width="80" TextChanged="AoMudarTetoMemoria"
+                                     AutomationProperties.Name="{x:Static r:Textos.Estudio_TetoDeMemoria}" />
+                            <TextBlock Text="{x:Static r:Textos.Estudio_MBUnidade}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 

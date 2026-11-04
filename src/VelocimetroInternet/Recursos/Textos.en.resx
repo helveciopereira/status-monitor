@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- Textos da interface em inglês (satélite en\StatusMonitor.resources.dll, v1.9.0). Toda chave do Textos.resx precisa existir aqui (teste V190). -->
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
@@ -280,4 +280,11 @@
   <data name="Wcag_AATextoGrande" xml:space="preserve"><value>AA large text</value></data>
   <data name="Wcag_Insuficiente" xml:space="preserve"><value>Insufficient</value></data>
   <data name="Widget_Pausado" xml:space="preserve"><value>paused</value></data>
+  <data name="Estudio_Memoria" xml:space="preserve"><value>Memory</value></data>
+  <data name="Estudio_DesenharPelaCpu" xml:space="preserve"><value>Draw with the CPU, without the video driver</value></data>
+  <data name="Estudio_DesenharPelaCpuNota" xml:space="preserve"><value>The widget is far too small to need the graphics card. With the driver out of the process, memory drops (measured in v1.9.1: 75 → 27 MB and 1,430 → 397 handles) and there is no jump after waking from sleep. Fully takes effect when the app reopens.</value></data>
+  <data name="Estudio_ReiniciarSozinho" xml:space="preserve"><value>Restart on its own when memory exceeds the ceiling</value></data>
+  <data name="Estudio_ReiniciarSozinhoNota" xml:space="preserve"><value>Only at a quiet moment (nothing open, mouse away from the widget, no full screen) and after 1 h running. History is already saved to disk; the widget blinks for a second.</value></data>
+  <data name="Estudio_TetoDeMemoria" xml:space="preserve"><value>Private memory ceiling</value></data>
+  <data name="Estudio_MBUnidade" xml:space="preserve"><value>MB</value></data>
 </root>

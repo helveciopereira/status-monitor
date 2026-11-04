@@ -26,6 +26,9 @@
 > **v1.9.0:** **interface em inglês** (estúdio › Idioma: automático pelo Windows, Português ou English; o relatório PDF,
 > o CSV e o log continuam em português) e **manifesto para o winget** em `tools/winget/` (instalação por
 > `winget install HelvecioPereira.StatusMonitor` depois de aceito no `microsoft/winget-pkgs`).
+> **v1.9.1:** **menos memória** — as janelas são desenhadas pela CPU, sem o driver de vídeo dentro do processo
+> (medido: 75 → 27 MB e 1 430 → 397 handles), e um **reinício automático** num momento tranquilo quando a memória
+> privada passa de um teto (200 MB por padrão; estúdio › Memória, com campo e chave para desligar).
 >
 > **v0.9.0:** **seletor visual de cor** (quadrado + barra de matiz) na paleta Personalizada.
 
@@ -40,7 +43,7 @@ com o sistema e mostra **upload e download ao mesmo tempo**, cada um com sua set
 Desde a v0.5.0 mostra também o **uso de CPU e RAM do computador, em %**, à esquerda da internet
 (liga/desliga em "CPU e RAM na barra", no painel rápido, ou no menu do clique direito).
 
-> Status: **Ondas 0 a 11, 13 e 14 concluídas + acesso amplo (inglês e winget)** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.9.0** · 2026-11-03
+> Status: **Ondas 0 a 11, 13 e 14 concluídas + acesso amplo (inglês e winget) + memória (v1.9.1)** (falta só a assinatura de código opcional, que depende de certificado comprado) · versão **1.9.1** · 2026-11-04
 >
 > **Instalar:** baixe e execute [`StatusMonitor-Setup.exe`](https://github.com/helveciopereira/status-monitor/releases/latest/download/StatusMonitor-Setup.exe)
 > (sem administrador; instala em `%LOCALAPPDATA%\VelocimetroInternetApp`). Depois disso ele **se atualiza sozinho**, em silêncio.

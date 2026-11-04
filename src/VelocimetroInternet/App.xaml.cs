@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using VelocimetroInternet.Apresentacao;
 using VelocimetroInternet.Config;
@@ -92,6 +94,15 @@ public partial class App : Application
     /// </summary>
     private static readonly TimeSpan IntervaloConsulta = TimeSpan.FromHours(1);
     private static readonly TimeSpan IntervaloMomentoTranquilo = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// v1.9.1: reinício automático por memória (ver <see cref="ReinicioMemoria"/>). O loop de medição
+    /// PEDE (<see cref="_reinicioPedido"/>, a cada 10 min, quando a privada passa do teto do estúdio);
+    /// este relógio, na UI, procura o momento tranquilo a cada minuto e reabre o app.
+    /// </summary>
+    private DispatcherTimer? _timerReinicio;
+    private volatile bool _reinicioPedido;
+
     /// <summary>Após acordar da suspensão: espera o Wi-Fi voltar antes de consultar.</summary>
     private static readonly TimeSpan ConsultaAposRetomada = TimeSpan.FromSeconds(30);
 
@@ -114,6 +125,16 @@ public partial class App : Application
         InstalarTratadoresDeExcecao();
 
         _msgAtivar = NativeMethods.RegisterWindowMessageW(NomeMensagemAtivar);
+
+        // v1.9.1: reaberto por si mesmo (reinício por memória) — a cópia antiga ainda está fechando e
+        // segura o mutex; espera o PID dela sair ANTES de disputar, senão esta se veria como 2ª cópia.
+        if (ReinicioMemoria.PidAguardar(e.Args) is int pidAntigo)
+        {
+            bool saiu = ReinicioMemoria.AguardarSaida(pidAntigo, TimeSpan.FromSeconds(30));
+            RegistrarLog(saiu
+                ? $"Reinício automático: a cópia anterior (PID {pidAntigo}) encerrou."
+                : $"Reinício automático: a cópia anterior (PID {pidAntigo}) NÃO encerrou em 30 s — seguindo.");
+        }
 
         // Instância única (01-ANALISE.md §6). A 2ª cópia avisa a 1ª e sai — o usuário que
         // clicou de novo no atalho vê o widget voltar / o painel abrir, em vez de "nada".
@@ -141,13 +162,26 @@ public partial class App : Application
         Configuracoes cfg = _config.Atual;
         // v1.9.0: idioma da interface ANTES de criar qualquer janela (os {x:Static} dos XAML leem a cultura ao carregar)
         Idioma.Aplicar(cfg.Idioma);
-        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} | Idioma={cfg.Idioma}→{Idioma.Cultura.Name} ===");
+        // v1.9.1: modo de desenho ANTES de qualquer janela (cada HwndTarget lê o modo ao nascer). Pela
+        // CPU, o driver de vídeo não aloca os buffers "write-combine" (48 MB medidos) nem ~1 000 handles,
+        // e não há degrau ao acordar da suspensão. Ver Configuracoes.RenderizarPorSoftware.
+        if (cfg.RenderizarPorSoftware)
+        {
+            RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+        }
+
+        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} | Idioma={cfg.Idioma}→{Idioma.Cultura.Name} | Desenho={(cfg.RenderizarPorSoftware ? "cpu" : "gpu")} | Reinicio={(cfg.ReinicioAutomatico ? $"{cfg.ReinicioTetoMb}MB" : "off")} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
         if (AtualizadoParaVersao is not null)
         {
             RegistrarLog($"Reaberto pelo atualizador: agora na versão {AtualizadoParaVersao}.");
+        }
+
+        if (ReinicioMemoria.FoiReiniciado(e.Args))
+        {
+            RegistrarLog("Reaberto pelo reinício automático de memória (v1.9.1).");
         }
 
         ServicoTema.Aplicar(TemaWindows.AppsClaros());
@@ -504,6 +538,16 @@ public partial class App : Application
         // v1.9.0: idioma. Vale para as janelas abertas DEPOIS (os {x:Static} do XAML são lidos ao carregar);
         // o painel rápido é fechado e descartado para renascer no idioma novo; o widget pausado e a
         // dica da bandeja são refeitos aqui mesmo.
+        // v1.9.1: modo de desenho. O WPF aceita a troca em pleno voo (vale para as janelas novas), mas
+        // o driver já carregado não devolve o que alocou — o ganho pleno vem ao reabrir (a nota do
+        // estúdio diz isso). O reinício automático desligado/ligado é lido pelo loop e pelo relógio.
+        RenderMode modoNovo = cfg.RenderizarPorSoftware ? RenderMode.SoftwareOnly : RenderMode.Default;
+        if (RenderOptions.ProcessRenderMode != modoNovo)
+        {
+            RenderOptions.ProcessRenderMode = modoNovo;
+            RegistrarLog($"Desenho: {(cfg.RenderizarPorSoftware ? "pela CPU (software)" : "pela GPU (padrão do WPF)")} — vale por completo ao reabrir o app.");
+        }
+
         string culturaAntes = Idioma.Cultura.Name;
         Idioma.Aplicar(cfg.Idioma);
         if (Idioma.Cultura.Name != culturaAntes)
@@ -1095,6 +1139,87 @@ public partial class App : Application
         }
     }
 
+    // ------------------------------------------------------------------ v1.9.1: reinício por memória
+
+    /// <summary>Liga o relógio de 1 min que procura o momento tranquilo para reabrir o app (idempotente).</summary>
+    private void IniciarVigiaReinicio()
+    {
+        if (_timerReinicio is not null)
+        {
+            return;
+        }
+
+        _timerReinicio = new DispatcherTimer(DispatcherPriority.Background) { Interval = IntervaloMomentoTranquilo };
+        _timerReinicio.Tick += (_, _) => AoTickReinicio();
+        _timerReinicio.Start();
+    }
+
+    private void AoTickReinicio()
+    {
+        if (!_config.Atual.ReinicioAutomatico)
+        {
+            // Desligado no estúdio depois do pedido: cancela e volta a observar (o loop pode pedir de novo se religar)
+            _timerReinicio?.Stop();
+            _timerReinicio = null;
+            _reinicioPedido = false;
+            RegistrarLog("Reinício automático desligado no estúdio: pedido cancelado.");
+            return;
+        }
+
+        if (_atualizacao.TemPendente)
+        {
+            return; // a atualização baixada vai reiniciar o app de qualquer forma — não reiniciar duas vezes
+        }
+
+        if (!MomentoTranquiloAgora())
+        {
+            return; // tenta de novo daqui a 1 min
+        }
+
+        ReiniciarProcesso();
+    }
+
+    /// <summary>
+    /// Abre uma cópia nova (que espera este PID sair) e encerra esta pelo caminho normal: o OnExit
+    /// salva o consumo do dia e a queda em andamento, tira o ícone da bandeja e solta o mutex.
+    /// Falhou ao abrir a nova? Segue nesta e tenta no próximo minuto.
+    /// </summary>
+    private void ReiniciarProcesso()
+    {
+        if (Environment.ProcessPath is not { } exe)
+        {
+            RegistrarLog("Reinício automático: caminho do executável desconhecido — cancelado.");
+            _timerReinicio?.Stop();
+            return;
+        }
+
+        _timerReinicio?.Stop();
+        using var proc = Process.GetCurrentProcess();
+        RegistrarLog(
+            $"Momento tranquilo: reiniciando para liberar memória (Privada {proc.PrivateMemorySize64 / 1048576.0:F0} MB, " +
+            $"handles {proc.HandleCount}, aberto há {(DateTime.Now - proc.StartTime).TotalHours:F1} h).");
+        try
+        {
+            var psi = new ProcessStartInfo(exe)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(exe) ?? string.Empty
+            };
+            psi.ArgumentList.Add(ReinicioMemoria.ArgumentoAguardarPid);
+            psi.ArgumentList.Add(Environment.ProcessId.ToString());
+            psi.ArgumentList.Add(ReinicioMemoria.ArgumentoReiniciado);
+            Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            RegistrarLog($"Falha ao abrir a nova cópia — segue nesta: {ex.Message}");
+            _timerReinicio?.Start();
+            return;
+        }
+
+        Shutdown(0);
+    }
+
     /// <summary>Lê o estado real da tela e aplica a <see cref="RegraMomentoTranquilo"/>.</summary>
     private bool MomentoTranquiloAgora()
     {
@@ -1329,6 +1454,19 @@ public partial class App : Application
                             $"Coleta completa (memória subiu {subiu / 1048576.0:F1} MB desde a última): " +
                             $"Privada {privAntes / 1048576.0:F1} → {proc.PrivateMemorySize64 / 1048576.0:F1} MB, handles {handlesAntes} → {proc.HandleCount}.");
                     }
+
+                    // v1.9.1: acima do teto do estúdio (e depois de 1 h aberto) → pede o reinício; o
+                    // relógio da UI escolhe o momento tranquilo. Pedido só uma vez por vida do processo.
+                    Configuracoes cfgAgora = _config.Atual;
+                    if (logLongo && !_reinicioPedido && ReinicioMemoria.DevePedir(
+                            cfgAgora.ReinicioAutomatico, cfgAgora.ReinicioTetoMb, proc.PrivateMemorySize64, DateTime.Now - proc.StartTime))
+                    {
+                        _reinicioPedido = true;
+                        RegistrarLog(
+                            $"Memória privada {proc.PrivateMemorySize64 / 1048576.0:F0} MB acima do teto de {cfgAgora.ReinicioTetoMb} MB: " +
+                            "reinício programado para o próximo momento tranquilo.");
+                        _ = Dispatcher.InvokeAsync(IniciarVigiaReinicio);
+                    }
                 }
             }
         }
@@ -1437,6 +1575,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _timerAtualizacao?.Stop();
+        _timerReinicio?.Stop(); // v1.9.1
         _ctsMedicao?.Cancel();
         _latencia?.Dispose(); // v1.1.0: para o ping (se ligado)
         _historico.SalvarConsumo();

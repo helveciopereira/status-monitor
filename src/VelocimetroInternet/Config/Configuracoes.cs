@@ -146,6 +146,32 @@ public sealed class Configuracoes
     /// </summary>
     public string Idioma { get; set; } = "auto";
 
+    // ---------------------------------------------------------------- v1.9.1 (memória)
+
+    /// <summary>
+    /// Desenhar as janelas pela CPU (<c>RenderMode.SoftwareOnly</c>), sem o driver de vídeo dentro do
+    /// processo. Padrão LIGADO. Por quê: medido em 2026-11-04 (harness, 20 s, widget com mini gráfico),
+    /// o driver da GPU respondia por 48 MB de buffers "write-combine" e ~1 000 handles — privada
+    /// 75 → 27 MB, handles 1 430 → 397 em software, com CPU igual ou menor (o widget tem 238×63 px).
+    /// Também elimina o degrau de memória ao acordar da suspensão (dispositivo D3D perdido e recriado).
+    /// Vale por completo ao reabrir o app (o driver já carregado não devolve o que alocou).
+    /// </summary>
+    public bool RenderizarPorSoftware { get; set; } = true;
+
+    /// <summary>
+    /// Reiniciar sozinho, num momento tranquilo (<c>RegraMomentoTranquilo</c>) e depois de 1 h aberto,
+    /// quando a memória privada passar de <see cref="ReinicioTetoMb"/>. Padrão LIGADO: rede de
+    /// segurança contra crescimento de qualquer origem (o histórico já fica salvo em disco a cada 60 s).
+    /// </summary>
+    public bool ReinicioAutomatico { get; set; } = true;
+
+    /// <summary>Teto de memória privada (MB) que pede o reinício. Padrão 200; faixa 100–4 000.</summary>
+    public int ReinicioTetoMb { get; set; } = ReinicioTetoPadraoMb;
+
+    public const int ReinicioTetoPadraoMb = 200;
+    public const int ReinicioTetoMinimoMb = 100;
+    public const int ReinicioTetoMaximoMb = 4_000;
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -187,6 +213,8 @@ public sealed class Configuracoes
         ModoExibicao = ModoExibicao is "duas-linhas" or "uma-linha" or "so-download" ? ModoExibicao : "duas-linhas";
         // v1.9.0: idioma desconhecido volta ao automático (o do Windows)
         Idioma = Idioma is "pt-BR" or "en" ? Idioma : "auto";
+        // v1.9.1: teto fora da faixa (arquivo editado à mão) volta ao padrão — 0 ou negativo reiniciaria sem parar
+        ReinicioTetoMb = ReinicioTetoMb is >= ReinicioTetoMinimoMb and <= ReinicioTetoMaximoMb ? ReinicioTetoMb : ReinicioTetoPadraoMb;
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {

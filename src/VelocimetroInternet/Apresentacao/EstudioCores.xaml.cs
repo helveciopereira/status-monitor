@@ -142,6 +142,12 @@ public partial class EstudioCores : Window
             CampoFranquia.Text = _rascunho.FranquiaMensalGb > 0
                 ? _rascunho.FranquiaMensalGb.ToString("0.##", Cultura)
                 : string.Empty;
+
+            // v1.9.1: memória
+            ChaveRenderSoftware.IsChecked = _rascunho.RenderizarPorSoftware;
+            ChaveReinicio.IsChecked = _rascunho.ReinicioAutomatico;
+            CampoTetoMemoria.Text = _rascunho.ReinicioTetoMb.ToString(Cultura);
+            LinhaTeto.IsEnabled = _rascunho.ReinicioAutomatico;
         }
         finally
         {
@@ -223,6 +229,38 @@ public partial class EstudioCores : Window
     private void AoAlternarAvisoVolta(object sender, RoutedEventArgs e)
     {
         _rascunho.AvisarQuandoInternetVoltar = ChaveAvisoVolta.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.9.1: desenho pela CPU. O App troca o modo ao aplicar, mas o ganho pleno vem ao reabrir (a nota avisa).</summary>
+    private void AoAlternarRenderSoftware(object sender, RoutedEventArgs e)
+    {
+        _rascunho.RenderizarPorSoftware = ChaveRenderSoftware.IsChecked == true;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.9.1: reinício automático por teto de memória; o campo do teto só faz sentido ligado.</summary>
+    private void AoAlternarReinicio(object sender, RoutedEventArgs e)
+    {
+        _rascunho.ReinicioAutomatico = ChaveReinicio.IsChecked == true;
+        LinhaTeto.IsEnabled = _rascunho.ReinicioAutomatico;
+        AtualizarEstadoSalvo();
+    }
+
+    /// <summary>v1.9.1: teto em MB. Mesmo critério da franquia: fora da faixa 100–4 000 mantém o último valor bom.</summary>
+    private void AoMudarTetoMemoria(object sender, TextChangedEventArgs e)
+    {
+        if (_carregando)
+        {
+            return;
+        }
+
+        if (int.TryParse(CampoTetoMemoria.Text.Trim(), NumberStyles.Integer, Cultura, out int v)
+            && v is >= Configuracoes.ReinicioTetoMinimoMb and <= Configuracoes.ReinicioTetoMaximoMb)
+        {
+            _rascunho.ReinicioTetoMb = v;
+        }
+
         AtualizarEstadoSalvo();
     }
 

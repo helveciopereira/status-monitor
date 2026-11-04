@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- Textos da interface em português do Brasil (idioma NEUTRO do app, v1.9.0). Gere Textos.Designer.cs com tools\gerar-textos.ps1 depois de editar. -->
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
@@ -280,4 +280,11 @@
   <data name="Wcag_AATextoGrande" xml:space="preserve"><value>AA texto grande</value></data>
   <data name="Wcag_Insuficiente" xml:space="preserve"><value>Insuficiente</value></data>
   <data name="Widget_Pausado" xml:space="preserve"><value>pausado</value></data>
+  <data name="Estudio_Memoria" xml:space="preserve"><value>Memória</value></data>
+  <data name="Estudio_DesenharPelaCpu" xml:space="preserve"><value>Desenhar pela CPU, sem o driver de vídeo</value></data>
+  <data name="Estudio_DesenharPelaCpuNota" xml:space="preserve"><value>O widget é pequeno demais para precisar da placa de vídeo. Com o driver fora do processo a memória cai (medido na v1.9.1: 75 → 27 MB e 1 430 → 397 handles) e não há degrau ao acordar da suspensão. Vale por completo ao reabrir o app.</value></data>
+  <data name="Estudio_ReiniciarSozinho" xml:space="preserve"><value>Reiniciar sozinho quando a memória passar do teto</value></data>
+  <data name="Estudio_ReiniciarSozinhoNota" xml:space="preserve"><value>Só num momento tranquilo (nada aberto, mouse longe do widget, sem tela cheia) e depois de 1 h aberto. O histórico já fica salvo em disco; o widget pisca por um segundo.</value></data>
+  <data name="Estudio_TetoDeMemoria" xml:space="preserve"><value>Teto de memória privada</value></data>
+  <data name="Estudio_MBUnidade" xml:space="preserve"><value>MB</value></data>
 </root>
