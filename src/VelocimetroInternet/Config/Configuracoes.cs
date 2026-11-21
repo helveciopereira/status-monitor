@@ -172,6 +172,25 @@ public sealed class Configuracoes
     public const int ReinicioTetoMinimoMb = 100;
     public const int ReinicioTetoMaximoMb = 4_000;
 
+    // ---------------------------------------------------------------- v2.0.1 (temperatura)
+
+    /// <summary>
+    /// v2.0.1: coluna de temperatura na barra, entre CPU/RAM e a internet. Padrão DESLIGADO (pedido do
+    /// dono: "não comece habilitado por padrão para quem instala ou atualiza") — um settings.json antigo
+    /// não tem o campo e continua sem a coluna. Liga no menu do clique direito › Temperatura.
+    /// </summary>
+    public bool MostrarTemperatura { get; set; }
+
+    /// <summary>
+    /// O que a linha de CIMA da coluna mostra: "auto" (padrão: o app escolhe — CPU, depois GPU, depois
+    /// disco, o que este PC tiver), "nenhuma" (linha vazia) ou o Id de um sensor ("cpu", "gpu:NOME",
+    /// "ssd:MODELO", "hd:MODELO" — ver <c>Medicao.Temperaturas</c>).
+    /// </summary>
+    public string TemperaturaLinha1 { get; set; } = "auto";
+
+    /// <summary>Idem para a linha de BAIXO. No automático pega o sensor seguinte ao da linha de cima.</summary>
+    public string TemperaturaLinha2 { get; set; } = "auto";
+
     /// <summary>Trechos de nome/descrição de interfaces a SEMPRE contabilizar (raro).</summary>
     public List<string> InterfacesIncluir { get; set; } = [];
 
@@ -215,6 +234,9 @@ public sealed class Configuracoes
         Idioma = Idioma is "pt-BR" or "en" ? Idioma : "auto";
         // v1.9.1: teto fora da faixa (arquivo editado à mão) volta ao padrão — 0 ou negativo reiniciaria sem parar
         ReinicioTetoMb = ReinicioTetoMb is >= ReinicioTetoMinimoMb and <= ReinicioTetoMaximoMb ? ReinicioTetoMb : ReinicioTetoPadraoMb;
+        // v2.0.1: código de linha desconhecido (arquivo editado à mão) volta ao automático
+        TemperaturaLinha1 = Medicao.Temperaturas.NormalizarLinha(TemperaturaLinha1, Medicao.Temperaturas.Automatica);
+        TemperaturaLinha2 = Medicao.Temperaturas.NormalizarLinha(TemperaturaLinha2, Medicao.Temperaturas.Automatica);
         // Distância negativa ou absurda (> 20.000 px lógicos) é lixo: descarta e volta ao automático
         foreach (string chave in PosicoesManuais.Where(p => p.Value is < 0 or > 20_000).Select(p => p.Key).ToList())
         {

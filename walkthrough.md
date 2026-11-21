@@ -1,5 +1,70 @@
 # Walkthrough — Status Monitor, ex-Velocímetro de Internet (Windows 11 · C# WPF .NET 10)
 
+## v2.0.1 — 2026-11-21 — Temperatura na barra (opcional, desligada por padrão)
+
+### O que mudou
+- **Coluna de temperatura** entre CPU/RAM e a internet, com duas linhas (`CPU 77°C` / `GPU 58°C`), nas
+  mesmas pílulas neutras do CPU/RAM. No modo de linha única vira o trecho `CPU 77°C · GPU 58°C  |`.
+  Número em **vermelho** a partir do limite da peça (CPU 90, GPU 85, SSD 70, HD 55 °C).
+- **Nasce desligada** (`Configuracoes.MostrarTemperatura = false`), também para quem atualiza: o
+  `settings.json` antigo não tem o campo e o padrão vale. Com a opção desligada o medidor não é carregado.
+- **Menu** (clique direito no widget ou na bandeja) › **Temperatura**: *Mostrar na barra*, *Linha de cima*
+  e *Linha de baixo*. Cada linha: **Automática** (primeiros sensores com leitura, sem repetir), **Nenhuma**
+  (a pílula daquela linha some; as duas em "Nenhuma" = sem coluna) ou um sensor deste PC, listado com a
+  leitura do momento (`GPU · NVIDIA GeForce RTX 4070 Laptop GPU — 51°C`). Gravado em `TemperaturaLinha1/2`
+  como `auto`, `nenhuma`, `cpu`, `gpu:NOME`, `ssd:MODELO`, `hd:MODELO` (2ª peça igual leva ` #2`).
+- **Fontes, todas sem administrador e sem driver** (`Medicao/MedidorTemperatura.cs`):
+  - CPU — contador `\Thermal Zone Information(*)\High Precision Temperature` (PDH, décimos de Kelvin);
+    usa a zona **mais quente** (nesta máquina a `TZ01` fica parada em 20 °C; a `THRM` é a real).
+  - GPU — `D3DKMTQueryAdapterInfo` tipo 62 (`D3DKMT_ADAPTER_PERFDATA`), uma entrada por placa.
+  - Discos — `IOCTL_STORAGE_QUERY_PROPERTY` em `\\.\PhysicalDriveN` aberto com acesso 0: registro SMART
+    do NVMe (temperatura composta) e, se não houver, o descritor genérico de temperatura. SSD × HD pelo
+    barramento e pela propriedade de "seek penalty".
+- **Custo contido**: só os sensores **mostrados** são lidos (não acorda a placa dedicada à toa), a cada
+  2 s; discos em cache de 30 s; o inventário completo só ao ligar, ao abrir o submenu ou quando uma linha
+  fica sem leitura (no máximo 1×/min). Desligar fecha o contador PDH (~6,7 MB privados enquanto ligado).
+- **Largura na barra**: `TaskbarLayout` soma 67 px (normal) / 122 px (linha única), escalados pelo tamanho
+  do texto; `TaskbarHost.MostrarTemperatura` reencaixa na hora. Barras secundárias acompanham.
+- O estúdio de cores **preserva** as três opções em *Aplicar* e *Restaurar padrão* (são do menu).
+- Linha `===` do log ganhou `Temp=<linha1>/<linha2>|off`; a linha periódica mostra as duas leituras.
+- Textos novos em pt-BR e inglês (`Menu_Temperatura*`).
+
+### Por quê
+- Pedido do dono: ver temperaturas ao lado de CPU/RAM, escolhendo quais, sem impor a coluna a ninguém.
+- **Por que nativo e não LibreHardwareMonitor**: os sensores "completos" (núcleos da CPU, RAM) exigem
+  driver de kernel e administrador — o app é instalado e roda sem elevação, e atualiza sozinho. As três
+  fontes acima foram sondadas nesta máquina sem elevação e conferem (GPU NVIDIA = `nvidia-smi`).
+- **RAM não é oferecida**: a temperatura dos módulos só sai por SMBus (driver de kernel). `ram` gravado à
+  mão no `settings.json` volta para `auto` no `Normalizar`.
+
+### Como usar
+Clique direito no widget › **Temperatura** › **Mostrar na barra**. Depois, em *Linha de cima* / *Linha de
+baixo*, escolher o sensor de cada uma (ou *Nenhuma*).
+
+### Limites conhecidos
+- A CPU é a **zona térmica ACPI** da placa: pode diferir alguns graus do sensor dos núcleos e **não existe
+  em alguns desktops** (a CPU simplesmente não aparece na lista).
+- Disco **SATA não foi testado** (esta máquina só tem NVMe): o caminho é o descritor genérico; se o disco
+  não o implementar, não aparece na lista.
+- Sem sensor nenhum, o submenu diz "Nenhum sensor de temperatura encontrado neste PC" e a linha mostra `TEMP —`.
+
+### Arquivos
+`Medicao/MedidorTemperatura.cs` (novo), `Sistema/NativeMethods.cs`, `Config/Configuracoes.cs`,
+`Apresentacao/TaskbarLayout.cs`, `TaskbarHost.cs`, `TaskbarWidget.xaml(.cs)`, `EstudioCores.xaml.cs`,
+`App.xaml.cs`, `Recursos/Textos.resx`, `Textos.en.resx`, `Textos.Designer.cs`,
+`VelocimetroInternet.csproj` (2.0.1), `tests/.../V201TemperaturaTests.cs` (novo), `README.md`,
+`03-PLANO-DE-ONDAS.md`.
+
+### Validação
+- `dotnet build -c Release`: 0 avisos, 0 erros. `dotnet test`: **426 aprovados**, 0 falhas (inclui a leitura
+  real desta máquina: CPU 77 °C, Radeon 890M 58 °C, RTX 4070 51 °C, SSD NVMe 34 °C).
+- Prova visual por harness (widget real renderizado em 13 cenários: desligada, automática, GPU+SSD, uma
+  linha só, alerta, sem CPU/RAM, tema claro, linha única, texto grande, sem sensor): nada cortado, a
+  largura calculada cobre o conteúdo em todos (pior caso `GPU 100°C`).
+- **Manual recomendada**: ligar pelo menu na barra real; trocar o sensor de cada linha; "Nenhuma" nas duas;
+  modo de linha única; barra em outro monitor; escalas 100/125/150 %; reiniciar o app e conferir que a
+  escolha ficou.
+
 ## v1.9.1 — 2026-11-04 — Memória: desenho pela CPU (sem o driver de vídeo) + reinício automático por teto
 
 ### O que mudou

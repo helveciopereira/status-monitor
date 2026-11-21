@@ -101,6 +101,17 @@ public static class TaskbarLayout
     /// </summary>
     public const int ImaPosicaoAutomaticaLogicaPx = 16;
 
+    /// <summary>
+    /// v2.0.1: largura somada quando a coluna de TEMPERATURA está ligada (fica entre CPU/RAM e a rede).
+    /// Normal = coluna de pílulas "GPU 100°C" (64) + 3 px de respiro; compacta = trecho
+    /// "CPU 100°C · GPU 100°C  |" na linha única. Medidos no pior caso (3 dígitos), como os de CPU/RAM.
+    /// </summary>
+    public const int LarguraLogicaTemperaturaNormalPx = 67;
+    public const int LarguraLogicaTemperaturaCompactaPx = 122;
+
+    /// <summary>Coluna de temperatura (64) sem o respiro — v2.0.1.</summary>
+    public const int LarguraColunaTemperaturaLogicaPx = LarguraLogicaTemperaturaNormalPx - RespiroSistemaLogicoPx;
+
     /// <summary>Largura lógica do widget normal (2 linhas), com ou sem a coluna CPU/RAM.</summary>
     public static int LarguraLogicaNormal(bool mostrarSistema) => LarguraLogicaNormal(mostrarSistema, 1.0);
 
@@ -108,24 +119,33 @@ public static class TaskbarLayout
     /// v0.8.0: idem, com as pílulas escaladas pelo fator da fonte/tamanho escolhidos
     /// (<see cref="AparenciaWidget.FatorLargura"/>). Fator 1 = exatamente a largura de antes.
     /// </summary>
-    public static int LarguraLogicaNormal(bool mostrarSistema, double fatorTexto) =>
+    public static int LarguraLogicaNormal(bool mostrarSistema, double fatorTexto, bool mostrarTemperatura = false) =>
         PaddingContornoLogicoPx
         + LarguraPilulaRede(fatorTexto)
-        + (mostrarSistema ? LarguraColunaSistema(fatorTexto) + RespiroSistemaLogicoPx : 0);
+        + (mostrarSistema ? LarguraColunaSistema(fatorTexto) + RespiroSistemaLogicoPx : 0)
+        + (mostrarTemperatura ? LarguraColunaTemperatura(fatorTexto) + RespiroSistemaLogicoPx : 0); // v2.0.1
 
     /// <summary>Largura lógica do widget compacto (1 linha), com ou sem CPU/RAM.</summary>
     public static int LarguraLogicaCompacta(bool mostrarSistema) => LarguraLogicaCompacta(mostrarSistema, 1.0);
 
     /// <summary>v0.8.0: idem, escalada pelo fator da fonte/tamanho (a linha única é quase só texto).</summary>
-    public static int LarguraLogicaCompacta(bool mostrarSistema, double fatorTexto) =>
+    public static int LarguraLogicaCompacta(bool mostrarSistema, double fatorTexto, bool mostrarTemperatura = false) =>
         Escalar(LarguraLogicaCompactaPx, fatorTexto)
-        + (mostrarSistema ? Escalar(LarguraLogicaSistemaCompactaPx, fatorTexto) : 0);
+        + ExtrasCompactos(mostrarSistema, mostrarTemperatura, fatorTexto);
+
+    /// <summary>Trechos "CPU · RAM  |" e (v2.0.1) "CPU 54°C · GPU 61°C  |" que vêm antes do ↑↓ na linha única.</summary>
+    private static int ExtrasCompactos(bool mostrarSistema, bool mostrarTemperatura, double fatorTexto) =>
+        (mostrarSistema ? Escalar(LarguraLogicaSistemaCompactaPx, fatorTexto) : 0)
+        + (mostrarTemperatura ? Escalar(LarguraLogicaTemperaturaCompactaPx, fatorTexto) : 0);
 
     /// <summary>Pílula ↑/↓ (px lógicos) para o fator de texto — usada também pelo widget.</summary>
     public static int LarguraPilulaRede(double fatorTexto) => Escalar(LarguraPilulaRedeLogicaPx, fatorTexto);
 
     /// <summary>Coluna CPU/RAM (px lógicos) para o fator de texto — usada também pelo widget.</summary>
     public static int LarguraColunaSistema(double fatorTexto) => Escalar(LarguraColunaSistemaLogicaPx, fatorTexto);
+
+    /// <summary>v2.0.1: coluna de temperatura (px lógicos) para o fator de texto — usada também pelo widget.</summary>
+    public static int LarguraColunaTemperatura(double fatorTexto) => Escalar(LarguraColunaTemperaturaLogicaPx, fatorTexto);
 
     /// <summary>
     /// v1.2.0: linha única SÓ com o download ("↓ 88,8 Mbps" + padding 6+6 + borda): o trecho
@@ -134,21 +154,22 @@ public static class TaskbarLayout
     public const int LarguraLogicaCompactaSoDownloadPx = 84;
 
     /// <summary>v1.2.0: largura da linha única no modo dado (só download = mais estreita).</summary>
-    public static int LarguraLogicaCompacta(bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo) =>
+    public static int LarguraLogicaCompacta(
+        bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo, bool mostrarTemperatura = false) =>
         modo == ModoExibicaoWidget.SoDownload
             ? Escalar(LarguraLogicaCompactaSoDownloadPx, fatorTexto)
-              + (mostrarSistema ? Escalar(LarguraLogicaSistemaCompactaPx, fatorTexto) : 0)
-            : LarguraLogicaCompacta(mostrarSistema, fatorTexto);
+              + ExtrasCompactos(mostrarSistema, mostrarTemperatura, fatorTexto)
+            : LarguraLogicaCompacta(mostrarSistema, fatorTexto, mostrarTemperatura);
 
     /// <summary>
     /// v1.2.0: largura e estado PREFERIDOS (com espaço sobrando). Uma linha prefere a linha única;
     /// os outros dois, o bloco de duas linhas (o "só download" ocupa a mesma pílula de rede).
     /// </summary>
     public static (int LarguraLogica, EstadoColisaoBarra Estado) Preferido(
-        bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo) =>
+        bool mostrarSistema, double fatorTexto, ModoExibicaoWidget modo, bool mostrarTemperatura = false) =>
         modo == ModoExibicaoWidget.UmaLinha
-            ? (LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo), EstadoColisaoBarra.CompactoUmaLinha)
-            : (LarguraLogicaNormal(mostrarSistema, fatorTexto), EstadoColisaoBarra.NormalDuasLinhas);
+            ? (LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo, mostrarTemperatura), EstadoColisaoBarra.CompactoUmaLinha)
+            : (LarguraLogicaNormal(mostrarSistema, fatorTexto, mostrarTemperatura), EstadoColisaoBarra.NormalDuasLinhas);
 
     private static int Escalar(int larguraPadrao, double fator) =>
         (int)Math.Round(larguraPadrao * (double.IsFinite(fator) && fator > 0 ? fator : 1.0));
@@ -169,14 +190,15 @@ public static class TaskbarLayout
         double escalaDpi,
         bool mostrarSistema = false,
         double fatorTexto = 1.0,
-        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas)
+        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas,
+        bool mostrarTemperatura = false) // v2.0.1: coluna de temperatura ligada → bloco mais largo
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
 
         // v1.2.0: "normal" = o tamanho PREFERIDO do modo (a linha única, no modo Uma linha)
-        (int larguraPreferidaLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo);
+        (int larguraPreferidaLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo, mostrarTemperatura);
         int larguraNormalPx = (int)Math.Round(larguraPreferidaLogica * escala);
-        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo) * escala);
+        int larguraCompactaPx = (int)Math.Round(LarguraLogicaCompacta(mostrarSistema, fatorTexto, modo, mostrarTemperatura) * escala);
         int alturaWidgetPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);
 
@@ -238,11 +260,12 @@ public static class TaskbarLayout
         double escalaDpi,
         bool mostrarSistema = false,
         double fatorTexto = 1.0,
-        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas)
+        ModoExibicaoWidget modo = ModoExibicaoWidget.DuasLinhas,
+        bool mostrarTemperatura = false) // v2.0.1: coluna de temperatura ligada → bloco mais largo
     {
         double escala = escalaDpi <= 0.1 ? 1.0 : escalaDpi;
         // v1.2.0: a posição manual usa o tamanho preferido do modo (linha única no "Uma linha")
-        (int larguraLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo);
+        (int larguraLogica, EstadoColisaoBarra estadoPreferido) = Preferido(mostrarSistema, fatorTexto, modo, mostrarTemperatura);
         int larguraPx = (int)Math.Round(larguraLogica * escala);
         int alturaPx = Math.Min(rectBarra.Height, (int)Math.Round(AlturaLogicaWidgetPx * escala));
         int margemPx = (int)Math.Round(MargemSegurancaLogicaPx * escala);

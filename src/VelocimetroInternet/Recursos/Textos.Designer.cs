@@ -533,6 +533,27 @@ public static partial class Textos
     /// <summary>Abrir Gerenciador de Tarefas</summary>
     public static string Menu_Taskmgr => Obter("Menu_Taskmgr");
 
+    /// <summary>Temperatura</summary>
+    public static string Menu_Temperatura => Obter("Menu_Temperatura");
+
+    /// <summary>Automática</summary>
+    public static string Menu_TemperaturaAutomatica => Obter("Menu_TemperaturaAutomatica");
+
+    /// <summary>Linha de baixo</summary>
+    public static string Menu_TemperaturaLinhaBaixo => Obter("Menu_TemperaturaLinhaBaixo");
+
+    /// <summary>Linha de cima</summary>
+    public static string Menu_TemperaturaLinhaCima => Obter("Menu_TemperaturaLinhaCima");
+
+    /// <summary>Mostrar na barra</summary>
+    public static string Menu_TemperaturaMostrar => Obter("Menu_TemperaturaMostrar");
+
+    /// <summary>Nenhuma</summary>
+    public static string Menu_TemperaturaNenhuma => Obter("Menu_TemperaturaNenhuma");
+
+    /// <summary>Nenhum sensor de temperatura encontrado neste PC</summary>
+    public static string Menu_TemperaturaSemSensores => Obter("Menu_TemperaturaSemSensores");
+
     /// <summary>Testar velocidade da internet…</summary>
     public static string Menu_Testar => Obter("Menu_Testar");
 

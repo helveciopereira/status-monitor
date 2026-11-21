@@ -167,6 +167,13 @@
   <data name="Menu_ConsumoApps" xml:space="preserve"><value>Consumo por aplicativo…</value></data>
   <data name="Menu_Estudio" xml:space="preserve"><value>Estúdio de cores e configurações…</value></data>
   <data name="Menu_MostrarCpuRam" xml:space="preserve"><value>Mostrar CPU e RAM</value></data>
+  <data name="Menu_Temperatura" xml:space="preserve"><value>Temperatura</value></data>
+  <data name="Menu_TemperaturaMostrar" xml:space="preserve"><value>Mostrar na barra</value></data>
+  <data name="Menu_TemperaturaLinhaCima" xml:space="preserve"><value>Linha de cima</value></data>
+  <data name="Menu_TemperaturaLinhaBaixo" xml:space="preserve"><value>Linha de baixo</value></data>
+  <data name="Menu_TemperaturaAutomatica" xml:space="preserve"><value>Automática</value></data>
+  <data name="Menu_TemperaturaNenhuma" xml:space="preserve"><value>Nenhuma</value></data>
+  <data name="Menu_TemperaturaSemSensores" xml:space="preserve"><value>Nenhum sensor de temperatura encontrado neste PC</value></data>
   <data name="Menu_Pausar" xml:space="preserve"><value>Pausar medição</value></data>
   <data name="Menu_PosicaoAutomatica" xml:space="preserve"><value>Voltar à posição automática</value></data>
   <data name="Menu_PosicaoAutomaticaDica" xml:space="preserve"><value>Para mudar o widget de lugar: segure Ctrl e arraste-o pela barra.</value></data>

@@ -55,6 +55,12 @@ public partial class App : Application
     private readonly ServicoQualidade _qualidade = new();
     private readonly ConectividadeWindows _conectividade = new();
 
+    /// <summary>
+    /// v2.0.1: temperaturas (CPU, GPU, discos). Não carrega nada enquanto a opção está desligada: o
+    /// loop só o consulta com a coluna visível, e o menu só lista os sensores ao abrir "Temperatura".
+    /// </summary>
+    private readonly MedidorTemperatura _temperatura = new();
+
     // v1.1.0 (Onda 6): ping opcional ao roteador e a 1.1.1.1 (desligado por padrão)
     private MedidorLatencia? _latencia;
 
@@ -170,7 +176,7 @@ public partial class App : Application
             RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
         }
 
-        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} | Idioma={cfg.Idioma}→{Idioma.Cultura.Name} | Desenho={(cfg.RenderizarPorSoftware ? "cpu" : "gpu")} | Reinicio={(cfg.ReinicioAutomatico ? $"{cfg.ReinicioTetoMb}MB" : "off")} ===");
+        RegistrarLog($"=== Status Monitor v{VersaoApp} | Unidade={cfg.Unidade} | Paleta={cfg.Paleta} | Fixar={cfg.FixarNaBarra} | Bandeja={cfg.MostrarIconeBandeja} | CpuRam={cfg.MostrarCpuRam} | Intervalo={cfg.IntervaloSegundos}s | Fonte={cfg.Fonte}/{cfg.TamanhoTexto} | DownEmCima={cfg.DownloadEmCima} | TodasBarras={cfg.MostrarEmTodasAsBarras} | Manuais={cfg.PosicoesManuais.Count} | Idioma={cfg.Idioma}→{Idioma.Cultura.Name} | Desenho={(cfg.RenderizarPorSoftware ? "cpu" : "gpu")} | Reinicio={(cfg.ReinicioAutomatico ? $"{cfg.ReinicioTetoMb}MB" : "off")} | Temp={(cfg.MostrarTemperatura ? $"{cfg.TemperaturaLinha1}/{cfg.TemperaturaLinha2}" : "off")} ===");
         RegistrarLog(_atualizacao.EstaInstalado
             ? $"Instalado pelo Setup (v{_atualizacao.VersaoInstalada}) — atualização automática ativa ({Environment.ProcessPath})."
             : $"Cópia solta, fora da instalação — sem atualização automática ({Environment.ProcessPath}).");
@@ -202,6 +208,7 @@ public partial class App : Application
             ForcarModoCompactoTeste = usarCompacto,
             // v0.5.0: antes do InicializarAsync, para a 1ª posição já sair com a largura certa
             MostrarSistema = cfg.MostrarCpuRam,
+            MostrarTemperatura = TemperaturaVisivel(cfg), // v2.0.1
             // v0.8.0: idem para a fonte/tamanho e a posição escolhida com Ctrl + arrastar
             FatorTexto = _fatorTexto,
             ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao), // v1.2.0
@@ -392,6 +399,7 @@ public partial class App : Application
         _fatorTexto = aparencia.FatorLargura();
         widget.AplicarAparencia(aparencia, _fatorTexto);
         widget.DefinirMostrarSistema(cfg.MostrarCpuRam);
+        AplicarTemperatura(widget, cfg); // v2.0.1
         widget.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
         widget.DefinirMiniGrafico(cfg.MiniGrafico); // v1.7.0 (Onda 13)
         widget.AplicarCores(Paletas.Resolver(
@@ -401,6 +409,105 @@ public partial class App : Application
         widget.PedirDica = MontarDicaWidget;
         widget.DuploClique += AbrirGerenciadorDeTarefas;
         return widget;
+    }
+
+    // ------------------------------------------------------------------ v2.0.1: temperatura
+
+    /// <summary>A coluna de temperatura aparece? Opção ligada e pelo menos uma linha diferente de "nenhuma".</summary>
+    private static bool TemperaturaVisivel(Configuracoes cfg) =>
+        Temperaturas.ColunaVisivel(cfg.MostrarTemperatura, cfg.TemperaturaLinha1, cfg.TemperaturaLinha2);
+
+    /// <summary>Coluna e as duas linhas dela no widget, conforme a configuração.</summary>
+    private static void AplicarTemperatura(TaskbarWidget widget, Configuracoes cfg) =>
+        widget.DefinirMostrarTemperatura(
+            TemperaturaVisivel(cfg),
+            cfg.TemperaturaLinha1 != Temperaturas.Nenhuma,
+            cfg.TemperaturaLinha2 != Temperaturas.Nenhuma);
+
+    /// <summary>
+    /// Submenu "Temperatura" do clique direito: a chave "Mostrar na barra" e, para cada linha, a lista
+    /// "Automática / Nenhuma / sensores deste PC" com a leitura de agora. Montado só quando o submenu
+    /// ABRE — levantar os sensores (PDH, vídeo, discos) não pode atrasar a abertura do menu principal.
+    /// </summary>
+    private MenuItem CriarMenuTemperatura(Configuracoes cfg)
+    {
+        var raiz = new MenuItem { Header = Textos.Menu_Temperatura };
+        raiz.Items.Add(new MenuItem { Header = "…", IsEnabled = false }); // sem filho não haveria a seta do submenu
+        bool montado = false;
+        raiz.SubmenuOpened += (_, _) =>
+        {
+            // O evento também chega (borbulhando) quando os submenus das linhas abrem: monta uma vez só
+            if (montado)
+            {
+                return;
+            }
+
+            montado = true;
+            IReadOnlyList<SensorTemperatura> sensores = _temperatura.Listar();
+            if (!cfg.MostrarTemperatura)
+            {
+                _temperatura.Fechar(); // só espiou a lista: não deixa o PDH carregado com a opção desligada
+            }
+
+            raiz.Items.Clear();
+            var itemMostrar = new MenuItem { Header = Textos.Menu_TemperaturaMostrar, IsChecked = cfg.MostrarTemperatura };
+            itemMostrar.Click += (_, _) => _config.Alterar(c => c.MostrarTemperatura = !c.MostrarTemperatura);
+            raiz.Items.Add(itemMostrar);
+            raiz.Items.Add(new Separator());
+            raiz.Items.Add(CriarMenuLinhaTemperatura(
+                Textos.Menu_TemperaturaLinhaCima, cfg.TemperaturaLinha1, sensores, (c, codigo) => c.TemperaturaLinha1 = codigo));
+            raiz.Items.Add(CriarMenuLinhaTemperatura(
+                Textos.Menu_TemperaturaLinhaBaixo, cfg.TemperaturaLinha2, sensores, (c, codigo) => c.TemperaturaLinha2 = codigo));
+            if (sensores.Count == 0)
+            {
+                raiz.Items.Add(new Separator());
+                raiz.Items.Add(new MenuItem { Header = Textos.Menu_TemperaturaSemSensores, IsEnabled = false });
+            }
+        };
+        return raiz;
+    }
+
+    /// <summary>Opções de UMA linha da coluna: a marcada é a gravada no settings.json.</summary>
+    private MenuItem CriarMenuLinhaTemperatura(
+        string titulo, string atual, IReadOnlyList<SensorTemperatura> sensores, Action<Configuracoes, string> gravar)
+    {
+        var linha = new MenuItem { Header = titulo };
+        void Adicionar(string rotulo, string codigo)
+        {
+            // "_" num rótulo de menu do WPF marca a tecla de atalho: dobrado, aparece como está (modelos de disco têm "_")
+            var item = new MenuItem { Header = rotulo.Replace("_", "__"), IsChecked = atual == codigo };
+            item.Click += (_, _) => _config.Alterar(c => gravar(c, codigo));
+            if (linha.Items.Count == 2)
+            {
+                linha.Items.Add(new Separator()); // separa "Automática / Nenhuma" dos sensores (só se houver algum)
+            }
+
+            linha.Items.Add(item);
+        }
+
+        Adicionar(Textos.Menu_TemperaturaAutomatica, Temperaturas.Automatica);
+        Adicionar(Textos.Menu_TemperaturaNenhuma, Temperaturas.Nenhuma);
+        foreach (SensorTemperatura s in sensores)
+        {
+            Adicionar(DescreverSensor(s), s.Id);
+        }
+
+        // Sensor escolhido antes e ausente agora (HD externo desligado): continua na lista, marcado e sem leitura
+        if (Temperaturas.TipoDe(atual) != TipoSensorTemperatura.Nenhum && !sensores.Any(s => s.Id == atual))
+        {
+            int corte = atual.IndexOf(':');
+            Adicionar(DescreverSensor(new SensorTemperatura(atual, corte < 0 ? "" : atual[(corte + 1)..], null)), atual);
+        }
+
+        return linha;
+    }
+
+    /// <summary>"GPU · NVIDIA GeForce RTX 4070 — 55°C" (a CPU não tem nome: "CPU — 79°C").</summary>
+    private static string DescreverSensor(SensorTemperatura s)
+    {
+        string rotulo = Temperaturas.Rotulo(s.Tipo);
+        string nome = s.Nome.Length > 0 ? $"{rotulo} · {s.Nome}" : rotulo;
+        return $"{nome} — {Temperaturas.Formatar(s.Celsius)}";
     }
 
     // ------------------------------------------------------------------ v1.0.0: dica, duplo clique, franquia
@@ -504,6 +611,7 @@ public partial class App : Application
     {
         Configuracoes cfg = _config.Atual;
         host.MostrarSistema = cfg.MostrarCpuRam;
+        host.MostrarTemperatura = TemperaturaVisivel(cfg); // v2.0.1
         host.FatorTexto = _fatorTexto;
         host.ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao); // v1.2.0
         host.PosicaoManualLogica = PosicaoManualDe(cfg, host.ChavePosicao);
@@ -580,13 +688,21 @@ public partial class App : Application
             w.DefinirUnidade(UnidadeDe(cfg));
             w.AplicarAparencia(aparencia, _fatorTexto);
             w.DefinirMostrarSistema(cfg.MostrarCpuRam);
+            AplicarTemperatura(w, cfg); // v2.0.1
             w.DefinirModoExibicao(ModosExibicao.DeCodigo(cfg.ModoExibicao)); // v1.2.0
             w.DefinirMiniGrafico(cfg.MiniGrafico); // v1.7.0 (Onda 13)
+        }
+
+        // v2.0.1: opção desligada → solta o contador de desempenho e esquece os sensores (religar relê tudo)
+        if (!cfg.MostrarTemperatura)
+        {
+            _temperatura.Fechar();
         }
 
         foreach (TaskbarHost h in TodosHosts())
         {
             h.MostrarSistema = cfg.MostrarCpuRam; // recalcula a largura na barra se mudou
+            h.MostrarTemperatura = TemperaturaVisivel(cfg); // v2.0.1: idem
             h.FatorTexto = _fatorTexto;
             h.ModoExibicao = ModosExibicao.DeCodigo(cfg.ModoExibicao); // v1.2.0
             h.PosicaoManualLogica = PosicaoManualDe(cfg, h.ChavePosicao);
@@ -948,6 +1064,9 @@ public partial class App : Application
         itemSistema.Click += (_, _) => _config.Alterar(c => c.MostrarCpuRam = !c.MostrarCpuRam);
         menu.Items.Add(itemSistema);
 
+        // v2.0.1: temperatura (desligada por padrão) — liga e escolhe o sensor de cada linha
+        menu.Items.Add(CriarMenuTemperatura(cfg));
+
         // v0.8.0: desfaz o Ctrl + arrastar (todas as barras voltam à vaga ao lado do '^')
         var itemAutomatica = new MenuItem
         {
@@ -1277,6 +1396,11 @@ public partial class App : Application
         // "sem internet" sem consultar o NLM a cada tick); a troca de estado vai para o log uma vez
         EstadoInternet estadoObservado = EstadoInternet.Online;
         bool ultimoSemInternet = false;
+        // v2.0.1: temperatura lida a cada 2 s (muda devagar; com intervalo de 0,5 s não precisa de 2 leituras
+        // por segundo) — e na hora quando o usuário troca o sensor de uma linha no menu
+        TimeSpan proximaTemperatura = TimeSpan.Zero;
+        string? linha1Lida = null, linha2Lida = null;
+        LinhasTemperatura linhasTemperatura = default;
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
@@ -1375,6 +1499,24 @@ public partial class App : Application
 
                 double referencia = ReferenciaIntensidade(_config.Atual, leitura.VelocidadeLinkBitsPorSegundo);
 
+                // v2.0.1: temperatura — só com a coluna visível (desligada, o medidor nem é carregado)
+                Configuracoes cfgTemperatura = _config.Atual;
+                bool mostrarTemperatura = TemperaturaVisivel(cfgTemperatura);
+                if (!mostrarTemperatura)
+                {
+                    linha1Lida = linha2Lida = null; // religar lê no 1º tick
+                }
+                else if (agora >= proximaTemperatura
+                    || cfgTemperatura.TemperaturaLinha1 != linha1Lida || cfgTemperatura.TemperaturaLinha2 != linha2Lida)
+                {
+                    proximaTemperatura = agora + TimeSpan.FromSeconds(2);
+                    linha1Lida = cfgTemperatura.TemperaturaLinha1;
+                    linha2Lida = cfgTemperatura.TemperaturaLinha2;
+                    linhasTemperatura = _temperatura.LerLinhas(linha1Lida, linha2Lida);
+                }
+
+                LinhasTemperatura temperaturaAgora = linhasTemperatura; // cópia para a interface (a variável muda no próximo tick)
+
                 if (!manterTextoFixoNaTela && _widget is not null)
                 {
                     _ = _widget.Dispatcher.InvokeAsync(() =>
@@ -1417,6 +1559,12 @@ public partial class App : Application
                             widgets.ForEach(w => w.AtualizarSistema(uso.CpuPercentual, uso.RamPercentual));
                         }
 
+                        // v2.0.1: temperatura também independe da rede
+                        if (mostrarTemperatura)
+                        {
+                            widgets.ForEach(w => w.AtualizarTemperatura(temperaturaAgora.Cima, temperaturaAgora.Baixo));
+                        }
+
                         _painel?.AtualizarAoVivo(semConexao, semInternet); // v1.8.1: "Sem internet · Wi-Fi"
                     });
                 }
@@ -1435,6 +1583,9 @@ public partial class App : Application
                     RegistrarLog(
                         $"[Tick #{tick}] ↑{vel.UploadBytesPorSegundo:F0} B/s ↓{vel.DownloadBytesPorSegundo:F0} B/s | " +
                         $"CPU {MedidorSistema.Formatar(uso.CpuPercentual)} RAM {MedidorSistema.Formatar(uso.RamPercentual)} | " +
+                        (mostrarTemperatura
+                            ? $"Temp {temperaturaAgora.Cima?.Id} {Temperaturas.Formatar(temperaturaAgora.Cima?.Celsius)} / {temperaturaAgora.Baixo?.Id} {Temperaturas.Formatar(temperaturaAgora.Baixo?.Celsius)} | "
+                            : "") + // v2.0.1
                         $"RAM WorkingSet={proc.WorkingSet64 / 1048576.0:F1} MB (Privada={proc.PrivateMemorySize64 / 1048576.0:F1} MB) | handles={proc.HandleCount}");
 
                     // v1.8.0: coleta completa quando a memória privada subiu 16 MB desde a última
@@ -1578,6 +1729,7 @@ public partial class App : Application
         _timerReinicio?.Stop(); // v1.9.1
         _ctsMedicao?.Cancel();
         _latencia?.Dispose(); // v1.1.0: para o ping (se ligado)
+        _temperatura.Dispose(); // v2.0.1: fecha o contador de desempenho (se aberto)
         _historico.SalvarConsumo();
         _qualidade.Encerrar(); // v1.4.0
         _bandeja?.Dispose();

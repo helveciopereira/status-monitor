@@ -233,6 +233,7 @@ public partial class TaskbarWidget : Window
         Resources["Widget.TamanhoSeparador"] = aparencia.TamanhoSeparador;
         _fatorLargura = fatorLargura;
         DefinirMostrarSistema(_mostrarSistema); // recalcula a largura da coluna CPU/RAM
+        DefinirMostrarTemperatura(_mostrarTemperatura, _linhaTemperaturaCima, _linhaTemperaturaBaixo); // v2.0.1: idem
 
         // Ordem das linhas: CPU/RAM ficam onde estão (CPU em cima); só ↑ e ↓ trocam
         _downloadEmCima = aparencia.DownloadEmCima;
@@ -321,6 +322,81 @@ public partial class TaskbarWidget : Window
         PintarAlerta(TextoRam, ramAlerta);
         PintarAlerta(RunCompactoCpu, cpuAlerta);
         PintarAlerta(RunCompactoRam, ramAlerta);
+    }
+
+    // ------------------------------------------------------------------ v2.0.1: temperatura
+
+    private bool _mostrarTemperatura;
+    private bool _linhaTemperaturaCima = true;
+    private bool _linhaTemperaturaBaixo = true;
+
+    /// <summary>
+    /// v2.0.1: mostra/esconde a coluna de temperatura (entre CPU/RAM e a rede) e cada uma das duas
+    /// linhas dela ("nenhuma" no menu = pílula daquela linha some). Nasce desligada. A LARGURA da
+    /// janela é do TaskbarHost (TaskbarLayout), como no CPU/RAM; aqui só some o conteúdo.
+    /// </summary>
+    public void DefinirMostrarTemperatura(bool mostrar, bool linhaCima, bool linhaBaixo)
+    {
+        _mostrarTemperatura = mostrar;
+        _linhaTemperaturaCima = linhaCima;
+        _linhaTemperaturaBaixo = linhaBaixo;
+        PilulaTemperatura1.Visibility = mostrar && linhaCima ? Visibility.Visible : Visibility.Collapsed;
+        PilulaTemperatura2.Visibility = mostrar && linhaBaixo ? Visibility.Visible : Visibility.Collapsed;
+        CompactoTemperatura.Visibility = mostrar ? Visibility.Visible : Visibility.Collapsed;
+        // Coluna com largura fixa: vai a 0 quando desligada, senão sobraria um vão (mesma regra do CPU/RAM)
+        ColunaTemperatura.Width = new GridLength(mostrar ? TaskbarLayout.LarguraColunaTemperatura(_fatorLargura) : 0);
+        ColunaRespiroTemperatura.Width = new GridLength(mostrar ? TaskbarLayout.RespiroSistemaLogicoPx : 0);
+        AjustarTrechosCompactosTemperatura();
+    }
+
+    /// <summary>Linha única: sem uma das linhas, o trecho dela e o " · " entre as duas ficam vazios.</summary>
+    private void AjustarTrechosCompactosTemperatura()
+    {
+        if (!_linhaTemperaturaCima)
+        {
+            RunCompactoRotuloTemp1.Text = RunCompactoTemp1.Text = "";
+        }
+
+        if (!_linhaTemperaturaBaixo)
+        {
+            RunCompactoRotuloTemp2.Text = RunCompactoTemp2.Text = "";
+        }
+
+        RunCompactoSeparadorTemp.Text = _linhaTemperaturaCima && _linhaTemperaturaBaixo ? " · " : "";
+    }
+
+    /// <summary>
+    /// v2.0.1: atualiza as duas linhas de temperatura nos dois layouts. Sensor null = linha desligada
+    /// (a pílula já está escondida); sensor sem leitura = rótulo dele e "—". Número em vermelho a
+    /// partir do limite da peça (<see cref="Medicao.Temperaturas.LimiteAlerta"/>).
+    /// </summary>
+    public void AtualizarTemperatura(Medicao.SensorTemperatura? cima, Medicao.SensorTemperatura? baixo)
+    {
+        if (_linhaTemperaturaCima)
+        {
+            PreencherTemperatura(cima, RotuloTemperatura1, TextoTemperatura1, RunCompactoRotuloTemp1, RunCompactoTemp1);
+        }
+
+        if (_linhaTemperaturaBaixo)
+        {
+            PreencherTemperatura(baixo, RotuloTemperatura2, TextoTemperatura2, RunCompactoRotuloTemp2, RunCompactoTemp2);
+        }
+    }
+
+    private static void PreencherTemperatura(
+        Medicao.SensorTemperatura? sensor, TextBlock rotulo, TextBlock valor, Run rotuloCompacto, Run valorCompacto)
+    {
+        Medicao.TipoSensorTemperatura tipo = sensor?.Tipo ?? Medicao.TipoSensorTemperatura.Nenhum;
+        string nome = Medicao.Temperaturas.Rotulo(tipo);
+        string texto = Medicao.Temperaturas.Formatar(sensor?.Celsius);
+        rotulo.Text = nome;
+        valor.Text = texto;
+        rotuloCompacto.Text = nome + " ";
+        valorCompacto.Text = texto;
+
+        bool alerta = Medicao.Temperaturas.EmAlerta(tipo, sensor?.Celsius);
+        PintarAlerta(valor, alerta);
+        PintarAlerta(valorCompacto, alerta);
     }
 
     /// <summary>
@@ -436,6 +512,9 @@ public partial class TaskbarWidget : Window
         TextoCompactoUpload.Text = "↑ —";
         TextoCompactoDownload.Text = $"↓ {pausado}";
         AtualizarSistema(null, null); // pausa vale para tudo: nada de CPU/RAM congelados
+        // v2.0.1: idem para a temperatura — "TEMP —" (sensor vazio), não um número parado
+        var semLeitura = new Medicao.SensorTemperatura("", "", null);
+        AtualizarTemperatura(semLeitura, semLeitura);
         // v1.7.0: o tempo pausado não foi medido — apaga o gráfico em vez de ligar os pontos por cima do buraco
         _serieUpload.Limpar();
         _serieDownload.Limpar();

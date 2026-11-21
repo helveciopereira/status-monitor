@@ -167,6 +167,13 @@
   <data name="Menu_ConsumoApps" xml:space="preserve"><value>Usage by app…</value></data>
   <data name="Menu_Estudio" xml:space="preserve"><value>Colors and settings…</value></data>
   <data name="Menu_MostrarCpuRam" xml:space="preserve"><value>Show CPU and RAM</value></data>
+  <data name="Menu_Temperatura" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Menu_TemperaturaMostrar" xml:space="preserve"><value>Show on the taskbar</value></data>
+  <data name="Menu_TemperaturaLinhaCima" xml:space="preserve"><value>Top line</value></data>
+  <data name="Menu_TemperaturaLinhaBaixo" xml:space="preserve"><value>Bottom line</value></data>
+  <data name="Menu_TemperaturaAutomatica" xml:space="preserve"><value>Automatic</value></data>
+  <data name="Menu_TemperaturaNenhuma" xml:space="preserve"><value>None</value></data>
+  <data name="Menu_TemperaturaSemSensores" xml:space="preserve"><value>No temperature sensor found on this PC</value></data>
   <data name="Menu_Pausar" xml:space="preserve"><value>Pause measurement</value></data>
   <data name="Menu_PosicaoAutomatica" xml:space="preserve"><value>Back to automatic position</value></data>
   <data name="Menu_PosicaoAutomaticaDica" xml:space="preserve"><value>To move the widget: hold Ctrl and drag it along the taskbar.</value></data>

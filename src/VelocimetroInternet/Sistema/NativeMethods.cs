@@ -534,4 +534,119 @@ public static class NativeMethods
 
     [DllImport("wlanapi.dll")]
     public static extern void WlanFreeMemory(nint memoria);
+
+    // =========================================================================
+    // v2.0.1: temperaturas (usadas só pelo MedidorTemperatura, e só com a opção ligada).
+    // Nenhuma destas chamadas exige administrador — o app continua instalando sem elevação.
+    // =========================================================================
+
+    // --- CPU: contador de desempenho "Thermal Zone Information" (zona térmica ACPI), via PDH nativo.
+    // PdhAddEnglishCounter aceita o nome em INGLÊS em qualquer idioma do Windows (num Windows pt-BR o
+    // contador se chama "Informações da Zona Térmica"). Todas devolvem 0 (ERROR_SUCCESS) ou um código PDH.
+
+    /// <summary>Formato "double" do PdhGetFormattedCounterArray.</summary>
+    public const uint PDH_FMT_DOUBLE = 0x00000200;
+
+    /// <summary>"O buffer é pequeno": resposta esperada da 1ª chamada (que só pergunta o tamanho).</summary>
+    public const int PDH_MORE_DATA = unchecked((int)0x800007D2);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    public static extern int PdhOpenQueryW(string? fonte, nint dadosUsuario, out nint consulta);
+
+    [DllImport("pdh.dll", CharSet = CharSet.Unicode)]
+    public static extern int PdhAddEnglishCounterW(nint consulta, string caminho, nint dadosUsuario, out nint contador);
+
+    [DllImport("pdh.dll")]
+    public static extern int PdhCollectQueryData(nint consulta);
+
+    [DllImport("pdh.dll")]
+    public static extern int PdhGetFormattedCounterArrayW(nint contador, uint formato, ref uint tamanhoBytes, out uint itens, nint buffer);
+
+    [DllImport("pdh.dll")]
+    public static extern int PdhCloseQuery(nint consulta);
+
+    // --- GPU: o mesmo número do Gerenciador de Tarefas (aba Desempenho › GPU), pedido ao kernel gráfico
+    // (dxgkrnl) pelas funções D3DKMT da gdi32. Devolvem NTSTATUS (0 = sucesso).
+
+    /// <summary>KMTQAITYPE_ADAPTERREGISTRYINFO: nome do adaptador (4 textos de MAX_PATH; o 1º é o nome).</summary>
+    public const int KMTQAITYPE_ADAPTERREGISTRYINFO = 8;
+
+    /// <summary>KMTQAITYPE_ADAPTERPERFDATA: ventoinha, energia e TEMPERATURA (décimos de °C) — WDDM 2.4+.</summary>
+    public const int KMTQAITYPE_ADAPTERPERFDATA = 62;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DKMT_ADAPTERINFO
+    {
+        public uint hAdapter;
+        public uint LuidBaixo;
+        public int LuidAlto;
+        public uint NumOfSources;
+        public int bPrecisePresentRegionsPreferred;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DKMT_ENUMADAPTERS2
+    {
+        public uint NumAdapters;
+        public nint pAdapters;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DKMT_QUERYADAPTERINFO
+    {
+        public uint hAdapter;
+        public int Type;
+        public nint pPrivateDriverData;
+        public uint PrivateDriverDataSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DKMT_CLOSEADAPTER
+    {
+        public uint hAdapter;
+    }
+
+    /// <summary>D3DKMT_ADAPTER_PERFDATA (64 bytes). Temperature vem em décimos de grau Celsius; 0 = o driver não informa.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DKMT_ADAPTER_PERFDATA
+    {
+        public uint PhysicalAdapterIndex;
+        public ulong MemoryFrequency;
+        public ulong MaxMemoryFrequency;
+        public ulong MaxMemoryFrequencyOC;
+        public ulong MemoryBandwidth;
+        public ulong PCIEBandwidth;
+        public uint FanRPM;
+        public uint Power;
+        public uint Temperature;
+        public byte PowerStateOverride;
+    }
+
+    [DllImport("gdi32.dll")]
+    public static extern int D3DKMTEnumAdapters2(ref D3DKMT_ENUMADAPTERS2 dados);
+
+    [DllImport("gdi32.dll")]
+    public static extern int D3DKMTQueryAdapterInfo(ref D3DKMT_QUERYADAPTERINFO dados);
+
+    [DllImport("gdi32.dll")]
+    public static extern int D3DKMTCloseAdapter(ref D3DKMT_CLOSEADAPTER dados);
+
+    // --- Discos: IOCTL_STORAGE_QUERY_PROPERTY em \\.\PhysicalDriveN aberto com acesso ZERO (só
+    // consulta de propriedades — por isso não pede administrador, ao contrário do SMART clássico).
+
+    /// <summary>IOCTL_STORAGE_QUERY_PROPERTY.</summary>
+    public const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+
+    public const uint FILE_SHARE_READ_WRITE = 0x00000003;
+    public const uint OPEN_EXISTING = 3;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFileW(
+        string nome, uint acesso, uint compartilhamento, nint seguranca, uint criacao, uint sinalizadores, nint modelo);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DeviceIoControl(
+        Microsoft.Win32.SafeHandles.SafeFileHandle dispositivo, uint codigo,
+        byte[] entrada, int tamanhoEntrada, byte[] saida, int tamanhoSaida, out int bytesDevolvidos, nint sobreposto);
 }

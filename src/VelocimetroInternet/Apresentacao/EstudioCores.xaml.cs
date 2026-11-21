@@ -666,6 +666,10 @@ public partial class EstudioCores : Window
             FixarNaBarra = _rascunho.FixarNaBarra,
             Unidade = _rascunho.Unidade,
             MostrarCpuRam = _rascunho.MostrarCpuRam, // v0.5.0: escolha do painel/menu, não é "aparência"
+            // v2.0.1: temperatura é escolha do menu (liga/desliga e sensor de cada linha), idem
+            MostrarTemperatura = _rascunho.MostrarTemperatura,
+            TemperaturaLinha1 = _rascunho.TemperaturaLinha1,
+            TemperaturaLinha2 = _rascunho.TemperaturaLinha2,
             // Sem isto, o próximo início religaria o "Iniciar com o Windows" que o usuário desligou
             InicioAutomaticoJaConfigurado = _rascunho.InicioAutomaticoJaConfigurado,
             // v0.8.0: o lugar escolhido arrastando tem botão próprio no menu ("Voltar à posição automática")
@@ -684,6 +688,10 @@ public partial class EstudioCores : Window
         _rascunho.Unidade = atual.Unidade;
         _rascunho.FixarNaBarra = atual.FixarNaBarra;
         _rascunho.MostrarCpuRam = atual.MostrarCpuRam; // v0.5.0: pode ter mudado pelo painel/menu
+        // v2.0.1: a temperatura só muda pelo menu — sem isto, Aplicar desfaria a escolha feita com o estúdio aberto
+        _rascunho.MostrarTemperatura = atual.MostrarTemperatura;
+        _rascunho.TemperaturaLinha1 = atual.TemperaturaLinha1;
+        _rascunho.TemperaturaLinha2 = atual.TemperaturaLinha2;
         _rascunho.InicioAutomaticoJaConfigurado = atual.InicioAutomaticoJaConfigurado;
         // v0.8.0: o widget pode ter sido arrastado (Ctrl+arrastar) com o estúdio aberto
         _rascunho.PosicoesManuais = new Dictionary<string, int>(atual.PosicoesManuais);

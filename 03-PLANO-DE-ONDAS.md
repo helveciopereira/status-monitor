@@ -379,6 +379,7 @@ clara · 🟢 ideia.
 3. ✅ **v1.8.1** (2026-11-03) — "sem internet" no widget + Onda 14 (aviso de queda e anexos).
 4. ✅ **v1.9.0** (2026-11-03) — winget + inglês (acesso amplo). Manifestos prontos e validados.
 4b. ✅ **v1.9.1** (2026-11-04) — memória: desenho pela CPU (sem driver de vídeo) + reinício automático por teto. Pendente: 24 h de log.
+4c. ✅ **v2.0.1** (2026-11-21) — **temperatura na barra** (pedido do dono): coluna opcional, desligada por padrão, entre CPU/RAM e a internet; duas linhas com sensor escolhido no menu (CPU, GPUs, SSD/HD). Sem administrador nem driver — RAM fica de fora (SMBus exige driver de kernel). Pendente: validar em PC com disco SATA e em desktop sem zona térmica ACPI.
 5. Ideias 🟢 conforme o gosto do dono.
 6. **Por último, só se o dono quiser distribuir:** PR ao `microsoft/winget-pkgs` (decisão de 2026-11-03: sem ganho para uso próprio).
 

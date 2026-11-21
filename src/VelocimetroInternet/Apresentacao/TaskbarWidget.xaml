@@ -73,10 +73,14 @@
                     <RowDefinition Height="2" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <!-- v0.5.0: coluna 0 = CPU/RAM (some quando desligado), 1 = respiro, 2 = rede -->
+                <!-- v0.5.0: coluna 0 = CPU/RAM (some quando desligado), 1 = respiro.
+                     v2.0.1: coluna 2 = TEMPERATURA (nasce com largura 0: opção desligada por padrão),
+                     3 = respiro dela, 4 = rede (era a 2). -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="ColunaSistema" Width="61" />
                     <ColumnDefinition x:Name="ColunaRespiro" Width="3" />
+                    <ColumnDefinition x:Name="ColunaTemperatura" Width="0" />
+                    <ColumnDefinition x:Name="ColunaRespiroTemperatura" Width="0" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -130,8 +134,59 @@
                     </Grid>
                 </Border>
 
+                <!-- v2.0.1 — Linha 0 / coluna 2: temperatura de CIMA (mesma pílula neutra do CPU/RAM).
+                     O rótulo ("CPU", "GPU", "SSD", "HD") e o valor ("54°C") vêm de AtualizarTemperatura. -->
+                <Border x:Name="PilulaTemperatura1" Grid.Row="0" Grid.Column="2" Visibility="Collapsed"
+                        CornerRadius="4"
+                        Background="{DynamicResource SistemaPillBgBrush}"
+                        BorderBrush="{DynamicResource SistemaPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="5,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="RotuloTemperatura1" Grid.Column="0" Text="TEMP"
+                                   Foreground="{DynamicResource SistemaRotuloBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}" FontSize="{DynamicResource Widget.TamanhoRotulo}" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoTemperatura1" Grid.Column="1" Text="—"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}" FontSize="{DynamicResource Widget.TamanhoValor}" FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoTemperatura1Barra" />
+                    </Grid>
+                </Border>
+
+                <!-- v2.0.1 — Linha 2 / coluna 2: temperatura de BAIXO -->
+                <Border x:Name="PilulaTemperatura2" Grid.Row="2" Grid.Column="2" Visibility="Collapsed"
+                        CornerRadius="4"
+                        Background="{DynamicResource SistemaPillBgBrush}"
+                        BorderBrush="{DynamicResource SistemaPillBorderBrush}"
+                        BorderThickness="0.75"
+                        Padding="5,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="RotuloTemperatura2" Grid.Column="0" Text="TEMP"
+                                   Foreground="{DynamicResource SistemaRotuloBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}" FontSize="{DynamicResource Widget.TamanhoRotulo}" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextoTemperatura2" Grid.Column="1" Text="—"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}" FontSize="{DynamicResource Widget.TamanhoValor}" FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoTemperatura2Barra" />
+                    </Grid>
+                </Border>
+
                 <!-- Linha 0: Pílula de Upload (Azul #4CC2FF). v0.8.0: nomeada — "download em cima" troca as linhas -->
-                <Border x:Name="PilulaUpload" Grid.Row="0" Grid.Column="2"
+                <Border x:Name="PilulaUpload" Grid.Row="0" Grid.Column="4"
                         CornerRadius="4"
                         Background="{DynamicResource UploadPillBgBrush}"
                         BorderBrush="{DynamicResource UploadPillBorderBrush}"
@@ -168,7 +223,7 @@
                 </Border>
 
                 <!-- Linha 2: Pílula de Download (Vermelho #FF6B6B) -->
-                <Border x:Name="PilulaDownload" Grid.Row="2" Grid.Column="2"
+                <Border x:Name="PilulaDownload" Grid.Row="2" Grid.Column="4"
                         CornerRadius="4"
                         Background="{DynamicResource DownloadPillBgBrush}"
                         BorderBrush="{DynamicResource DownloadPillBorderBrush}"
@@ -229,6 +284,23 @@
                                    Typography.NumeralAlignment="Tabular"
                                    VerticalAlignment="Center"
                                    AutomationProperties.Name="TextoCompactoSistemaBarra"><Run Text="CPU " /><Run x:Name="RunCompactoCpu" Text="12%" /><Run Text=" · RAM " /><Run x:Name="RunCompactoRam" Text="48%" /></TextBlock>
+                        <TextBlock Text="  |  "
+                                   Foreground="{DynamicResource SeparadorBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}"
+                                   FontSize="{DynamicResource Widget.TamanhoSeparador}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <!-- v2.0.1: "CPU 54°C · GPU 61°C  |" entre o CPU/RAM e o ↑↓ (some quando desligado).
+                         Em trechos (Run): o rótulo muda com o sensor e só o número em alerta fica vermelho. -->
+                    <StackPanel x:Name="CompactoTemperatura" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock x:Name="TextoCompactoTemperatura"
+                                   Foreground="{DynamicResource SistemaTextBrush}"
+                                   FontFamily="{DynamicResource Widget.Fonte}"
+                                   FontSize="{DynamicResource Widget.TamanhoCompacto}"
+                                   FontWeight="SemiBold"
+                                   Typography.NumeralAlignment="Tabular"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.Name="TextoCompactoTemperaturaBarra"><Run x:Name="RunCompactoRotuloTemp1" Text="TEMP " /><Run x:Name="RunCompactoTemp1" Text="—" /><Run x:Name="RunCompactoSeparadorTemp" Text=" · " /><Run x:Name="RunCompactoRotuloTemp2" Text="TEMP " /><Run x:Name="RunCompactoTemp2" Text="—" /></TextBlock>
                         <TextBlock Text="  |  "
                                    Foreground="{DynamicResource SeparadorBrush}"
                                    FontFamily="{DynamicResource Widget.Fonte}"
